@@ -14,33 +14,33 @@ export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
   const photo = membre.photo_chemin ? liens.get(membre.photo_chemin) : null;
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[256px_1fr] lg:bg-[linear-gradient(to_right,var(--color-marine)_256px,transparent_256px)]">
-      <aside className="flex flex-col gap-6 bg-marine p-4 text-white lg:sticky lg:top-0 lg:h-screen lg:p-5">
+    <div className="min-h-screen lg:grid lg:grid-cols-[272px_1fr] lg:bg-[linear-gradient(to_right,rgb(255_255_255/0.8)_271px,var(--color-trait)_271px_272px,transparent_272px)]">
+      <aside className="flex flex-col gap-6 border-b border-trait bg-white/80 p-4 backdrop-blur-md lg:sticky lg:top-0 lg:h-screen lg:border-r lg:border-b-0 lg:p-5">
         <div className="flex items-center gap-3">
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={entreprise.nom} className="h-12 max-w-[200px] rounded-xl bg-white object-contain p-1.5" />
+            <img src={logo} alt={entreprise.nom} className="h-12 max-w-[200px] object-contain" />
           ) : (
-            <p className="font-titre text-3xl font-extrabold uppercase leading-none">{entreprise.nom}</p>
+            <p className="text-2xl font-extrabold leading-none tracking-[-0.03em]">{entreprise.nom}</p>
           )}
         </div>
-        <LienBouton href="/interventions/nouvelle" className="w-full">
+        <LienBouton href="/interventions/nouvelle" className="w-full whitespace-nowrap !px-4">
           <Icone nom="plus" taille={18} /> Nouvelle intervention
         </LienBouton>
         <Navigation />
         <div className="mt-auto hidden space-y-4 lg:block">
-          <Link href="/equipe#profil" className="flex items-center gap-3 rounded-2xl p-2 transition hover:bg-white/5">
-            <Avatar url={photo} initiales={initiales(membre.prenom, membre.nom)} taille={40} className="ring-2 ring-jaune" />
+          <Link href="/equipe#profil" className="flex items-center gap-3 rounded-2xl p-2 transition hover:bg-doux">
+            <Avatar url={photo} initiales={initiales(membre.prenom, membre.nom)} taille={40} className="ring-2 ring-cobalt ring-offset-2 ring-offset-white" />
             <span className="min-w-0">
               <span className="block truncate font-bold">
                 {membre.prenom} {membre.nom}
               </span>
-              <span className="block text-xs text-white/55">{LIBELLE_ROLE[membre.role]}</span>
+              <span className="block text-xs text-gris">{LIBELLE_ROLE[membre.role]}</span>
             </span>
           </Link>
-          <BoutonDeconnexion className="px-2 text-sm text-white/60 hover:text-white" />
-          <div className="px-2 text-xs text-white/40">
-            Propulsé par <Logo clair taille={18} />
+          <BoutonDeconnexion className="px-2 text-sm text-gris hover:text-encre" />
+          <div className="border-t border-trait px-2 pt-4 text-xs text-gris">
+            Propulsé par <Logo taille={18} />
           </div>
         </div>
       </aside>

@@ -80,7 +80,7 @@ export default async function DetailIntervention({ params, searchParams }: PageP
               <form action={renvoyer.bind(null, i.id)}><Bouton variante="secondaire">Renvoyer au technicien</Bouton></form>
             )}
             {i.statut === 'validee' && (
-              <form action={facturer.bind(null, i.id)}><Bouton variante="sombre">Marquer facturée</Bouton></form>
+              <form action={facturer.bind(null, i.id)}><Bouton variante="principal">Marquer facturée</Bouton></form>
             )}
             {i.statut === 'facturee' && (
               <form action={annulerFacturation.bind(null, i.id)}><Bouton variante="secondaire">Annuler la facturation</Bouton></form>
@@ -97,7 +97,7 @@ export default async function DetailIntervention({ params, searchParams }: PageP
         <div className="space-y-6">
           {fiches.length === 0 ? (
             <div className="carte p-6">
-              <h2 className="font-titre text-2xl font-extrabold uppercase">Fiche</h2>
+              <h2 className="text-2xl font-extrabold">Fiche</h2>
               <p className="mt-2 text-gris">
                 {i.statut === 'en_cours'
                   ? 'Le technicien est sur place : la fiche apparaîtra ici dès qu’il l’aura envoyée.'
@@ -111,17 +111,17 @@ export default async function DetailIntervention({ params, searchParams }: PageP
 
         <aside className="space-y-6">
           <section className="carte space-y-3 p-5 text-sm">
-            <h2 className="font-titre text-xl font-extrabold uppercase">Client et lieu</h2>
+            <h2 className="text-xl font-extrabold">Client et lieu</h2>
             <p className="font-semibold">{i.client?.nom}</p>
             {i.client?.telephone && <p><a className="underline" href={`tel:${i.client.telephone}`}>{i.client.telephone}</a></p>}
             {i.client_complet?.email && <p>{i.client_complet.email}</p>}
             <p>{adresseComplete(i.site)}</p>
             {i.site_complet?.acces && <p className="text-gris">Accès : {i.site_complet.acces}</p>}
-            {i.description && <p className="rounded-xl bg-beton p-3">{i.description}</p>}
+            {i.description && <p className="rounded-xl bg-doux p-3">{i.description}</p>}
           </section>
 
           <section className="carte p-5 text-sm">
-            <h2 className="mb-3 font-titre text-xl font-extrabold uppercase">Planning</h2>
+            <h2 className="mb-3 text-xl font-extrabold">Planning</h2>
             {modifiable ? (
               <form action={planifier.bind(null, i.id)} className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
@@ -131,12 +131,12 @@ export default async function DetailIntervention({ params, searchParams }: PageP
                 <div className="space-y-1.5">
                   {equipe.filter((m) => m.role !== 'assistant').map((m) => (
                     <label key={m.id} className="flex items-center gap-2">
-                      <input type="checkbox" name="techniciens" value={m.id} defaultChecked={affectes.has(m.id)} className="h-4 w-4 accent-marine" />
+                      <input type="checkbox" name="techniciens" value={m.id} defaultChecked={affectes.has(m.id)} className="h-4 w-4 accent-cobalt" />
                       {m.prenom} {m.nom}
                     </label>
                   ))}
                 </div>
-                <Bouton variante="sombre" className="w-full">Enregistrer</Bouton>
+                <Bouton variante="principal" className="w-full">Enregistrer</Bouton>
               </form>
             ) : (
               <p>
@@ -165,7 +165,7 @@ function BlocFiche({ fiche: f, rang, urls }: { fiche: FicheComplete; rang: numbe
   return (
     <article className="carte divide-y divide-trait">
       <header className="flex flex-wrap items-center gap-3 p-5">
-        <h2 className="font-titre text-2xl font-extrabold uppercase">Fiche{rang ? ` · passage ${rang}` : ''}</h2>
+        <h2 className="text-2xl font-extrabold">Fiche{rang ? ` · passage ${rang}` : ''}</h2>
         {f.resultat && <Puce ton={f.resultat === 'termine' ? 'vert' : 'rouge'}>{LIBELLE_RESULTAT[f.resultat]}</Puce>}
         <span className="ml-auto text-sm text-gris">
           {f.envoyee_le && `Envoyée le ${new Date(f.envoyee_le).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}`}
@@ -191,9 +191,9 @@ function BlocFiche({ fiche: f, rang, urls }: { fiche: FicheComplete; rang: numbe
               const val = v.mesures?.[m.code] ?? null;
               const alerte = etatMesure(m.code, val) === 'alerte';
               return (
-                <div key={m.code} className={`rounded-xl p-3 ${alerte ? 'bg-rouge-doux text-rouge' : 'bg-beton'}`}>
+                <div key={m.code} className={`rounded-xl p-3 ${alerte ? 'bg-rouge-doux text-rouge' : 'bg-doux'}`}>
                   <p className="text-xs font-semibold">{m.libelle}</p>
-                  <p className="font-titre text-2xl font-bold">{String(val).replace('.', ',')} {m.unite}</p>
+                  <p className="text-2xl font-extrabold tracking-[-0.02em]">{String(val).replace('.', ',')} {m.unite}</p>
                 </div>
               );
             })}
@@ -223,7 +223,7 @@ function BlocFiche({ fiche: f, rang, urls }: { fiche: FicheComplete; rang: numbe
                 <a key={m.chemin} href={url} target="_blank" rel="noreferrer" className="relative block overflow-hidden rounded-xl">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={url} alt={m.legende ?? 'Photo'} className="aspect-square w-full object-cover" />
-                  {m.categorie && <span className="absolute left-1.5 top-1.5 rounded bg-marine/80 px-1.5 text-xs text-white">{m.categorie === 'avant' ? 'Avant' : 'Après'}</span>}
+                  {m.categorie && <span className="absolute left-1.5 top-1.5 rounded-md bg-white/90 px-1.5 text-xs font-bold text-encre">{m.categorie === 'avant' ? 'Avant' : 'Après'}</span>}
                 </a>
               ) : null;
             })}

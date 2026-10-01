@@ -39,7 +39,7 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
                 <span className="block truncate text-sm text-gris">{m.email}</span>
               </span>
               <Puce ton={m.role === 'dirigeant' ? 'bleu' : 'gris'}>{LIBELLE_ROLE[m.role]}</Puce>
-              {!m.user_id && <Puce ton="jaune">Invité</Puce>}
+              {!m.user_id && <Puce ton="violet">Invité</Puce>}
               {dirigeant && m.id !== moi.id && (
                 <form action={changerActif.bind(null, m.id, !m.actif)}>
                   <button className="text-sm font-semibold text-gris underline">{m.actif ? 'Désactiver' : 'Réactiver'}</button>
@@ -52,7 +52,7 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
         <div className="space-y-6 self-start">
         <section id="profil" className="carte apparition flex flex-col items-center p-6 text-center">
           <Avatar url={photo(moiComplet.photo_chemin)} initiales={initiales(moi.prenom, moi.nom)} taille={104} anneau />
-          <p className="mt-4 font-titre text-2xl font-extrabold uppercase">
+          <p className="mt-4 text-2xl font-extrabold">
             {moi.prenom} {moi.nom}
           </p>
           <p className="mb-4 text-sm text-gris">{LIBELLE_ROLE[moi.role]}</p>
@@ -65,11 +65,11 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
 
         {dirigeant && (
           <section className="carte apparition p-5" style={{ '--i': 1 } as CSSProperties}>
-            <h2 className="font-titre text-xl font-extrabold uppercase">Logo de l’entreprise</h2>
+            <h2 className="text-xl font-extrabold">Logo de l’entreprise</h2>
             <p className="mb-4 text-sm text-gris">Affiché dans le menu et, bientôt, sur les rapports envoyés aux clients.</p>
             {entreprise.logo_chemin && photo(entreprise.logo_chemin) && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo(entreprise.logo_chemin)!} alt="" className="mb-4 h-16 rounded-xl bg-beton object-contain p-2" />
+              <img src={photo(entreprise.logo_chemin)!} alt="" className="mb-4 h-16 rounded-xl bg-doux object-contain p-2" />
             )}
             <EnvoiPhoto
               entrepriseId={entreprise.id}
@@ -81,7 +81,7 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
 
         {dirigeant && (
           <form action={inviter} className="carte apparition space-y-3 p-5" style={{ '--i': 2 } as CSSProperties}>
-            <h2 className="font-titre text-xl font-extrabold uppercase">Ajouter quelqu’un</h2>
+            <h2 className="text-xl font-extrabold">Ajouter quelqu’un</h2>
             <div className="grid grid-cols-2 gap-2">
               <input name="prenom" className="champ" required placeholder="Prénom" aria-label="Prénom" />
               <input name="nom" className="champ" placeholder="Nom" aria-label="Nom" />

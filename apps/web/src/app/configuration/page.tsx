@@ -7,7 +7,7 @@ export default function Configuration() {
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
       <Logo />
-      <h1 className="mt-8 font-titre text-4xl font-extrabold uppercase text-marine">Configuration manquante</h1>
+      <h1 className="mt-8 text-4xl font-extrabold text-encre">Configuration manquante</h1>
       <p className="mt-4">
         Le site n’est pas encore relié à sa base de données. Renseignez ces deux variables (dans un fichier{' '}
         <code>apps/web/.env.local</code>, ou dans les réglages du projet Vercel) :

@@ -19,7 +19,7 @@ export default async function Bienvenue({ searchParams }: PageProps<'/bienvenue'
   return (
     <main className="mx-auto max-w-md px-6 py-16">
       <Logo />
-      <h1 className="mt-10 font-titre text-4xl font-extrabold uppercase text-marine">Bienvenue</h1>
+      <h1 className="mt-10 text-4xl font-extrabold text-encre">Bienvenue</h1>
       <p className="mt-2 text-gris">
         Créez votre entreprise pour commencer. Si votre patron vous a invité, demandez-lui de vérifier l’adresse
         e-mail utilisée : <b className="text-encre">{user.email}</b>.

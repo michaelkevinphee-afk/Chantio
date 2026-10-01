@@ -52,7 +52,7 @@ export default function FormulaireConnexion() {
   if (etape === 'code') {
     return (
       <form onSubmit={verifierCode} className="mt-10">
-        <h1 className="font-titre text-4xl font-extrabold uppercase text-marine">Votre code</h1>
+        <h1 className="text-4xl font-extrabold text-encre">Votre code</h1>
         <p className="mt-2 text-gris">
           Un code vient d’être envoyé à <b className="text-encre">{email}</b>.
         </p>
@@ -80,7 +80,7 @@ export default function FormulaireConnexion() {
 
   return (
     <form onSubmit={envoyerCode} className="mt-10">
-      <h1 className="font-titre text-4xl font-extrabold uppercase text-marine">Connexion</h1>
+      <h1 className="text-4xl font-extrabold text-encre">Connexion</h1>
       <p className="mt-2 text-gris">Pas de mot de passe : on vous envoie un code par e-mail.</p>
       <label className="etiquette mt-6" htmlFor="email">
         Adresse e-mail

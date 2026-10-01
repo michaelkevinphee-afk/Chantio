@@ -1,53 +1,124 @@
 @import "tailwindcss";
 
-/* Couleurs Chantio (maquettes v2) : marine + jaune chantier, fond béton clair. */
+/* Charte du site Chantio : bleu cobalt, pervenche et lavande du logo, fond bleuté clair,
+   dégradés vifs. Le bleu encre ne sert qu'au texte (pas de fond sombre), et pas d'orange. */
 @theme inline {
-  --color-marine: #14213D;
-  --color-marine-clair: #2A3B5F;
-  --color-jaune: #F2B705;
-  --color-jaune-doux: #FDF3D0;
-  --color-beton: #F2F1EC;
-  --color-trait: #E4E2DA;
-  --color-encre: #14213D;
-  --color-gris: #5E6678;
-  --color-vert: #1F8A4C;
-  --color-vert-doux: #DDF3E5;
-  --color-orange: #D9822B;
-  --color-orange-doux: #FCEBD9;
-  --color-rouge: #D93A2B;
-  --color-rouge-doux: #FBE3E0;
-  --color-bleu: #1E40AF;
-  --color-bleu-doux: #E0EAFD;
-  --font-sans: var(--font-texte);
-  --font-titre: var(--font-barlow);
+  --color-encre: #101A3D;
+  --color-cobalt: #2F54EB;
+  --color-cobalt-vif: #4467FA;
+  --color-pervenche: #7C93F5;
+  --color-lavande: #B9C6FB;
+  --color-fond: #F4F6FF;
+  --color-doux: #E9EEFF;
+  --color-trait: #D9E0F7;
+  --color-gris: #5B6480;
+  --color-gris-doux: #EEF1FB;
+  --color-bleu: #2442C4;
+  --color-bleu-doux: #E3E9FF;
+  --color-menthe: #12B76A;
+  --color-vert: #067647;
+  --color-vert-doux: #DCFAE6;
+  --color-violet: #5925DC;
+  --color-violet-doux: #ECE9FE;
+  --color-rouge: #D92D20;
+  --color-rouge-doux: #FEE4E2;
+  --font-sans: var(--font-jakarta);
+  --font-mono: var(--font-jetbrains);
+}
+
+:root {
+  --degrade: linear-gradient(120deg, #2F54EB 0%, #4467FA 45%, #7C93F5 100%);
+  --halo: rgb(47 84 235 / 0.35);
 }
 
 body {
-  background: var(--color-beton);
   color: var(--color-encre);
   font-weight: 500;
+  background:
+    radial-gradient(60% 420px at 85% -120px, rgb(124 147 245 / 0.32), transparent 70%),
+    radial-gradient(40% 320px at 0% -80px, rgb(185 198 251 / 0.45), transparent 70%),
+    var(--color-fond);
+  background-attachment: fixed;
 }
 
-.champ {
-  @apply w-full rounded-2xl border border-trait bg-white px-4 py-3 text-base outline-none transition focus:border-marine focus:ring-2 focus:ring-marine/15;
+@layer base {
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-cobalt);
+    outline-offset: 3px;
+  }
 }
-.etiquette {
-  @apply mb-1.5 block text-sm font-bold text-encre;
-}
-/* Cartes blanches arrondies, ombre légère comme sur les maquettes. */
-.carte {
-  @apply rounded-[22px] bg-white;
-  box-shadow: 0 1px 0 #DDDAD0, 0 2px 6px rgb(20 33 61 / 0.06);
-}
-.carte-lien {
-  @apply transition duration-200;
-}
-.carte-lien:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 1px 0 #DDDAD0, 0 10px 24px -8px rgb(20 33 61 / 0.18);
-}
-.surtitre {
-  @apply text-xs font-extrabold uppercase tracking-[0.12em] text-gris;
+
+/* Composants : dans la couche « components » pour que les utilitaires Tailwind gardent la main. */
+@layer components {
+  .champ {
+    @apply w-full rounded-[14px] border border-trait bg-white px-4 py-3 text-base outline-none transition focus:border-cobalt focus:ring-4 focus:ring-cobalt/15;
+  }
+  .etiquette {
+    @apply mb-1.5 block text-sm font-bold text-encre;
+  }
+  /* Cartes blanches, filet lavande et halo bleu discret, comme sur le site. */
+  .carte {
+    @apply rounded-[20px] border border-trait bg-white;
+    box-shadow: 0 18px 30px -26px var(--halo);
+  }
+  .carte-lien {
+    @apply transition duration-200;
+  }
+  .carte-lien:hover {
+    transform: translateY(-2px);
+    border-color: #C4D1FF;
+    box-shadow: 0 22px 34px -22px var(--halo);
+  }
+  /* Petit titre en capitales cobalt (« eyebrow » du site). */
+  .surtitre {
+    @apply text-[13px] font-bold uppercase tracking-[0.08em] text-cobalt;
+  }
+  /* Dégradé cobalt → pervenche des boutons et bandeaux du site. */
+  .degrade {
+    background-image: var(--degrade);
+    background-size: 160% 100%;
+    background-position: 0 0;
+    box-shadow: 0 14px 28px -14px var(--halo);
+    transition: background-position 0.5s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  a.degrade:hover, button.degrade:hover:not(:disabled) {
+    background-position: 100% 0;
+    translate: 0 -2px;
+    box-shadow: 0 18px 32px -14px var(--halo);
+  }
+  .texte-degrade {
+    background-image: var(--degrade);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Bandeau en dégradé avec les blocs du logo en filigrane (appel à l'action du site). */
+  .bandeau {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(40% 90% at 100% 0%, rgb(185 198 251 / 0.7), transparent 70%),
+      radial-gradient(40% 90% at 0% 100%, rgb(124 147 245 / 0.8), transparent 70%),
+      linear-gradient(120deg, #2F54EB, #4467FA);
+    box-shadow: 0 18px 32px -18px var(--halo);
+  }
+  .bandeau > * {
+    position: relative;
+  }
+  .bandeau::after {
+    content: "";
+    position: absolute;
+    right: -24px;
+    bottom: -46px;
+    width: 150px;
+    height: 150px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect x='14' y='14' width='24' height='68' rx='10' fill='%23fff' fill-opacity='.18'/%3E%3Crect x='44' y='14' width='38' height='24' rx='10' fill='%23fff' fill-opacity='.28'/%3E%3Crect x='44' y='58' width='38' height='24' rx='10' fill='%23fff' fill-opacity='.4'/%3E%3C/svg%3E") no-repeat center / contain;
+    transform: rotate(-10deg);
+    pointer-events: none;
+  }
 }
 
 /* Apparition en cascade : style={{ '--i': n }} décale chaque élément. */
@@ -67,8 +138,8 @@ body {
   animation: remplissage 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 0.25s both;
 }
 @keyframes pulsation {
-  0%, 100% { box-shadow: 0 0 0 0 rgb(242 183 5 / 0.55); }
-  50% { box-shadow: 0 0 0 6px rgb(242 183 5 / 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgb(18 183 106 / 0.55); }
+  50% { box-shadow: 0 0 0 6px rgb(18 183 106 / 0); }
 }
 .en-direct {
   animation: pulsation 1.8s ease-in-out infinite;
@@ -77,4 +148,5 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .apparition, .remplissage, .en-direct { animation: none; }
   .carte-lien:hover { transform: none; }
+  a.degrade:hover, button.degrade:hover { translate: none; }
 }
