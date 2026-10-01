@@ -6,6 +6,7 @@ import { Icone, type NomIcone } from './icones';
 
 const LIENS: { href: string; libelle: string; icone: NomIcone }[] = [
   { href: '/', libelle: 'Pilotage', icone: 'pilotage' },
+  { href: '/planning', libelle: 'Planning', icone: 'calendrier' },
   { href: '/interventions', libelle: 'Interventions', icone: 'interventions' },
   { href: '/clients', libelle: 'Clients', icone: 'clients' },
   { href: '/equipe', libelle: 'Équipe', icone: 'equipe' },
