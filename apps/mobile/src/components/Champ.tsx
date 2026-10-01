@@ -50,6 +50,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     minHeight: 58,
+    // Sur le web : pas de contour du navigateur, le bord passe en cobalt (comme le site).
+    outlineWidth: 0,
   },
   multi: { minHeight: 110, lineHeight: 24 },
 });

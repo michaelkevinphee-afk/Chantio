@@ -42,7 +42,7 @@ export function LigneIntervention({ intervention: i, onPress, avecJour, avecTech
           </View>
         )}
         <Text style={styles.motif} numberOfLines={1}>{i.motif}</Text>
-        <Text style={styles.sous} numberOfLines={1}>{[sous, techs].filter(Boolean).join(' · ')}</Text>
+        <Text style={styles.sous} numberOfLines={2}>{[sous, techs].filter(Boolean).join(' · ')}</Text>
       </View>
       <Icone nom="droite" taille={22} couleur={c.grisClair} />
     </Appui>
@@ -59,10 +59,10 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 12,
     boxShadow: ombres.carte,
   },
-  temps: { minWidth: 66 },
+  temps: { minWidth: 62 },
   heure: { fontFamily: polices.titre, fontSize: 24, lineHeight: 30, letterSpacing: -0.7, color: c.encre },
   jour: { fontFamily: polices.texte700, fontSize: 13, color: c.gris, marginTop: 2 },
   texte: { flex: 1, minWidth: 0 },

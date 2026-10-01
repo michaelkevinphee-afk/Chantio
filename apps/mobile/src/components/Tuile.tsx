@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   sansIcone: { minHeight: 76, justifyContent: 'center' },
   choisie: { backgroundColor: c.cobalt, borderColor: c.cobalt, boxShadow: ombres.bouton },
   icone: { width: 50, height: 50, borderRadius: 16, backgroundColor: c.doux, alignItems: 'center', justifyContent: 'center' },
-  texte: { fontFamily: polices.texte700, fontSize: 17, lineHeight: 21, color: c.encre, paddingRight: 30 },
+  texte: { fontFamily: polices.texte700, fontSize: 17, lineHeight: 21, color: c.encre, paddingRight: 36 },
   coche: {
     position: 'absolute',
     right: 12,

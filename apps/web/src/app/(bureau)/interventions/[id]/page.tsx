@@ -243,7 +243,7 @@ function BlocFiche({ fiche: f, rang, urls }: { fiche: FicheComplete; rang: numbe
         {f.signature_client ? (
           <div className="flex items-end gap-4">
             <svg viewBox="0 0 300 150" className="h-24 w-48 rounded-xl border border-trait bg-white">
-              <path d={f.signature_client} fill="none" stroke="#14213D" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+              <path d={f.signature_client} fill="none" stroke="#101A3D" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <p className="text-sm">
               {f.signataire_nom}

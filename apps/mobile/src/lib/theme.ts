@@ -2,7 +2,7 @@ import { couleurs, degrade, tons } from '@chantio/shared';
 
 // Couleurs de l'appli mobile : la même charte que le site Chantio
 // (bleu cobalt, pervenche, lavande du logo, fond bleuté clair).
-// Le bleu encre sert au texte, jamais en aplat ; pas d'orange, pas de jaune.
+// Le bleu encre sert au texte, jamais en aplat, et pas d'orange.
 export { couleurs, degrade, tons };
 
 /** Palette commune + compléments propres au mobile. */

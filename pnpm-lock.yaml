@@ -13,12 +13,6 @@ importers:
       '@chantio/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@expo-google-fonts/barlow':
-        specifier: ^0.4.1
-        version: 0.4.1
-      '@expo-google-fonts/barlow-condensed':
-        specifier: ^0.4.1
-        version: 0.4.1
       '@expo-google-fonts/plus-jakarta-sans':
         specifier: ^0.4.2
         version: 0.4.2
@@ -594,12 +588,6 @@ packages:
   '@eslint/plugin-kit@0.4.1':
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
-  '@expo-google-fonts/barlow-condensed@0.4.1':
-    resolution: {integrity: sha512-9yuXU1MpI4Dw/8rR4pj2EXcT4/31H5+DrrT47auF8IzD9r7SZPRoNVq8clRq7zxOTh7v1gJk3pBhydDVf2x/dA==}
-
-  '@expo-google-fonts/barlow@0.4.1':
-    resolution: {integrity: sha512-ARAwBvQFGxOt2dfoQRVDRZghaStrXTIyI7oBD6/J4z2Iyr+0ME2HJq13RFhTuagCFrT4iapzuKHwOR3iLrNJrA==}
 
   '@expo-google-fonts/material-symbols@0.4.48':
     resolution: {integrity: sha512-aZztj44PyA/sj3TXSwwpLJwqMlTUJ49okbZJYURzEcuERxMQB0KbX7RrLBi8WJnuWz5HFOLlTRxORrJfNnUPNQ==}
@@ -5165,10 +5153,6 @@ snapshots:
     dependencies:
       '@eslint/core': 0.17.0
       levn: 0.4.1
-
-  '@expo-google-fonts/barlow-condensed@0.4.1': {}
-
-  '@expo-google-fonts/barlow@0.4.1': {}
 
   '@expo-google-fonts/material-symbols@0.4.48': {}
 

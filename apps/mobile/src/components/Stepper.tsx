@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   bouton: { backgroundColor: c.doux, alignItems: 'center', justifyContent: 'center' },
   presse: { backgroundColor: c.presse },
   centre: { flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', minWidth: 0, gap: 6 },
-  nombre: { fontFamily: polices.titre, fontSize: 48, lineHeight: 58, letterSpacing: -1.4, color: c.encre, textAlign: 'center', padding: 0, margin: 0 },
+  nombre: { fontFamily: polices.titre, fontSize: 48, lineHeight: 58, letterSpacing: -1.4, color: c.encre, textAlign: 'center', padding: 0, margin: 0, outlineWidth: 0 },
   mesure: { position: 'absolute', opacity: 0, left: 0, top: 0 },
   unite: { fontFamily: polices.texte600, fontSize: 19, color: c.gris },
   quantite: { fontFamily: polices.titre, fontSize: 26, color: c.encre, minWidth: 26, textAlign: 'center' },
