@@ -1,6 +1,6 @@
 'use client';
 
-import 'leaflet/dist/leaflet.css';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { adresseComplete, geocoder, type Point } from '@chantio/shared';
 import { useEffect, useRef, useState } from 'react';
 
@@ -13,9 +13,17 @@ export interface ArretCarte {
   site: { adresse: string; code_postal: string | null; ville: string | null; latitude: number | null; longitude: number | null } | null;
 }
 
-// Fond de carte de l'IGN (Plan IGN) : gratuit, sans compte ni clé.
-const TUILES =
-  'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
+// Fond « Positron » d'OpenFreeMap : carte claire et épurée, gratuite, sans compte ni clé,
+// utilisable pour un service commercial (données © OpenStreetMap).
+const STYLE = 'https://tiles.openfreemap.org/styles/positron';
+
+// Teintes de la charte posées sur le fond : eau lavande, parcs à peine verts, sol bleuté.
+const TEINTES: [RegExp, string, string][] = [
+  [/^background$/, 'background-color', '#F7F8FD'],
+  [/^water/, 'fill-color', '#DCE3FB'],
+  [/^waterway/, 'line-color', '#C9D4FA'],
+  [/^(park|landuse_park|landcover_wood|landcover_grass)/, 'fill-color', '#EAF4EE'],
+];
 
 const echapper = (t: string) => t.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 
@@ -36,40 +44,76 @@ async function position(site: ArretCarte['site']): Promise<Point | null> {
   return p;
 }
 
-/** Carte des interventions du jour : une pastille numérotée par chantier, dans l'ordre des heures. */
-export function CarteDuJour({ arrets }: { arrets: ArretCarte[] }) {
+/** Carte des interventions du jour : une pastille numérotée par chantier, reliées dans l'ordre des heures. */
+export function CarteDuJour({ arrets, hauteur = 340 }: { arrets: ArretCarte[]; hauteur?: number }) {
   const zone = useRef<HTMLDivElement>(null);
   const [manquants, setManquants] = useState(0);
 
   useEffect(() => {
     let actif = true;
-    let carte: import('leaflet').Map | null = null;
+    let carte: import('maplibre-gl').Map | null = null;
     (async () => {
-      const L = (await import('leaflet')).default;
+      const ml = await import('maplibre-gl');
       const points = await Promise.all(arrets.map((a) => position(a.site)));
       if (!actif || !zone.current) return;
-      carte = L.map(zone.current, { scrollWheelZoom: false, attributionControl: true });
-      L.tileLayer(TUILES, { maxZoom: 19, attribution: '© IGN – Géoplateforme' }).addTo(carte);
-      const places: [number, number][] = [];
+      const places = points.flatMap((p) => (p ? [[p.lon, p.lat] as [number, number]] : []));
+      carte = new ml.Map({
+        container: zone.current,
+        style: STYLE,
+        center: places[0] ?? [2.3522, 48.8566],
+        zoom: 11,
+        scrollZoom: false,
+        attributionControl: { compact: true },
+        dragRotate: false,
+        pitchWithRotate: false,
+      });
+      carte.addControl(new ml.NavigationControl({ showCompass: false }), 'top-right');
+      const c = carte;
+
+      c.on('load', () => {
+        for (const couche of c.getStyle().layers ?? []) {
+          for (const [motif, propriete, couleur] of TEINTES) {
+            if (motif.test(couche.id) && couche.type === propriete.split('-')[0]) {
+              try {
+                c.setPaintProperty(couche.id, propriete as 'fill-color', couleur);
+              } catch {}
+            }
+          }
+        }
+        // Trajet de la journée, en pointillés cobalt, dans l'ordre des heures.
+        if (places.length > 1) {
+          c.addSource('trajet', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: places } } });
+          c.addLayer({
+            id: 'trajet',
+            type: 'line',
+            source: 'trajet',
+            layout: { 'line-cap': 'round', 'line-join': 'round' },
+            paint: { 'line-color': '#2F54EB', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [0.5, 2] },
+          });
+        }
+      });
+
       arrets.forEach((a, n) => {
         const p = points[n];
         if (!p) return;
-        places.push([p.lat, p.lon]);
-        const icone = L.divIcon({
-          className: '',
-          html: `<span class="pastille-carte${a.enCours ? ' en-cours' : ''}">${n + 1}</span>`,
-          iconSize: [34, 34],
-          iconAnchor: [17, 17],
-        });
-        L.marker([p.lat, p.lon], { icon: icone, title: a.titre })
-          .addTo(carte!)
-          .bindPopup(
-            `<a href="/interventions/${a.id}" class="bulle-carte"><b>${echapper(a.heure)} · ${echapper(a.titre)}</b><br>${echapper(a.detail)}</a>`,
-          );
+        const pastille = document.createElement('span');
+        pastille.className = `pastille-carte${a.enCours ? ' en-cours' : ''}`;
+        pastille.textContent = String(n + 1);
+        pastille.title = a.titre;
+        new ml.Marker({ element: pastille })
+          .setLngLat([p.lon, p.lat])
+          .setPopup(
+            new ml.Popup({ offset: 22, closeButton: false, maxWidth: '260px' }).setHTML(
+              `<a href="/interventions/${a.id}" class="bulle-carte"><b>${echapper(a.heure)} · ${echapper(a.titre)}</b><br>${echapper(a.detail)}</a>`,
+            ),
+          )
+          .addTo(c);
       });
       setManquants(points.filter((p) => !p).length);
-      if (places.length) carte.fitBounds(places, { padding: [40, 40], maxZoom: 15 });
-      else carte.setView([48.8566, 2.3522], 11);
+      if (places.length > 1) {
+        const bornes = places.reduce((b, p) => b.extend(p), new ml.LngLatBounds(places[0], places[0]));
+        c.fitBounds(bornes, { padding: 56, maxZoom: 15, duration: 0 });
+      } else if (places.length === 1) c.setZoom(14);
     })();
     return () => {
       actif = false;
@@ -78,10 +122,10 @@ export function CarteDuJour({ arrets }: { arrets: ArretCarte[] }) {
   }, [arrets]);
 
   return (
-    <div className="carte isolate overflow-hidden p-0">
-      <div ref={zone} className="h-[320px] w-full bg-doux" aria-label="Carte des interventions du jour" />
+    <div className="relative isolate overflow-hidden">
+      <div ref={zone} style={{ height: hauteur }} className="carte-fond w-full" aria-label="Carte des interventions du jour" />
       {manquants > 0 && (
-        <p className="border-t border-trait px-4 py-2 text-sm text-gris">
+        <p className="absolute inset-x-3 bottom-3 rounded-xl bg-white/95 px-3 py-2 text-sm text-gris shadow-sm">
           {manquants} adresse{manquants > 1 ? 's' : ''} introuvable{manquants > 1 ? 's' : ''} : vérifie la fiche client.
         </p>
       )}
