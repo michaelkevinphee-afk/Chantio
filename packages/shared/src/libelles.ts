@@ -28,13 +28,13 @@ export const LIBELLE_STATUT_TERRAIN: Record<StatutIntervention, string> = {
   facturee: 'Terminée',
 };
 
-export type Ton = 'gris' | 'bleu' | 'cobalt' | 'ambre' | 'vert' | 'rouge';
+export type Ton = 'gris' | 'bleu' | 'cobalt' | 'violet' | 'vert' | 'rouge';
 
 export const TON_STATUT: Record<StatutIntervention, Ton> = {
   a_planifier: 'gris',
   planifiee: 'bleu',
   en_cours: 'cobalt',
-  terminee: 'ambre',
+  terminee: 'violet',
   a_reprendre: 'rouge',
   validee: 'vert',
   facturee: 'gris',

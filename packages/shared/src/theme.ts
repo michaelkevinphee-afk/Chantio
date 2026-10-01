@@ -1,5 +1,6 @@
 // Couleurs de Chantio : la charte du site (bleu cobalt, pervenche, lavande du logo),
-// fond bleuté clair, dégradés vifs. Le bleu encre sert au texte, jamais en aplat.
+// fond bleuté clair, dégradés vifs. Le bleu encre sert au texte, jamais en aplat,
+// et pas d'orange.
 
 export const couleurs = {
   encre: '#101A3D',
@@ -15,8 +16,8 @@ export const couleurs = {
   menthe: '#12B76A',
   vert: '#067647',
   vertDoux: '#DCFAE6',
-  ambre: '#B54708',
-  ambreDoux: '#FEF0C7',
+  violet: '#5925DC',
+  violetDoux: '#ECE9FE',
   rouge: '#D92D20',
   rougeDoux: '#FEE4E2',
 } as const;
@@ -28,7 +29,7 @@ export const tons = {
   gris: { fond: '#EEF1FB', texte: couleurs.gris },
   bleu: { fond: '#E3E9FF', texte: '#2442C4' },
   cobalt: { fond: couleurs.cobalt, texte: couleurs.blanc },
-  ambre: { fond: couleurs.ambreDoux, texte: couleurs.ambre },
+  violet: { fond: couleurs.violetDoux, texte: couleurs.violet },
   vert: { fond: couleurs.vertDoux, texte: couleurs.vert },
   rouge: { fond: couleurs.rougeDoux, texte: couleurs.rouge },
 } as const;
