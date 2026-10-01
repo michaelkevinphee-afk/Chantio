@@ -47,6 +47,7 @@ const ICONES = {
   ],
   jauge: [{ d: 'm12 14 4-4' }, { d: 'M3.34 19a10 10 0 1 1 17.32 0' }],
   couches: [{ d: 'm12 2 10 5-10 5L2 7z' }, { d: 'm2 17 10 5 10-5M2 12l10 5 10-5' }],
+  micro: [{ rect: [9, 2, 6, 12, 3] }, { d: 'M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8' }],
   personne: [{ d: 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2' }, { cercle: [12, 7, 4] }],
   sortie: [{ d: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9' }],
 } satisfies Record<string, Forme[]>;

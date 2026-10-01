@@ -239,6 +239,7 @@ export default function FicheGuidee() {
             label="Précisions"
             indice="(facultatif)"
             multiligne
+            dictee
             value={b.constatDetail}
             onChangeText={(t) => maj(() => ({ constatDetail: t }))}
             placeholder="Fuite au raccord du flexible, traces anciennes…"
@@ -388,6 +389,7 @@ export default function FicheGuidee() {
             <Champ
               label="Ce qu'il reste à faire"
               multiligne
+              dictee
               value={b.aPrevoir}
               onChangeText={(t) => maj(() => ({ aPrevoir: t }))}
               placeholder="Pièce à commander, revenir jeudi…"
@@ -396,6 +398,7 @@ export default function FicheGuidee() {
           <Champ
             label="Travaux réalisés"
             multiligne
+            dictee
             value={b.travaux}
             onChangeText={(t) => maj(() => ({ travaux: t }))}
             placeholder="Nettoyage du brûleur, remplacement du joint…"
