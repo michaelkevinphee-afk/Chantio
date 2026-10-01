@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps, CSSProperties, ReactNode } from 'react';
 import { LIBELLE_STATUT, TON_STATUT, type StatutIntervention, type Ton } from '@chantio/shared';
 
 const TONS: Record<Ton, string> = {
@@ -105,5 +105,38 @@ export function Avatar({
     <span style={style} className={`grid shrink-0 place-items-center rounded-full bg-bleu-doux font-extrabold text-bleu ${bord} ${className}`}>
       {initiales}
     </span>
+  );
+}
+
+/**
+ * Panneau du bureau : carte blanche avec un en-tête toujours pareil (titre, compteur, lien à droite)
+ * séparé du contenu par un filet. Sert de brique commune au Pilotage et à l'Équipe.
+ */
+export function Panneau({
+  titre,
+  nombre,
+  action,
+  children,
+  className = '',
+  style,
+}: {
+  titre: ReactNode;
+  nombre?: number;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <section style={style} className={`carte overflow-hidden ${className}`}>
+      <header className="flex min-h-14 items-center gap-2 border-b border-trait px-5 py-3">
+        <h2 className="flex items-center gap-2 text-[17px] font-extrabold">{titre}</h2>
+        {nombre != null && (
+          <span className="rounded-full bg-doux px-2 py-0.5 text-xs font-extrabold text-cobalt tabular-nums">{nombre}</span>
+        )}
+        {action && <div className="ml-auto text-sm font-bold text-cobalt">{action}</div>}
+      </header>
+      {children}
+    </section>
   );
 }

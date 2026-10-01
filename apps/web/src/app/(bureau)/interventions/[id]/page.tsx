@@ -16,10 +16,12 @@ import {
   type Fourniture,
   type Media,
 } from '@chantio/shared';
-import { Bouton, Puce, PuceStatut, Titre } from '@/components/ui';
+import { Puce, PuceStatut, Titre } from '@/components/ui';
 import { contexteBureau } from '@/lib/session';
 import { listerEquipe, SELECT_LISTE, type InterventionListe } from '@/lib/requetes';
-import { annulerFacturation, facturer, planifier, renvoyer, supprimer, valider } from '../actions';
+import { Planning } from '@/components/planning';
+import { BoutonEnvoi } from '@/components/retour';
+import { annulerFacturation, facturer, renvoyer, supprimer, valider } from '../actions';
 
 type FicheComplete = Fiche & { fournitures: Fourniture[]; medias: Media[] };
 
@@ -53,7 +55,6 @@ export default async function DetailIntervention({ params, searchParams }: PageP
     signees?.forEach((s) => s.signedUrl && s.path && urls.set(s.path, s.signedUrl));
   }
 
-  const affectes = new Set(i.affectations.map((a) => a.membre?.id));
   const modifiable = ['a_planifier', 'planifiee', 'en_cours', 'a_reprendre'].includes(i.statut);
   const valideur = peutValider(membre.role);
 
@@ -74,16 +75,16 @@ export default async function DetailIntervention({ params, searchParams }: PageP
         actions={
           <>
             {valideur && ['terminee', 'a_reprendre'].includes(i.statut) && (
-              <form action={valider.bind(null, i.id)}><Bouton>Valider la fiche</Bouton></form>
+              <form action={valider.bind(null, i.id)}><BoutonEnvoi enCours="Validation…">Valider la fiche</BoutonEnvoi></form>
             )}
             {valideur && ['terminee', 'a_reprendre', 'validee'].includes(i.statut) && (
-              <form action={renvoyer.bind(null, i.id)}><Bouton variante="secondaire">Renvoyer au technicien</Bouton></form>
+              <form action={renvoyer.bind(null, i.id)}><BoutonEnvoi variante="secondaire" enCours="Envoi…">Renvoyer au technicien</BoutonEnvoi></form>
             )}
             {i.statut === 'validee' && (
-              <form action={facturer.bind(null, i.id)}><Bouton variante="principal">Marquer facturée</Bouton></form>
+              <form action={facturer.bind(null, i.id)}><BoutonEnvoi variante="principal" enCours="Enregistrement…">Marquer facturée</BoutonEnvoi></form>
             )}
             {i.statut === 'facturee' && (
-              <form action={annulerFacturation.bind(null, i.id)}><Bouton variante="secondaire">Annuler la facturation</Bouton></form>
+              <form action={annulerFacturation.bind(null, i.id)}><BoutonEnvoi variante="secondaire" enCours="Annulation…">Annuler la facturation</BoutonEnvoi></form>
             )}
           </>
         }
@@ -120,37 +121,31 @@ export default async function DetailIntervention({ params, searchParams }: PageP
             {i.description && <p className="rounded-xl bg-doux p-3">{i.description}</p>}
           </section>
 
-          <section className="carte p-5 text-sm">
-            <h2 className="mb-3 text-xl font-extrabold">Planning</h2>
-            {modifiable ? (
-              <form action={planifier.bind(null, i.id)} className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <input name="date_prevue" type="date" className="champ" defaultValue={i.date_prevue ?? ''} aria-label="Date" />
-                  <input name="heure_prevue" type="time" className="champ" defaultValue={i.heure_prevue?.slice(0, 5) ?? ''} aria-label="Heure" />
-                </div>
-                <div className="space-y-1.5">
-                  {equipe.filter((m) => m.role !== 'assistant').map((m) => (
-                    <label key={m.id} className="flex items-center gap-2">
-                      <input type="checkbox" name="techniciens" value={m.id} defaultChecked={affectes.has(m.id)} className="h-4 w-4 accent-cobalt" />
-                      {m.prenom} {m.nom}
-                    </label>
-                  ))}
-                </div>
-                <Bouton variante="principal" className="w-full">Enregistrer</Bouton>
-              </form>
-            ) : (
+          {modifiable ? (
+            <Planning
+              interventionId={i.id}
+              equipe={equipe.filter((m) => m.role !== 'assistant')}
+              initial={{
+                date_prevue: i.date_prevue,
+                heure_prevue: i.heure_prevue?.slice(0, 5) ?? null,
+                techniciens: i.affectations.flatMap((a) => (a.membre ? [a.membre.id] : [])),
+              }}
+            />
+          ) : (
+            <section className="carte p-5 text-sm">
+              <h2 className="mb-3 text-xl font-extrabold">Planning</h2>
               <p>
                 {i.date_prevue ? <span className="inline-block first-letter:uppercase">{dateLongue(i.date_prevue)}</span> : 'Sans date'}{' '}
                 {heure(i.heure_prevue)}
                 <br />
                 {i.affectations.map((a) => a.membre?.prenom).join(', ') || 'Aucun technicien'}
               </p>
-            )}
-          </section>
+            </section>
+          )}
 
           {membre.role === 'dirigeant' && !['validee', 'facturee'].includes(i.statut) && (
             <form action={supprimer.bind(null, i.id)}>
-              <Bouton variante="danger" className="w-full">Supprimer l’intervention</Bouton>
+              <BoutonEnvoi variante="danger" className="w-full" enCours="Suppression…">Supprimer l’intervention</BoutonEnvoi>
             </form>
           )}
         </aside>

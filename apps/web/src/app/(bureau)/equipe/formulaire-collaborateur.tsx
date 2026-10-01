@@ -1,5 +1,5 @@
 import { LIBELLE_ROLE, type RoleMembre } from '@chantio/shared';
-import { BoutonEnvoi } from '@/components/volet';
+import { BoutonEnvoi } from '@/components/retour';
 import { inviter } from './actions';
 
 const ROLES: { role: RoleMembre; detail: string }[] = [

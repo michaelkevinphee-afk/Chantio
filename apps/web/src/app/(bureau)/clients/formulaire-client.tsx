@@ -3,7 +3,7 @@
 import { Fragment, useActionState, useRef, useState } from 'react';
 import { LIBELLE_TYPE_CLIENT } from '@chantio/shared';
 import { Icone } from '@/components/icones';
-import { BoutonEnvoi } from '@/components/volet';
+import { BoutonEnvoi } from '@/components/retour';
 import type { EntrepriseTrouvee } from '@/app/api/entreprises/route';
 import { ajouterClient } from './actions';
 
@@ -192,7 +192,7 @@ export function FormulaireClient() {
 
       {etat?.erreur && <p className="rounded-xl bg-rouge-doux px-4 py-3 text-sm font-semibold text-rouge">{etat.erreur}</p>}
       <div className="sticky -bottom-6 -mx-6 -mb-6 border-t border-trait bg-fond/90 px-6 py-4 backdrop-blur">
-        <BoutonEnvoi className="w-full">Créer le client</BoutonEnvoi>
+        <BoutonEnvoi className="w-full" enCours="Enregistrement…">Créer le client</BoutonEnvoi>
       </div>
     </form>
   );

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useTransition, type ReactNode } from 'react';
-import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Icone } from './icones';
 
@@ -94,20 +93,6 @@ export function Ligne({ libelle, children }: { libelle: string; children: ReactN
       <span className="w-32 shrink-0 text-gris">{libelle}</span>
       <span className="min-w-0 flex-1 font-semibold break-words">{children}</span>
     </div>
-  );
-}
-
-/** Bouton d'envoi qui montre tout de suite que le clic est pris en compte. */
-export function BoutonEnvoi({ children, enCours = 'Enregistrement…', className = '' }: { children: ReactNode; enCours?: string; className?: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      disabled={pending}
-      className={`degrade inline-flex items-center justify-center gap-2 rounded-[14px] px-5 py-3 text-[15px] font-extrabold text-white transition active:scale-[0.97] disabled:opacity-70 ${className}`}
-    >
-      {pending && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
-      {pending ? enCours : children}
-    </button>
   );
 }
 

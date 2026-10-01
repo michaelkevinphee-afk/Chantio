@@ -11,7 +11,8 @@ import {
 import Link from 'next/link';
 import { Icone } from '@/components/icones';
 import { LienBouton, Puce, PuceStatut } from '@/components/ui';
-import { Bloc, BoutonEnvoi, Ligne, Volet } from '@/components/volet';
+import { BoutonEnvoi } from '@/components/retour';
+import { Bloc, Ligne, Volet } from '@/components/volet';
 import { contexteBureau } from '@/lib/session';
 import { ajouterContact, supprimerContact } from './actions';
 
@@ -133,7 +134,7 @@ export async function VoletClient({ id, fermer, cree }: { id: string; fermer: st
               <input name="telephone" type="tel" className="champ" placeholder="Téléphone" aria-label="Téléphone" />
               <input name="email" type="email" className="champ" placeholder="E-mail" aria-label="E-mail" />
             </div>
-            <BoutonEnvoi className="w-full">Ajouter le contact</BoutonEnvoi>
+            <BoutonEnvoi className="w-full" enCours="Ajout…">Ajouter le contact</BoutonEnvoi>
           </form>
         </details>
       </Bloc>

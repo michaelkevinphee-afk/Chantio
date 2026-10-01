@@ -3,6 +3,7 @@ import { initiales, LIBELLE_ROLE } from '@chantio/shared';
 import { BoutonDeconnexion } from '@/components/deconnexion';
 import { Icone } from '@/components/icones';
 import { Navigation } from '@/components/navigation';
+import { ZoneAnnonces } from '@/components/retour';
 import { Avatar, LienBouton, Logo } from '@/components/ui';
 import { liensProfils } from '@/lib/profils';
 import { contexteBureau } from '@/lib/session';
@@ -45,6 +46,7 @@ export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
         </div>
       </aside>
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">{children}</main>
+      <ZoneAnnonces />
     </div>
   );
 }
