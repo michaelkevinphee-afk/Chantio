@@ -12,7 +12,7 @@ const ROLES_INVITABLES: RoleMembre[] = ['technicien', 'chef_chantier', 'assistan
 
 export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
   const { supabase, membre: moi, entreprise } = await contexteBureau();
-  const { erreur, invite } = await searchParams;
+  const { erreur, invite, sansmail } = await searchParams;
   const { data } = await supabase.from('membres').select('*').order('actif', { ascending: false }).order('prenom');
   const membres = (data ?? []) as Membre[];
   const dirigeant = moi.role === 'dirigeant';
@@ -94,7 +94,9 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
             {erreur && <p className="text-sm font-semibold text-rouge">{erreur}</p>}
             {invite && (
               <p className="rounded-xl bg-vert-doux p-3 text-sm text-vert">
-                C’est noté. Dites à {invite} d’installer l’appli Chantio et de se connecter avec cette adresse e-mail.
+                {sansmail
+                  ? `C’est noté, mais l’e-mail n’a pas pu partir. Dites à ${invite} d’installer l’appli Chantio et de toucher « Première connexion ou mot de passe oublié » avec cette adresse.`
+                  : `C’est noté. Un e-mail avec un code vient de partir. Dites à ${invite} d’installer l’appli Chantio et de toucher « Première connexion ou mot de passe oublié » (pensez aux spams).`}
               </p>
             )}
             <Bouton className="w-full">Ajouter à l’équipe</Bouton>
