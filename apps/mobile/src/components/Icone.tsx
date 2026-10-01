@@ -1,5 +1,7 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
+import { c } from '@/lib/theme';
+
 // Icônes au trait (même dessin que la maquette).
 type Forme = { d: string } | { cercle: [number, number, number] } | { rect: [number, number, number, number, number] };
 
@@ -51,7 +53,7 @@ const ICONES = {
 
 export type NomIcone = keyof typeof ICONES;
 
-export function Icone({ nom, taille = 24, couleur = 'currentColor', epaisseur = 2.3 }: {
+export function Icone({ nom, taille = 24, couleur = c.encre, epaisseur = 2.3 }: {
   nom: NomIcone;
   taille?: number;
   couleur?: string;

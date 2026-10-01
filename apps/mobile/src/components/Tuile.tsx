@@ -1,8 +1,9 @@
 import { Children, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { c, polices } from '@/lib/theme';
+import { c, ombres, polices } from '@/lib/theme';
 import { Appui, Apparition, Pop } from './Anime';
+import { Degrade } from './Degrade';
 import { Icone, type NomIcone } from './Icone';
 
 /** Réponse en grosse tuile : on touche au lieu de choisir dans une liste. */
@@ -20,15 +21,16 @@ export function Tuile({ texte, choisie, onPress, icone }: {
       echelle={0.96}
       style={[styles.tuile, icone ? styles.avecIcone : styles.sansIcone, choisie && styles.choisie]}
     >
+      {choisie && <Degrade rayon={RAYON - 1} />}
       {icone && (
-        <View style={[styles.icone, choisie && { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
-          <Icone nom={icone} taille={26} couleur={choisie ? c.blanc : c.marine} />
+        <View style={[styles.icone, choisie && { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+          <Icone nom={icone} taille={26} couleur={choisie ? c.blanc : c.cobalt} />
         </View>
       )}
       <Text style={[styles.texte, choisie && { color: c.blanc }]}>{texte}</Text>
       {choisie && (
         <Pop style={styles.coche}>
-          <Icone nom="check" taille={18} epaisseur={3} couleur={c.marine} />
+          <Icone nom="check" taille={18} epaisseur={3} couleur={c.cobalt} />
         </Pop>
       )}
     </Appui>
@@ -52,24 +54,27 @@ export function GrilleTuiles({ children }: { children: ReactNode }) {
   );
 }
 
+const RAYON = 20;
+
 const styles = StyleSheet.create({
   grille: { gap: 12 },
   ligne: { flexDirection: 'row', gap: 12 },
   tuile: {
     flex: 1,
     backgroundColor: c.blanc,
-    borderRadius: 24,
+    borderRadius: RAYON,
     padding: 14,
     justifyContent: 'space-between',
     gap: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: c.ombre,
+    borderWidth: 1,
+    borderColor: c.trait,
+    boxShadow: ombres.carte,
   },
   avecIcone: { minHeight: 118 },
   sansIcone: { minHeight: 76, justifyContent: 'center' },
-  choisie: { backgroundColor: c.marine, borderBottomColor: c.marine },
-  icone: { width: 50, height: 50, borderRadius: 16, backgroundColor: '#EEF0F5', alignItems: 'center', justifyContent: 'center' },
-  texte: { fontFamily: polices.texte700, fontSize: 19, lineHeight: 22, color: c.marine, paddingRight: 30 },
+  choisie: { backgroundColor: c.cobalt, borderColor: c.cobalt, boxShadow: ombres.bouton },
+  icone: { width: 50, height: 50, borderRadius: 16, backgroundColor: c.doux, alignItems: 'center', justifyContent: 'center' },
+  texte: { fontFamily: polices.texte700, fontSize: 17, lineHeight: 21, color: c.encre, paddingRight: 36 },
   coche: {
     position: 'absolute',
     right: 12,
@@ -77,7 +82,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: c.jaune,
+    backgroundColor: c.blanc,
     alignItems: 'center',
     justifyContent: 'center',
   },

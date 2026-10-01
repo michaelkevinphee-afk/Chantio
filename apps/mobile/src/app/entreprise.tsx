@@ -50,7 +50,7 @@ export default function CreerEntreprise() {
       <Champ label="Nom de l'entreprise" value={nom} onChangeText={setNom} placeholder="Plomberie Verger" autoCapitalize="words" />
       <Champ label="Ton prénom" value={prenom} onChangeText={setPrenom} placeholder="Christophe" autoCapitalize="words" autoComplete="given-name" />
       {erreur ? (
-        <Carte style={{ backgroundColor: c.rougeDoux }}>
+        <Carte alerte>
           <Texte style={{ color: c.rouge, fontFamily: polices.texte700 }}>{erreur}</Texte>
         </Carte>
       ) : null}
@@ -61,10 +61,10 @@ export default function CreerEntreprise() {
         </Texte>
         <View style={{ flexDirection: 'row', gap: 18 }}>
           <Pressable onPress={rechargerProfil} hitSlop={8}>
-            <Texte variante="fort" style={{ textDecorationLine: 'underline' }}>Vérifier</Texte>
+            <Texte variante="fort" style={{ color: c.cobalt, textDecorationLine: 'underline' }}>Vérifier</Texte>
           </Pressable>
           <Pressable onPress={deconnecter} hitSlop={8}>
-            <Texte variante="fort" style={{ textDecorationLine: 'underline' }}>Changer de compte</Texte>
+            <Texte variante="fort" style={{ color: c.cobalt, textDecorationLine: 'underline' }}>Changer de compte</Texte>
           </Pressable>
         </View>
       </Carte>

@@ -9,6 +9,7 @@ import { Bandeau } from '@/components/Bandeau';
 import { BandeauEnvoi } from '@/components/BandeauEnvoi';
 import { Bouton, BoutonRond } from '@/components/Bouton';
 import { Carte } from '@/components/Carte';
+import { Degrade } from '@/components/Degrade';
 import { Ecran } from '@/components/Ecran';
 import { Icone } from '@/components/Icone';
 import { LigneIntervention, estTerminee } from '@/components/LigneIntervention';
@@ -19,7 +20,7 @@ import type { InterventionVue } from '@/lib/donnees';
 import { delai, heureCourte, minutesAvant } from '@/lib/horaires';
 import { appeler } from '@/lib/liens';
 import { useSession } from '@/lib/session';
-import { c, polices } from '@/lib/theme';
+import { c, ombres, polices } from '@/lib/theme';
 
 const capitaliser = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
@@ -60,7 +61,7 @@ export default function MaJournee() {
   let rang = 0;
 
   return (
-    <Ecran refreshControl={<RefreshControl refreshing={s.chargementListe} onRefresh={s.rafraichir} tintColor={c.marine} />}>
+    <Ecran refreshControl={<RefreshControl refreshing={s.chargementListe} onRefresh={s.rafraichir} tintColor={c.cobalt} />}>
       <Apparition rang={rang++} style={styles.entete}>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.date} numberOfLines={1}>{capitaliser(dateLongue(t))}</Text>
@@ -74,7 +75,7 @@ export default function MaJournee() {
       {s.source?.mode === 'demo' && (
         <Apparition rang={rang++}>
           <Pressable onPress={s.quitterDemo}>
-            <Bandeau jaune texte="Mode démo : rien n'est enregistré. Touche ici pour quitter." />
+            <Bandeau bleu texte="Mode démo : rien n'est enregistré. Touche ici pour quitter." />
           </Pressable>
         </Apparition>
       )}
@@ -105,6 +106,7 @@ export default function MaJournee() {
       {suivante ? (
         <Apparition rang={rang++} key={suivante.id}>
           <Appui accessibilityRole="button" onPress={() => ouvrir(suivante)} echelle={0.985} style={styles.carteSuivante}>
+            <Degrade rayon={RAYON_SUIVANTE} halo />
             <View style={styles.ligneHaut}>
               <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                 <Text style={styles.pilule}>{pilule}</Text>
@@ -112,7 +114,7 @@ export default function MaJournee() {
               </View>
               {avant != null && avant > 0 && suivante.statut !== 'en_cours' ? (
                 <View style={styles.eta}>
-                  <Icone nom="horloge" taille={18} couleur={c.marineSoft} />
+                  <Icone nom="horloge" taille={18} couleur={c.surCobalt} />
                   <Text style={styles.etaTexte}>{delai(avant)}</Text>
                 </View>
               ) : null}
@@ -125,11 +127,12 @@ export default function MaJournee() {
               <Bouton
                 titre={suivante.statut === 'en_cours' ? 'Reprendre la fiche' : 'Démarrer'}
                 icone="droite"
+                variante="clair"
                 onPress={() => demarrer(suivante)}
                 style={{ flex: 1 }}
               />
               {suivante.client?.telephone ? (
-                <BoutonRond grand icone="telephone" label={`Appeler ${suivante.client.telephone}`} onPress={() => appeler(suivante.client!.telephone!)} fond="rgba(255,255,255,0.12)" couleur={c.blanc} />
+                <BoutonRond grand icone="telephone" label={`Appeler ${suivante.client.telephone}`} onPress={() => appeler(suivante.client!.telephone!)} fond="rgba(255,255,255,0.18)" couleur={c.blanc} />
               ) : null}
             </View>
           </Appui>
@@ -137,7 +140,7 @@ export default function MaJournee() {
       ) : (
         <Apparition rang={rang++}>
           <Carte style={{ padding: 22 }}>
-            <Titre taille={26}>{duJour.length ? 'Tout est fait' : 'Rien de prévu'}</Titre>
+            <Titre taille={24}>{duJour.length ? 'Tout est fait' : 'Rien de prévu'}</Titre>
             <Texte variante="doux">
               {duJour.length
                 ? 'Toutes les fiches du jour sont envoyées.'
@@ -190,30 +193,32 @@ function Section({ titre, liste, ouvrir, equipe, avecJour, rang }: {
   );
 }
 
+const RAYON_SUIVANTE = 28;
+
 const styles = StyleSheet.create({
   entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 6 },
-  date: { fontFamily: polices.texte600, fontSize: 18, color: c.texteDoux },
-  carteSuivante: { backgroundColor: c.marine, borderRadius: 30, padding: 20, gap: 4 },
+  date: { fontFamily: polices.texte600, fontSize: 17, color: c.gris },
+  carteSuivante: { backgroundColor: c.cobalt, borderRadius: RAYON_SUIVANTE, padding: 20, gap: 4, boxShadow: ombres.bloc },
   ligneHaut: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   eta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  etaTexte: { fontFamily: polices.texte600, fontSize: 16, color: c.marineSoft },
-  bascule: { flexDirection: 'row', backgroundColor: c.blanc, borderRadius: 18, padding: 4, gap: 4 },
+  etaTexte: { fontFamily: polices.texte600, fontSize: 16, color: c.surCobalt },
+  bascule: { flexDirection: 'row', backgroundColor: c.blanc, borderWidth: 1, borderColor: c.trait, borderRadius: 18, padding: 4, gap: 4 },
   option: { flex: 1, minHeight: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  optionOn: { backgroundColor: c.marine },
-  optionTexte: { fontFamily: polices.texte700, fontSize: 17, color: c.marine },
+  optionOn: { backgroundColor: c.cobalt, boxShadow: ombres.bouton },
+  optionTexte: { fontFamily: polices.texte700, fontSize: 16, color: c.encre },
   pilule: {
-    fontFamily: polices.texte700,
-    fontSize: 14,
+    fontFamily: polices.texte800,
+    fontSize: 13,
     textTransform: 'uppercase',
-    letterSpacing: 0.85,
-    backgroundColor: c.jaune,
-    color: c.marine,
+    letterSpacing: 1,
+    backgroundColor: c.blanc,
+    color: c.cobalt,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 10,
     overflow: 'hidden',
   },
-  grandeHeure: { fontFamily: polices.titre, fontSize: 64, lineHeight: 66, color: c.blanc, marginTop: 6 },
-  motifSuivante: { fontFamily: polices.texte700, fontSize: 24, lineHeight: 28, color: c.blanc },
-  adresseSuivante: { fontFamily: polices.texte, fontSize: 17, lineHeight: 21, color: c.marineSoft },
+  grandeHeure: { fontFamily: polices.titre, fontSize: 58, lineHeight: 64, letterSpacing: -2, color: c.blanc, marginTop: 6 },
+  motifSuivante: { fontFamily: polices.texte800, fontSize: 22, lineHeight: 27, letterSpacing: -0.4, color: c.blanc },
+  adresseSuivante: { fontFamily: polices.texte, fontSize: 16, lineHeight: 21, color: c.surCobalt },
 });

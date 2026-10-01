@@ -97,7 +97,7 @@ export default function Connexion() {
               setCode(chiffres);
             }}
             placeholder="••••••"
-            placeholderTextColor="#B9BDC6"
+            placeholderTextColor={c.grisClair}
             keyboardType="number-pad"
             autoComplete="one-time-code"
             textContentType="oneTimeCode"
@@ -107,9 +107,12 @@ export default function Connexion() {
               fontSize: 48,
               letterSpacing: 10,
               textAlign: 'center',
-              color: c.marine,
+              color: c.encre,
               backgroundColor: c.blanc,
-              borderRadius: 22,
+              borderWidth: 2,
+              borderColor: c.cobalt,
+              borderRadius: 18,
+              outlineWidth: 0,
               paddingVertical: 16,
             }}
           />
@@ -121,7 +124,7 @@ export default function Connexion() {
       )}
 
       {erreur ? (
-        <Carte style={{ backgroundColor: c.rougeDoux }}>
+        <Carte alerte>
           <Texte style={{ color: c.rouge, fontFamily: polices.texte700 }}>{erreur}</Texte>
         </Carte>
       ) : null}
@@ -137,7 +140,7 @@ export default function Connexion() {
 function Lien({ texte, onPress }: { texte: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} hitSlop={10} style={{ paddingVertical: 8 }}>
-      <Texte variante="fort" style={{ fontSize: 17, textDecorationLine: 'underline' }}>{texte}</Texte>
+      <Texte variante="fort" style={{ fontSize: 17, color: c.cobalt, textDecorationLine: 'underline' }}>{texte}</Texte>
     </Pressable>
   );
 }

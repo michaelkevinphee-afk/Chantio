@@ -41,7 +41,7 @@ function BoutonPm({ sens, label, onPress, taille }: { sens: 1 | -1; label: strin
         pressed && styles.presse,
       ]}
     >
-      <Icone nom={sens > 0 ? 'plus' : 'moins'} taille={taille > 56 ? 28 : 22} epaisseur={3} couleur={c.marine} />
+      <Icone nom={sens > 0 ? 'plus' : 'moins'} taille={taille > 56 ? 28 : 22} epaisseur={3} couleur={c.cobalt} />
     </Appui>
   );
 }
@@ -84,7 +84,7 @@ export function Stepper({ valeur, onChange, pas = 1, min = 0, unite, depart = 0,
             accessibilityLabel={label}
             value={texte}
             placeholder="—"
-            placeholderTextColor={c.texteDoux}
+            placeholderTextColor={c.grisClair}
             keyboardType="decimal-pad"
             selectTextOnFocus
             onChangeText={(s) => {
@@ -126,18 +126,18 @@ export function Quantite({ valeur, onChange, label, min = 0 }: {
 export function Vider({ onPress }: { onPress: () => void }) {
   return (
     <Pressable hitSlop={8} onPress={onPress} accessibilityRole="button">
-      <Text style={{ fontFamily: polices.texte700, fontSize: 15, color: c.marine, textDecorationLine: 'underline' }}>Vider</Text>
+      <Text style={{ fontFamily: polices.texte700, fontSize: 15, color: c.cobalt, textDecorationLine: 'underline' }}>Vider</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  bouton: { backgroundColor: c.beton, alignItems: 'center', justifyContent: 'center' },
-  presse: { backgroundColor: c.grisClair },
+  bouton: { backgroundColor: c.doux, alignItems: 'center', justifyContent: 'center' },
+  presse: { backgroundColor: c.presse },
   centre: { flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', minWidth: 0, gap: 6 },
-  nombre: { fontFamily: polices.titre, fontSize: 54, lineHeight: 60, color: c.marine, textAlign: 'center', padding: 0, margin: 0 },
+  nombre: { fontFamily: polices.titre, fontSize: 48, lineHeight: 58, letterSpacing: -1.4, color: c.encre, textAlign: 'center', padding: 0, margin: 0, outlineWidth: 0 },
   mesure: { position: 'absolute', opacity: 0, left: 0, top: 0 },
-  unite: { fontFamily: polices.texte600, fontSize: 20, color: c.texteDoux },
-  quantite: { fontFamily: polices.titre, fontSize: 28, color: c.marine, minWidth: 26, textAlign: 'center' },
+  unite: { fontFamily: polices.texte600, fontSize: 19, color: c.gris },
+  quantite: { fontFamily: polices.titre, fontSize: 26, color: c.encre, minWidth: 26, textAlign: 'center' },
 });

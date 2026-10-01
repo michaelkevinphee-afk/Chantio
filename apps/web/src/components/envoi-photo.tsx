@@ -71,7 +71,7 @@ export function EnvoiPhoto({
         type="button"
         onClick={() => champ.current?.click()}
         disabled={etat === 'envoi'}
-        className="inline-flex items-center gap-2 rounded-2xl bg-beton px-4 py-2.5 text-sm font-bold transition hover:bg-trait active:scale-[0.97] disabled:opacity-60"
+        className="inline-flex items-center gap-2 rounded-2xl bg-doux px-4 py-2.5 text-sm font-bold transition hover:bg-trait active:scale-[0.97] disabled:opacity-60"
       >
         <Icone nom="photo" taille={18} />
         {etat === 'envoi' ? 'Envoi…' : libelle}

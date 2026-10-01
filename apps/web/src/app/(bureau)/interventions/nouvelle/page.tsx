@@ -18,7 +18,7 @@ export default async function NouvelleIntervention({ searchParams }: PageProps<'
       <form action={creerIntervention} className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
           <fieldset className="carte space-y-4 p-6">
-            <legend className="px-1 font-titre text-xl font-extrabold uppercase">Client</legend>
+            <legend className="px-1 text-xl font-extrabold">Client</legend>
             <ChoixClient
               clients={clients}
               types={Object.entries(LIBELLE_TYPE_CLIENT).map(([valeur, libelle]) => ({ valeur, libelle }))}
@@ -26,7 +26,7 @@ export default async function NouvelleIntervention({ searchParams }: PageProps<'
           </fieldset>
 
           <fieldset className="carte grid gap-4 p-6 sm:grid-cols-6">
-            <legend className="px-1 font-titre text-xl font-extrabold uppercase">Adresse d’intervention</legend>
+            <legend className="px-1 text-xl font-extrabold">Adresse d’intervention</legend>
             <div className="sm:col-span-6">
               <label className="etiquette" htmlFor="adresse">Adresse</label>
               <input id="adresse" name="adresse" className="champ" required placeholder="12 rue des Tilleuls" />
@@ -46,7 +46,7 @@ export default async function NouvelleIntervention({ searchParams }: PageProps<'
           </fieldset>
 
           <fieldset className="carte grid gap-4 p-6 sm:grid-cols-2">
-            <legend className="px-1 font-titre text-xl font-extrabold uppercase">Demande</legend>
+            <legend className="px-1 text-xl font-extrabold">Demande</legend>
             <div className="sm:col-span-2">
               <label className="etiquette" htmlFor="motif">Motif</label>
               <input id="motif" name="motif" className="champ" required list="motifs" placeholder="Fuite sous évier" />
@@ -75,7 +75,7 @@ export default async function NouvelleIntervention({ searchParams }: PageProps<'
 
         <aside className="space-y-6">
           <fieldset className="carte space-y-4 p-6">
-            <legend className="px-1 font-titre text-xl font-extrabold uppercase">Planning</legend>
+            <legend className="px-1 text-xl font-extrabold">Planning</legend>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="etiquette" htmlFor="date_prevue">Date</label>
@@ -91,7 +91,7 @@ export default async function NouvelleIntervention({ searchParams }: PageProps<'
               <div className="space-y-2">
                 {intervenants.map((m) => (
                   <label key={m.id} className="flex items-center gap-3 rounded-xl border border-trait px-3 py-2">
-                    <input type="checkbox" name="techniciens" value={m.id} className="h-4 w-4 accent-marine" />
+                    <input type="checkbox" name="techniciens" value={m.id} className="h-4 w-4 accent-cobalt" />
                     <span className="font-semibold">{m.prenom} {m.nom}</span>
                     <span className="ml-auto text-xs text-gris">{LIBELLE_ROLE[m.role]}</span>
                   </label>

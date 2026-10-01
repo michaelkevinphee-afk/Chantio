@@ -1,8 +1,7 @@
-import { BarlowCondensed_700Bold } from '@expo-google-fonts/barlow-condensed/700Bold';
-import { BarlowCondensed_800ExtraBold } from '@expo-google-fonts/barlow-condensed/800ExtraBold';
-import { Barlow_500Medium } from '@expo-google-fonts/barlow/500Medium';
-import { Barlow_600SemiBold } from '@expo-google-fonts/barlow/600SemiBold';
-import { Barlow_700Bold } from '@expo-google-fonts/barlow/700Bold';
+import { PlusJakartaSans_500Medium } from '@expo-google-fonts/plus-jakarta-sans/500Medium';
+import { PlusJakartaSans_600SemiBold } from '@expo-google-fonts/plus-jakarta-sans/600SemiBold';
+import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans/700Bold';
+import { PlusJakartaSans_800ExtraBold } from '@expo-google-fonts/plus-jakarta-sans/800ExtraBold';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -20,11 +19,10 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function Racine() {
   const [polices, erreur] = useFonts({
-    Barlow_500Medium,
-    Barlow_600SemiBold,
-    Barlow_700Bold,
-    BarlowCondensed_700Bold,
-    BarlowCondensed_800ExtraBold,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
   });
   const pret = polices || !!erreur;
 
@@ -48,25 +46,25 @@ function Navigation() {
 
   if (etat === 'chargement') {
     return (
-      <View style={{ flex: 1, backgroundColor: c.beton, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 }}>
+      <View style={{ flex: 1, backgroundColor: c.fond, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 }}>
         {erreurProfil ? (
           <>
-            <Titre taille={32} style={{ textAlign: 'center' }}>Pas de connexion</Titre>
+            <Titre taille={30} style={{ textAlign: 'center' }}>Pas de connexion</Titre>
             <Texte variante="doux" style={{ textAlign: 'center' }}>
               Impossible de charger ton profil. Vérifie le réseau et réessaie.
             </Texte>
             <Bouton titre="Réessayer" onPress={rechargerProfil} style={{ alignSelf: 'stretch' }} />
-            <Bouton titre="Se déconnecter" variante="blanc" petit onPress={deconnecter} style={{ alignSelf: 'stretch' }} />
+            <Bouton titre="Se déconnecter" variante="secondaire" petit onPress={deconnecter} style={{ alignSelf: 'stretch' }} />
           </>
         ) : (
-          <ActivityIndicator size="large" color={c.marine} />
+          <ActivityIndicator size="large" color={c.cobalt} />
         )}
       </View>
     );
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.beton }, animation: 'slide_from_right' }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.fond }, animation: 'slide_from_right' }}>
       <Stack.Protected guard={etat === 'pret'}>
         <Stack.Screen name="index" />
         <Stack.Screen name="moi" />

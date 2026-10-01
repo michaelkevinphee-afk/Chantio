@@ -61,7 +61,7 @@ export default async function Interventions({ searchParams }: PageProps<'/interv
             key={f}
             href={lien(f)}
             className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
-              f === filtre ? 'bg-marine text-white' : 'border border-trait bg-white hover:border-marine'
+              f === filtre ? 'degrade text-white' : 'border border-trait bg-white hover:border-cobalt'
             }`}
           >
             {f === 'toutes' ? 'Toutes' : LIBELLE_STATUT[f]}
@@ -91,7 +91,7 @@ export default async function Interventions({ searchParams }: PageProps<'/interv
             </thead>
             <tbody className="divide-y divide-trait">
               {liste.map((i) => (
-                <tr key={i.id} className="hover:bg-beton">
+                <tr key={i.id} className="hover:bg-fond">
                   <td className="px-4 py-3 font-mono text-xs text-gris">
                     <Link href={`/interventions/${i.id}`}>{numero(i.numero)}</Link>
                   </td>

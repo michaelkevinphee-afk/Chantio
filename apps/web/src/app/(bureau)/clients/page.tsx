@@ -51,7 +51,7 @@ export default async function Clients({ searchParams }: PageProps<'/clients'>) {
         )}
 
         <form action={ajouterClient} className="carte space-y-3 self-start p-5">
-          <h2 className="font-titre text-xl font-extrabold uppercase">Ajouter un client</h2>
+          <h2 className="text-xl font-extrabold">Ajouter un client</h2>
           <input name="nom" className="champ" required placeholder="Nom ou raison sociale" aria-label="Nom" />
           <select name="type" className="champ" defaultValue="particulier" aria-label="Type">
             {Object.entries(LIBELLE_TYPE_CLIENT).map(([v, l]) => <option key={v} value={v}>{l}</option>)}

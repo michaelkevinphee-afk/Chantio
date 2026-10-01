@@ -21,11 +21,11 @@ export function Navigation() {
           <Link
             key={l.href}
             href={l.href}
-            className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 font-bold whitespace-nowrap transition ${
-              actif ? 'bg-white text-marine' : 'text-white/65 hover:bg-white/5 hover:text-white'
+            className={`flex items-center gap-3 rounded-[14px] px-3 py-2.5 font-bold whitespace-nowrap transition ${
+              actif ? 'degrade text-white' : 'text-gris hover:bg-doux hover:text-encre'
             }`}
           >
-            <Icone nom={l.icone} taille={20} className={actif ? 'text-marine' : ''} />
+            <Icone nom={l.icone} taille={20} />
             {l.libelle}
           </Link>
         );
