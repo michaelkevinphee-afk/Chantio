@@ -1,0 +1,94 @@
+import { ajouterJours, aujourdhui, type FicheAEnvoyer, type Membre } from '@chantio/shared';
+import { File } from 'expo-file-system';
+import { Platform } from 'react-native';
+
+import { enErreur, type InterventionVue, type Profil, type SourceDonnees } from './donnees';
+import { supabase } from './supabase';
+
+const CHAMPS_INTERVENTION = `*,
+  client:clients(nom, telephone, contact),
+  site:sites(adresse, code_postal, ville, acces, consignes),
+  affectations(membre:membres(id, prenom))`;
+
+type LigneIntervention = Omit<InterventionVue, 'intervenants'> & {
+  affectations: { membre: { id: string; prenom: string } | null }[] | null;
+};
+
+async function lireFichier(uri: string): Promise<ArrayBuffer> {
+  if (Platform.OS === 'web') return (await fetch(uri)).arrayBuffer();
+  return new File(uri).arrayBuffer();
+}
+
+export const sourceSupabase: SourceDonnees = {
+  mode: 'supabase',
+
+  async chargerProfil(): Promise<Profil | null> {
+    const sb = supabase();
+    const { data: session } = await sb.auth.getSession();
+    const uid = session.session?.user.id;
+    if (!uid) return null;
+
+    const chercher = async () => {
+      const { data, error } = await sb.from('membres').select('*').eq('user_id', uid).maybeSingle();
+      if (error) throw enErreur(error);
+      return data as Membre | null;
+    };
+    let membre = await chercher();
+    if (!membre) {
+      // Compte créé avant l'invitation : on le relie à son membre.
+      const { error } = await sb.rpc('rejoindre_entreprise');
+      if (error) throw enErreur(error);
+      membre = await chercher();
+    }
+    if (!membre) return null;
+
+    const { data: entreprise, error } = await sb
+      .from('entreprises')
+      .select('id, nom')
+      .eq('id', membre.entreprise_id)
+      .single();
+    if (error) throw enErreur(error);
+    return { membre, entreprise };
+  },
+
+  async creerEntreprise(nom, prenom) {
+    const { error } = await supabase().rpc('creer_entreprise', { p_nom: nom, p_prenom: prenom });
+    if (error) throw enErreur(error);
+  },
+
+  async listerInterventions() {
+    const debut = aujourdhui();
+    const fin = ajouterJours(debut, 30);
+    const { data, error } = await supabase()
+      .from('interventions')
+      .select(CHAMPS_INTERVENTION)
+      .or(`and(date_prevue.gte.${debut},date_prevue.lte.${fin}),statut.eq.en_cours`)
+      .order('date_prevue', { ascending: true })
+      .order('heure_prevue', { ascending: true, nullsFirst: false })
+      .limit(300);
+    if (error) throw enErreur(error);
+    return (data as unknown as LigneIntervention[]).map(({ affectations, ...i }) => ({
+      ...i,
+      intervenants: (affectations ?? []).flatMap((a) => (a.membre ? [a.membre] : [])),
+    }));
+  },
+
+  async demarrer(interventionId) {
+    const { error } = await supabase().rpc('demarrer_intervention', { p_intervention: interventionId });
+    if (error) throw enErreur(error);
+  },
+
+  async envoyerPhoto(chemin, uriLocale) {
+    const corps = await lireFichier(uriLocale);
+    const { error } = await supabase()
+      .storage.from('medias')
+      .upload(chemin, corps, { contentType: 'image/jpeg', upsert: false });
+    // Déjà déposée lors d'un essai précédent : c'est bon.
+    if (error && !/exist|duplicate/i.test(error.message)) throw enErreur(error);
+  },
+
+  async envoyerFiche(fiche: FicheAEnvoyer) {
+    const { error } = await supabase().rpc('envoyer_fiche', { p_fiche: fiche });
+    if (error) throw enErreur(error);
+  },
+};

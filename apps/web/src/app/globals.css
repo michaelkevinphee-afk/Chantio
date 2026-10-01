@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/* Couleurs Chantio : marine + jaune chantier, fond béton clair. */
+@theme inline {
+  --color-marine: #14213D;
+  --color-marine-clair: #2A3B5F;
+  --color-jaune: #F2B705;
+  --color-jaune-doux: #FDF3D0;
+  --color-beton: #F2F1EC;
+  --color-trait: #E5E3DC;
+  --color-encre: #14213D;
+  --color-gris: #6B7280;
+  --color-vert: #1F8A4C;
+  --color-vert-doux: #DDF3E5;
+  --color-rouge: #C0392B;
+  --color-rouge-doux: #FBE3E0;
+  --color-bleu: #1E40AF;
+  --color-bleu-doux: #E0EAFD;
+  --font-sans: var(--font-jakarta);
+  --font-titre: var(--font-barlow);
+}
+
+body {
+  background: var(--color-beton);
+  color: var(--color-encre);
+}
+
+.champ {
+  @apply w-full rounded-xl border border-trait bg-white px-3.5 py-2.5 text-[15px] outline-none transition focus:border-marine focus:ring-2 focus:ring-marine/15;
+}
+.etiquette {
+  @apply mb-1.5 block text-sm font-semibold text-encre;
+}
+.carte {
+  @apply rounded-2xl border border-trait bg-white;
+}

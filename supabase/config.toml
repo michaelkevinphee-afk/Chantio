@@ -1,0 +1,23 @@
+# Configuration Supabase (outil en ligne de commande `supabase`).
+project_id = "chantio"
+
+[api]
+schemas = ["public"]
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["chantio://"]
+
+[auth.email]
+enable_signup = true
+# Connexion par code à 6 chiffres envoyé par e-mail, sans mot de passe.
+otp_length = 6
+otp_expiry = 3600
+
+[auth.email.template.magic_link]
+subject = "Votre code de connexion Chantio"
+content_path = "./supabase/templates/code.html"
+
+[auth.email.template.confirmation]
+subject = "Votre code de connexion Chantio"
+content_path = "./supabase/templates/code.html"
