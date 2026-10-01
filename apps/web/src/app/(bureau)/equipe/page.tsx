@@ -4,7 +4,7 @@ import { EnvoiPhoto } from '@/components/envoi-photo';
 import { Avatar, Bouton, Puce, Titre } from '@/components/ui';
 import { liensProfils } from '@/lib/profils';
 import { contexteBureau } from '@/lib/session';
-import { changerActif, inviter } from './actions';
+import { changerActif, inviter, renvoyer } from './actions';
 
 export const metadata = { title: 'Équipe · Chantio' };
 
@@ -12,7 +12,7 @@ const ROLES_INVITABLES: RoleMembre[] = ['technicien', 'chef_chantier', 'assistan
 
 export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
   const { supabase, membre: moi, entreprise } = await contexteBureau();
-  const { erreur, invite, sansmail } = await searchParams;
+  const { erreur, invite, renvoi, sansmail } = await searchParams;
   const { data } = await supabase.from('membres').select('*').order('actif', { ascending: false }).order('prenom');
   const membres = (data ?? []) as Membre[];
   const dirigeant = moi.role === 'dirigeant';
@@ -24,7 +24,15 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
     <>
       <Titre sous="Les personnes qui utilisent Chantio dans votre entreprise">Équipe</Titre>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <ul className="space-y-2.5 self-start">
+        <div className="space-y-2.5 self-start">
+        {renvoi && (
+          <p className={`rounded-xl p-3 text-sm ${sansmail ? 'bg-rouge-doux text-rouge' : 'bg-vert-doux text-vert'}`}>
+            {sansmail
+              ? `L’e-mail pour ${renvoi} n’a pas pu partir : ${sansmail}.`
+              : `E-mail renvoyé à ${renvoi}, avec un nouveau code. Pensez aux spams.`}
+          </p>
+        )}
+        <ul className="space-y-2.5">
           {membres.map((m, n) => (
             <li
               key={m.id}
@@ -40,6 +48,11 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
               </span>
               <Puce ton={m.role === 'dirigeant' ? 'bleu' : 'gris'}>{LIBELLE_ROLE[m.role]}</Puce>
               {!m.user_id && <Puce ton="violet">Invité</Puce>}
+              {dirigeant && !m.user_id && m.actif && (
+                <form action={renvoyer.bind(null, m.id)}>
+                  <button className="text-sm font-semibold text-bleu underline">Renvoyer l’e-mail</button>
+                </form>
+              )}
               {dirigeant && m.id !== moi.id && (
                 <form action={changerActif.bind(null, m.id, !m.actif)}>
                   <button className="text-sm font-semibold text-gris underline">{m.actif ? 'Désactiver' : 'Réactiver'}</button>
@@ -48,6 +61,7 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
             </li>
           ))}
         </ul>
+        </div>
 
         <div className="space-y-6 self-start">
         <section id="profil" className="carte apparition flex flex-col items-center p-6 text-center">
@@ -95,7 +109,7 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
             {invite && (
               <p className="rounded-xl bg-vert-doux p-3 text-sm text-vert">
                 {sansmail
-                  ? `C’est noté, mais l’e-mail n’a pas pu partir. Dites à ${invite} d’installer l’appli Chantio et de toucher « Première connexion ou mot de passe oublié » avec cette adresse.`
+                  ? `C’est noté, mais l’e-mail n’a pas pu partir (${sansmail}). Dites à ${invite} d’installer l’appli Chantio et de toucher « Première connexion ou mot de passe oublié » avec cette adresse.`
                   : `C’est noté. Un e-mail avec un code vient de partir. Dites à ${invite} d’installer l’appli Chantio et de toucher « Première connexion ou mot de passe oublié » (pensez aux spams).`}
               </p>
             )}

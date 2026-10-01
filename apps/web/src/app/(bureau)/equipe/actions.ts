@@ -27,16 +27,34 @@ export async function inviter(d: FormData) {
     const message = error.code === '23505' ? 'Cette adresse e-mail fait déjà partie de l’équipe.' : 'Ajout impossible.';
     redirect(`/equipe?erreur=${encodeURIComponent(message)}`);
   }
-  // Client sans session : l'envoi ne touche pas à la connexion du dirigeant.
+  const errEnvoi = await envoyerCode(email ?? '');
+  revalidatePath('/equipe');
+  redirect(`/equipe?invite=${encodeURIComponent(prenom ?? '')}${errEnvoi ? `&sansmail=${encodeURIComponent(errEnvoi)}` : ''}`);
+}
+
+// Renvoie le code de première connexion à une personne déjà ajoutée.
+export async function renvoyer(membreId: string) {
+  const { supabase } = await contexteBureau();
+  const { data } = await supabase.from('membres').select('prenom, email').eq('id', membreId).maybeSingle();
+  if (!data?.email) redirect(`/equipe?erreur=${encodeURIComponent('Adresse e-mail introuvable.')}`);
+  const errEnvoi = await envoyerCode(data.email);
+  redirect(
+    `/equipe?renvoi=${encodeURIComponent(data.prenom ?? '')}${errEnvoi ? `&sansmail=${encodeURIComponent(errEnvoi)}` : ''}`,
+  );
+}
+
+// Envoie un code de connexion par e-mail. Renvoie le message d'erreur, ou null.
+// Client sans session : l'envoi ne touche pas à la connexion du dirigeant.
+async function envoyerCode(email: string) {
   const envoi = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { error: errEnvoi } = await envoi.auth.signInWithOtp({
-    email: email ?? '',
-    options: { shouldCreateUser: true },
-  });
-  revalidatePath('/equipe');
-  redirect(`/equipe?invite=${encodeURIComponent(prenom ?? '')}${errEnvoi ? '&sansmail=1' : ''}`);
+  const { error } = await envoi.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+  if (!error) return null;
+  console.error('Envoi du code impossible', error);
+  return /rate|limit|seconds/i.test(error.message)
+    ? 'trop d’envois rapprochés, réessayez dans une minute'
+    : error.message;
 }
 
 export async function changerActif(membreId: string, actif: boolean) {
