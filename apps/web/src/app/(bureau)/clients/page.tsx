@@ -17,7 +17,7 @@ export default async function Clients({ searchParams }: PageProps<'/clients'>) {
   return (
     <>
       <Titre sous={`${clients.length} client${clients.length > 1 ? 's' : ''}`}>Clients</Titre>
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         {clients.length === 0 ? (
           <Vide titre="Aucun client">Ajoutez votre premier client, ou créez directement une intervention.</Vide>
         ) : (

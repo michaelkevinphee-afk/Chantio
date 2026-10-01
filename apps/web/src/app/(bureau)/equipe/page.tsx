@@ -1,5 +1,8 @@
-import { LIBELLE_ROLE, type Membre, type RoleMembre } from '@chantio/shared';
-import { Bouton, Puce, Titre } from '@/components/ui';
+import type { CSSProperties } from 'react';
+import { initiales, LIBELLE_ROLE, type Membre, type RoleMembre } from '@chantio/shared';
+import { EnvoiPhoto } from '@/components/envoi-photo';
+import { Avatar, Bouton, Puce, Titre } from '@/components/ui';
+import { liensProfils } from '@/lib/profils';
 import { contexteBureau } from '@/lib/session';
 import { changerActif, inviter } from './actions';
 
@@ -8,22 +11,27 @@ export const metadata = { title: 'Équipe · Chantio' };
 const ROLES_INVITABLES: RoleMembre[] = ['technicien', 'chef_chantier', 'assistant', 'apprenti', 'sous_traitant', 'dirigeant'];
 
 export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
-  const { supabase, membre: moi } = await contexteBureau();
+  const { supabase, membre: moi, entreprise } = await contexteBureau();
   const { erreur, invite } = await searchParams;
   const { data } = await supabase.from('membres').select('*').order('actif', { ascending: false }).order('prenom');
   const membres = (data ?? []) as Membre[];
   const dirigeant = moi.role === 'dirigeant';
+  const liens = await liensProfils(supabase, [entreprise.logo_chemin, ...membres.map((m) => m.photo_chemin)]);
+  const photo = (chemin: string | null) => (chemin ? liens.get(chemin) : null);
+  const moiComplet = membres.find((m) => m.id === moi.id) ?? moi;
 
   return (
     <>
       <Titre sous="Les personnes qui utilisent Chantio dans votre entreprise">Équipe</Titre>
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <ul className="carte divide-y divide-trait self-start">
-          {membres.map((m) => (
-            <li key={m.id} className={`flex flex-wrap items-center gap-3 px-4 py-3 ${m.actif ? '' : 'opacity-50'}`}>
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-marine font-bold text-jaune">
-                {m.prenom.slice(0, 1).toUpperCase()}
-              </span>
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <ul className="space-y-2.5 self-start">
+          {membres.map((m, n) => (
+            <li
+              key={m.id}
+              style={{ '--i': n } as CSSProperties}
+              className={`carte apparition flex flex-wrap items-center gap-3 p-3 pr-4 ${m.actif ? '' : 'opacity-50'}`}
+            >
+              <Avatar url={photo(m.photo_chemin)} initiales={initiales(m.prenom, m.nom)} taille={48} />
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold">
                   {m.prenom} {m.nom} {m.id === moi.id && <span className="text-gris">(vous)</span>}
@@ -41,8 +49,38 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
           ))}
         </ul>
 
+        <div className="space-y-6 self-start">
+        <section id="profil" className="carte apparition flex flex-col items-center p-6 text-center">
+          <Avatar url={photo(moiComplet.photo_chemin)} initiales={initiales(moi.prenom, moi.nom)} taille={104} anneau />
+          <p className="mt-4 font-titre text-2xl font-extrabold uppercase">
+            {moi.prenom} {moi.nom}
+          </p>
+          <p className="mb-4 text-sm text-gris">{LIBELLE_ROLE[moi.role]}</p>
+          <EnvoiPhoto
+            entrepriseId={entreprise.id}
+            membreId={moi.id}
+            libelle={moiComplet.photo_chemin ? 'Changer ma photo' : 'Ajouter ma photo'}
+          />
+        </section>
+
         {dirigeant && (
-          <form action={inviter} className="carte space-y-3 self-start p-5">
+          <section className="carte apparition p-5" style={{ '--i': 1 } as CSSProperties}>
+            <h2 className="font-titre text-xl font-extrabold uppercase">Logo de l’entreprise</h2>
+            <p className="mb-4 text-sm text-gris">Affiché dans le menu et, bientôt, sur les rapports envoyés aux clients.</p>
+            {entreprise.logo_chemin && photo(entreprise.logo_chemin) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo(entreprise.logo_chemin)!} alt="" className="mb-4 h-16 rounded-xl bg-beton object-contain p-2" />
+            )}
+            <EnvoiPhoto
+              entrepriseId={entreprise.id}
+              logo
+              libelle={entreprise.logo_chemin ? 'Changer le logo' : 'Ajouter le logo'}
+            />
+          </section>
+        )}
+
+        {dirigeant && (
+          <form action={inviter} className="carte apparition space-y-3 p-5" style={{ '--i': 2 } as CSSProperties}>
             <h2 className="font-titre text-xl font-extrabold uppercase">Ajouter quelqu’un</h2>
             <div className="grid grid-cols-2 gap-2">
               <input name="prenom" className="champ" required placeholder="Prénom" aria-label="Prénom" />
@@ -62,6 +100,7 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
             <Bouton className="w-full">Ajouter à l’équipe</Bouton>
           </form>
         )}
+        </div>
       </div>
     </>
   );

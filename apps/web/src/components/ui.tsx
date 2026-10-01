@@ -25,13 +25,13 @@ export function PuceStatut({ statut }: { statut: StatutIntervention }) {
 const VARIANTES = {
   principal: 'bg-jaune text-marine hover:brightness-95',
   sombre: 'bg-marine text-white hover:bg-marine-clair',
-  secondaire: 'bg-white text-marine border border-trait hover:bg-beton',
+  secondaire: 'bg-white text-marine shadow-[0_1px_0_#DDDAD0,0_2px_6px_rgb(20_33_61/0.06)] hover:bg-beton',
   danger: 'bg-white text-rouge border border-rouge/30 hover:bg-rouge-doux',
 };
 
 type Variante = keyof typeof VARIANTES;
 const classeBouton = (v: Variante, extra = '') =>
-  `inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:opacity-50 ${VARIANTES[v]} ${extra}`;
+  `inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-[15px] font-bold transition active:scale-[0.97] disabled:opacity-50 ${VARIANTES[v]} ${extra}`;
 
 export function Bouton({ variante = 'principal', className, ...props }: ComponentProps<'button'> & { variante?: Variante }) {
   return <button className={classeBouton(variante, className)} {...props} />;
@@ -43,10 +43,10 @@ export function LienBouton({ variante = 'principal', className, ...props }: Comp
 
 export function Titre({ children, sous, actions }: { children: ReactNode; sous?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="apparition mb-8 flex flex-wrap items-end justify-between gap-4 max-sm:items-start">
       <div>
-        <h1 className="font-titre text-4xl font-extrabold uppercase tracking-tight text-marine">{children}</h1>
-        {sous && <p className="mt-1 text-gris">{sous}</p>}
+        {sous && <p className="text-lg font-semibold text-gris">{sous}</p>}
+        <h1 className="font-titre text-5xl font-extrabold uppercase leading-none tracking-tight text-marine">{children}</h1>
       </div>
       {actions && <div className="flex gap-2">{actions}</div>}
     </div>
@@ -77,6 +77,32 @@ export function Logo({ clair = false, taille = 28 }: { clair?: boolean; taille?:
       >
         chantio
       </span>
+    </span>
+  );
+}
+
+/** Photo de profil ronde (ou initiales), avec l'anneau jaune des maquettes. */
+export function Avatar({
+  url,
+  initiales,
+  taille = 40,
+  anneau = false,
+  className = '',
+}: {
+  url?: string | null;
+  initiales: string;
+  taille?: number;
+  anneau?: boolean;
+  className?: string;
+}) {
+  const style = { width: taille, height: taille, fontSize: Math.round(taille * 0.36) };
+  const bord = anneau ? 'ring-[3px] ring-jaune ring-offset-2 ring-offset-beton' : '';
+  return url ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={url} alt="" style={style} className={`shrink-0 rounded-full object-cover ${bord} ${className}`} />
+  ) : (
+    <span style={style} className={`grid shrink-0 place-items-center rounded-full bg-[#ECEBE6] font-titre font-extrabold text-marine ${bord} ${className}`}>
+      {initiales}
     </span>
   );
 }

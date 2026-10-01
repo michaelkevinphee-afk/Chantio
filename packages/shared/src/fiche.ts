@@ -43,3 +43,18 @@ export function nouvelId(): string {
 export function cheminPhoto(entrepriseId: string, ficheId: string, nom: string = nouvelId()): string {
   return `${entrepriseId}/${ficheId}/${nom}.jpg`;
 }
+
+/** Stockage « profils » : photo d'un membre, <entreprise>/membres/<membre>/<nom>.jpg */
+export function cheminPhotoProfil(entrepriseId: string, membreId: string, nom: string = nouvelId()): string {
+  return `${entrepriseId}/membres/${membreId}/${nom}.jpg`;
+}
+
+/** Stockage « profils » : logo de l'entreprise, <entreprise>/logo/<nom>.<ext> */
+export function cheminLogo(entrepriseId: string, extension = 'png', nom: string = nouvelId()): string {
+  return `${entrepriseId}/logo/${nom}.${extension}`;
+}
+
+/** Initiales affichées quand il n'y a pas de photo : « Christophe Rambla » → « CR ». */
+export function initiales(prenom: string, nom?: string | null): string {
+  return ((prenom.trim()[0] ?? '') + (nom?.trim()[0] ?? prenom.trim()[1] ?? '')).toUpperCase();
+}
