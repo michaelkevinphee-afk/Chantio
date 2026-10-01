@@ -1,0 +1,982 @@
+<title>Chantio · Fiches d’intervention pour les artisans du bâtiment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout : site vitrine en trois vues (accueil, tarifs, création de compte), une colonne centrée de 1180px, blocs de couleur pleine pour rythmer */
+:root{
+  --ink:#101A3D; --cobalt:#2F54EB; --cobalt2:#7C93F5; --cobalt3:#B9C6FB; --mint:#12B76A;
+  --bg:#F6F7FB; --surface:#FFFFFF; --soft:#EEF1FB; --line:#DCE1F0; --fg:#101A3D; --mut:#5B6480;
+  --band:#E6ECFE; --bandfg:#101A3D; --bandmut:#4B5578; --onaccent:#FFFFFF; --warn:#B54708; --warnbg:#FEF0C7;
+  --display:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --body:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --r:18px; color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.03em;line-height:1.08}
+p{margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:24px}
+@media (max-width:520px){.wrap{padding-inline:16px}}
+:focus-visible{outline:3px solid var(--cobalt);outline-offset:3px;border-radius:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:54px;padding:0 24px;border-radius:14px;font-weight:800;font-size:16px;text-decoration:none;border:0;cursor:pointer;font-family:var(--body)}
+.btn-main{background:var(--cobalt);color:var(--onaccent)}
+.btn-main:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent;color:var(--fg);box-shadow:inset 0 0 0 2px var(--line)}
+.btn-ghost:hover{box-shadow:inset 0 0 0 2px var(--cobalt)}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cobalt)}
+.mut{color:var(--mut)}
+
+/* En-tête */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:28px;height:72px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--display);font-weight:800;font-size:25px;letter-spacing:-.045em}
+.top nav{display:flex;gap:22px;flex:1}
+.top nav a{text-decoration:none;font-weight:600;font-size:15px;color:var(--mut)}
+.top nav a:hover,.top nav a[aria-current="page"]{color:var(--fg)}
+.top .actions{display:flex;gap:10px;align-items:center}
+.top .btn{height:44px;padding:0 18px;font-size:15px}
+@media (max-width:900px){.top nav{display:none}.top .actions{margin-left:auto}.top .login{display:none}}
+
+/* Accueil */
+.hero{padding-block:64px 40px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:48px;align-items:center}
+@media (max-width:1100px){.hero-grid{grid-template-columns:minmax(0,1fr)}}
+.hero .intro{max-width:800px}
+.hero h1{font-size:clamp(34px,3.9vw,52px);font-weight:800;margin-top:16px}
+.hero h1 em{font-style:normal;color:var(--cobalt)}
+.hero .lead{margin-top:20px;font-size:19px;color:var(--mut);max-width:36em}
+.hero .ctas{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
+.hero .small{margin-top:16px;font-size:14px;color:var(--mut);display:flex;gap:18px;flex-wrap:wrap}
+.hero .small span{display:inline-flex;align-items:center;gap:6px}
+@media (max-width:900px){.hero{padding-block:40px 24px}.hero-grid{gap:40px}}
+
+.float{background:var(--surface);color:var(--fg);border-radius:16px;padding:12px 14px;box-shadow:0 14px 34px -12px rgba(16,26,61,.35);display:flex;gap:10px;align-items:center;font-size:14px;font-weight:700;border:1px solid var(--line);white-space:nowrap}
+.float small{display:block;font-weight:500;color:var(--mut);font-size:12px}
+.dot{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+
+/* Appareils dessinés en CSS : l'écran est une vraie capture de l'appli */
+.mac .lid{background:#0E1424;border-radius:clamp(10px,1.6vw,22px) clamp(10px,1.6vw,22px) 4px 4px;padding:1.5% 1.5% 2%;box-shadow:inset 0 0 0 2px #2B3349}
+.mac .scr{position:relative;aspect-ratio:16/10;overflow:hidden;border-radius:4px;background:#F2F1EC}
+.mac .base{position:relative;height:clamp(9px,1.5vw,20px);margin-inline:-6%;background:linear-gradient(#E6E9F0,#B7BCCA);border-radius:0 0 50% 50%/0 0 100% 100%}
+.mac .base::before{content:"";position:absolute;left:50%;top:0;width:13%;height:42%;transform:translateX(-50%);background:#A8AEBF;border-radius:0 0 10px 10px}
+.iphone{background:#0E1424;border-radius:clamp(24px,3.6vw,46px);padding:clamp(5px,.7vw,9px);box-shadow:inset 0 0 0 2px #39415A,0 40px 60px -26px rgba(16,26,61,.5)}
+.iphone .scr{position:relative;aspect-ratio:780/1688;overflow:hidden;border-radius:clamp(19px,3vw,38px);background:#F2F1EC}
+.mac .scr img,.iphone .scr img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;opacity:0;transform:translateX(10%);transition:opacity .6s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+.mac .scr img{transform:scale(1.04);transition:opacity .6s ease,transform 1.4s cubic-bezier(.2,.7,.2,1)}
+.mac .scr img.on,.iphone .scr img.on{opacity:1;transform:none}
+.iphone .scr img.out{transform:translateX(-10%)}
+
+.devices{position:relative;padding-right:13%;padding-bottom:28px}
+@media (min-width:1101px){.devices{margin-right:-40px}}
+.devices .mac{filter:drop-shadow(0 40px 50px rgba(16,26,61,.22))}
+.hero-phone{position:absolute;right:0;bottom:0;width:23%}
+.devices .f1{position:absolute;left:3%;bottom:2px}
+.devices .f2{position:absolute;right:20%;top:14%}
+@media (max-width:700px){.devices{padding-right:8%}.hero-phone{width:30%;right:-2px;bottom:-8px}.devices .float{display:none}}
+
+/* Histoire de l'appli : le téléphone reste fixe et change d'écran au défilement */
+.story{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:64px;align-items:start}
+.chapters{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.chapters li{min-height:min(36vh,300px);display:flex;align-items:center}
+.chapters button{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:22px 26px;border-radius:20px;border:1px solid transparent;background:transparent;color:var(--mut);font:inherit;cursor:pointer;transition:background .35s,border-color .35s,color .35s,box-shadow .35s,transform .35s}
+.chapters .k{font:700 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--cobalt2);transition:color .35s}
+.chapters b{font:800 clamp(22px,2.4vw,30px)/1.1 var(--display);letter-spacing:-.03em}
+.chapters .d{font-size:16px;max-width:30em}
+.chapters li.on button{background:var(--surface);border-color:var(--line);color:var(--fg);box-shadow:0 24px 40px -28px rgba(16,26,61,.4);transform:translateX(6px)}
+.chapters li.on .k{color:var(--cobalt)}
+.chapters li.on .d{color:var(--mut)}
+.stick{position:sticky;top:calc(110px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:center;gap:20px}
+.iphone.big{width:min(330px,100%)}
+.bar{height:4px;border-radius:4px;background:var(--line);width:160px;max-width:100%;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--cobalt);border-radius:4px;transition:width .5s ease}
+@media (max-width:900px){
+  .story{grid-template-columns:minmax(0,1fr);gap:24px}
+  .stick{position:relative;top:auto;order:-1}
+  .iphone.big{width:min(250px,70%)}
+  .chapters{flex-direction:row;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding-bottom:8px;scrollbar-width:none}
+  .chapters li{min-height:0;flex:0 0 82%;scroll-snap-align:center}
+  .chapters button{height:100%;background:var(--surface);border-color:var(--line)}
+  .chapters li.on button{transform:none;border-color:var(--cobalt)}
+}
+
+/* Bureau */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+.tabs button{height:48px;padding:0 18px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);font:700 15px var(--body);cursor:pointer;transition:background .25s,border-color .25s,color .25s}
+.tabs button:hover{border-color:var(--cobalt)}
+.tabs button[aria-selected="true"]{background:var(--cobalt);border-color:var(--cobalt);color:var(--onaccent)}
+.deskshow{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:56px;align-items:center;padding-inline:4%}
+.deskshow .mac{filter:drop-shadow(0 34px 44px rgba(16,26,61,.22))}
+.deskshow .txt{display:flex;flex-direction:column;gap:12px}
+.deskshow h3{font-size:26px;font-weight:800}
+.deskshow .bar{width:120px;margin-top:8px}
+@media (max-width:900px){.deskshow{grid-template-columns:minmax(0,1fr);gap:28px}}
+.brandnote{font-size:13px;color:var(--mut);margin-top:22px}
+
+/* Mouvements */
+@media (prefers-reduced-motion:no-preference){
+  .hero .intro>*{animation:up .8s cubic-bezier(.2,.7,.2,1) both}
+  .hero .intro>*:nth-child(2){animation-delay:.08s}.hero .intro>*:nth-child(3){animation-delay:.16s}.hero .intro>*:nth-child(4){animation-delay:.24s}.hero .intro>*:nth-child(5){animation-delay:.3s}
+  .devices .mac{animation:rise 1.1s .2s cubic-bezier(.2,.7,.2,1) both}
+  .hero-phone{animation:rise 1.1s .45s cubic-bezier(.2,.7,.2,1) both,bob 7s 1.6s ease-in-out infinite}
+  .devices .f1{animation:pop .6s 1.2s cubic-bezier(.3,1.4,.5,1) both}
+  .devices .f2{animation:pop .6s 1.6s cubic-bezier(.3,1.4,.5,1) both,bob 6s 2.4s ease-in-out infinite reverse}
+  .rv{transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+  .rv.pre{opacity:0;transform:translateY(28px)}
+  .step,.terrain figure,.panel{transition:transform .35s ease,box-shadow .35s ease}
+  .step:hover,.panel:hover{transform:translateY(-4px);box-shadow:0 24px 40px -28px rgba(16,26,61,.45)}
+  @keyframes up{from{opacity:.25;transform:translateY(18px)}to{opacity:1;transform:none}}
+  @keyframes rise{from{opacity:.3;transform:translateY(40px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.85) translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes bob{0%,100%{translate:0 0}50%{translate:0 -10px}}
+}
+@media (prefers-reduced-motion:reduce){.mac .scr img,.iphone .scr img{transition:none;transform:none}}
+
+.pilot{border-block:1px solid var(--line);padding-block:22px}
+.pilot .wrap{display:flex;gap:16px 32px;align-items:center;flex-wrap:wrap;justify-content:space-between;font-size:15px}
+.pilot b{font-weight:800}
+.pilot .tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:var(--soft);font-size:13px;font-weight:700;color:var(--fg)}
+
+.terrain{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);grid-template-rows:repeat(2,250px);gap:20px}
+.terrain figure{position:relative;margin:0;border-radius:24px;overflow:hidden;background:var(--soft);box-shadow:0 24px 48px -24px rgba(16,26,61,.35)}
+.terrain figure.big{grid-row:span 2}
+.terrain img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s ease}
+.terrain figure:hover img{transform:scale(1.03)}
+.terrain figcaption{position:absolute;left:16px;bottom:16px;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;background:rgba(255,255,255,.94);color:var(--fg);font-size:14px;font-weight:800;backdrop-filter:blur(6px)}
+.terrain figcaption i{width:8px;height:8px;border-radius:3px;background:var(--cobalt);display:block}
+.terrain .float{position:absolute;right:16px;top:16px}
+@media (max-width:860px){.terrain{grid-template-columns:minmax(0,1fr);grid-template-rows:none}.terrain figure.big{grid-row:auto}.terrain figure{height:240px}.terrain figure.big{height:280px}.terrain .float{display:none}}
+
+section.block{padding-block:84px}
+.head2{max-width:720px;display:flex;flex-direction:column;gap:12px;margin-bottom:40px}
+.head2 h2{font-size:clamp(30px,3.6vw,44px);font-weight:800}
+.head2 p{font-size:18px;color:var(--mut)}
+
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;counter-reset:s}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:26px;display:flex;flex-direction:column;gap:10px}
+.step .num{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--cobalt)}
+.step h3{font-size:22px;font-weight:800}
+.step ul{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;color:var(--mut);font-size:15px}
+.step li{display:flex;gap:8px}
+.step li::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--cobalt2);margin-top:9px;flex:none}
+@media (max-width:860px){.steps{grid-template-columns:minmax(0,1fr)}}
+
+.band{background:var(--band);color:var(--bandfg);border-radius:28px;padding:56px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.band .who{display:flex;flex-direction:column;gap:12px}
+.band .who h3{font-size:24px;font-weight:800}
+.band .who p{color:var(--bandmut);font-size:15px}
+.band .ico{width:52px;height:52px;border-radius:16px;background:#FFFFFF;display:flex;align-items:center;justify-content:center}
+.band .k{font-family:var(--mono);font-size:12px;color:var(--cobalt);font-weight:700;letter-spacing:.04em}
+@media (max-width:860px){.band{grid-template-columns:minmax(0,1fr);padding:32px 24px}}
+
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+@media (max-width:860px){.two{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:28px;display:flex;flex-direction:column;gap:16px}
+.panel h3{font-size:22px;font-weight:800}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:12px;background:var(--soft);font-weight:700;font-size:14px}
+.chip.later{background:transparent;box-shadow:inset 0 0 0 1.5px dashed var(--line);color:var(--mut);border:1.5px dashed var(--line)}
+.integ{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.integ div{height:64px;border-radius:14px;border:1px solid var(--line);display:flex;align-items:center;padding:0 16px;gap:12px;font-weight:800}
+.integ small{display:block;font-weight:500;color:var(--mut);font-size:12px}
+.mono{font-family:var(--mono)}
+
+.cta{background:var(--cobalt);color:var(--onaccent);border-radius:28px;padding:52px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.cta h2{font-size:clamp(28px,3.2vw,40px);font-weight:800;max-width:16em}
+.cta p{opacity:.85;margin-top:8px}
+.cta .btn{background:#fff;color:#101A3D}
+@media (max-width:520px){.cta{padding:32px 22px}}
+
+.faq{display:flex;flex-direction:column;gap:10px;max-width:820px}
+.faq details{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:0 20px}
+.faq summary{cursor:pointer;font-weight:800;font-size:17px;padding:18px 0;list-style:none;display:flex;justify-content:space-between;gap:16px}
+.faq summary::after{content:"+";font-size:22px;line-height:1;color:var(--cobalt)}
+.faq details[open] summary::after{content:"–"}
+.faq details p{padding-bottom:18px;color:var(--mut)}
+
+footer{border-top:1px solid var(--line);padding-block:40px;margin-top:40px}
+footer .wrap{display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;font-size:14px;color:var(--mut)}
+footer nav{display:flex;gap:18px;flex-wrap:wrap}
+footer a{text-decoration:none}
+
+/* Tarifs */
+.ptop{padding-block:64px 24px;text-align:left}
+.ptop h1{font-size:clamp(34px,4.6vw,56px);font-weight:800}
+.ptop p{margin-top:14px;font-size:18px;color:var(--mut);max-width:40em}
+.founder{margin-top:26px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--warnbg);color:var(--fg);border-radius:16px;padding:16px 20px;font-size:15px}
+.founder b{color:var(--warn)}
+.plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;padding-block:24px}
+@media (max-width:1060px){.plans{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.plans{grid-template-columns:minmax(0,1fr)}}
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:26px;display:flex;flex-direction:column;gap:16px;position:relative}
+.plan.best{border:2px solid var(--cobalt);box-shadow:0 20px 40px -24px rgba(47,84,235,.6)}
+.plan .badge{position:absolute;top:-13px;left:24px;background:var(--cobalt);color:var(--onaccent);font-size:12px;font-weight:800;padding:5px 10px;border-radius:999px;letter-spacing:.02em}
+.plan h3{font-size:22px;font-weight:800}
+.plan .for{font-size:14px;color:var(--mut);min-height:42px}
+.price{display:flex;align-items:baseline;gap:6px}
+.price b{font-family:var(--display);font-size:46px;font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.price span{color:var(--mut);font-size:14px;font-weight:600}
+.plan .note{font-size:13px;color:var(--mut);min-height:40px}
+.plan ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;font-size:15px;border-top:1px solid var(--line);padding-top:16px}
+.plan li{display:flex;gap:10px;align-items:flex-start}
+.plan li svg{flex:none;margin-top:3px}
+.plan .btn{margin-top:auto;width:100%}
+
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:stretch;margin-top:20px}
+@media (max-width:860px){.calc{grid-template-columns:minmax(0,1fr)}}
+.stepper{display:flex;align-items:center;gap:14px}
+.stepper button{width:56px;height:56px;border-radius:16px;border:0;background:var(--soft);color:var(--fg);font-size:28px;font-weight:800;cursor:pointer}
+.stepper output{font-family:var(--display);font-size:52px;font-weight:800;min-width:72px;text-align:center;font-variant-numeric:tabular-nums}
+.res{background:var(--band);color:var(--bandfg);border-radius:var(--r);padding:28px;display:flex;flex-direction:column;gap:10px}
+.res .big{font-family:var(--display);font-size:44px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.res .rows{display:flex;flex-direction:column;gap:6px;margin-top:6px;font-size:14px;color:var(--bandmut)}
+.res .rows div{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
+.res .rows .on{color:var(--bandfg);font-weight:800}
+
+.mods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:1000px){.mods{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.mods{grid-template-columns:minmax(0,1fr)}}
+.mod{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:8px}
+.mod b{font-size:17px}
+.mod p{font-size:14px;color:var(--mut)}
+.mod .soon{font-size:12px;font-weight:800;color:var(--cobalt);letter-spacing:.04em;text-transform:uppercase}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:15px}
+th,td{padding:14px 18px;text-align:left;border-bottom:1px solid var(--line)}
+th{font-weight:800;font-size:14px}
+td.c,th.c{text-align:center}
+tr:last-child td{border-bottom:0}
+tbody th{font-weight:600}
+
+/* Création de compte */
+.signup{padding-block:48px 24px;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:40px;align-items:start}
+@media (max-width:900px){.signup{grid-template-columns:minmax(0,1fr)}}
+.aside{display:flex;flex-direction:column;gap:20px;position:sticky;top:96px}
+@media (max-width:900px){.aside{position:static}}
+.aside h1{font-size:clamp(30px,3.6vw,44px);font-weight:800}
+.prog{display:flex;flex-direction:column;gap:6px;list-style:none;margin:0;padding:0}
+.prog li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;font-weight:700;color:var(--mut)}
+.prog li .n{width:30px;height:30px;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;flex:none}
+.prog li.on{background:var(--surface);color:var(--fg);box-shadow:0 0 0 1px var(--line)}
+.prog li.on .n{background:var(--cobalt);color:var(--onaccent)}
+.prog li.ok .n{background:var(--mint);color:#fff}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:22px}
+@media (max-width:520px){.card{padding:22px}}
+.card h2{font-size:28px;font-weight:800}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:600px){.fields{grid-template-columns:minmax(0,1fr)}}
+.f{display:flex;flex-direction:column;gap:6px;min-width:0}
+.f.full{grid-column:1/-1}
+label,.lbl{font-weight:700;font-size:14px}
+input[type=text],input[type=email],input[type=tel],input[type=password]{height:54px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--fg);padding:0 14px;font-size:16px;font-family:var(--body);width:100%;min-width:0}
+input:focus{outline:none;border-color:var(--cobalt)}
+.hint{font-size:13px;color:var(--mut)}
+.err{font-size:13px;color:#D92D20;font-weight:600}
+.pick{display:flex;flex-wrap:wrap;gap:10px}
+.pick input{position:absolute;opacity:0;pointer-events:none}
+.pick label{display:inline-flex;align-items:center;gap:8px;min-height:52px;padding:0 18px;border-radius:14px;border:1.5px solid var(--line);cursor:pointer;font-size:15px}
+.pick input:checked+label{border-color:var(--cobalt);background:var(--soft);color:var(--fg)}
+.pick input:focus-visible+label{outline:3px solid var(--cobalt);outline-offset:2px}
+.planpick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:600px){.planpick{grid-template-columns:minmax(0,1fr)}}
+.planpick label{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:14px 16px;min-height:0}
+.planpick label b{font-size:16px}
+.planpick label span{font-size:13px;color:var(--mut);font-weight:500}
+.nav2{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:22px}
+.summary{background:var(--soft);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.summary div{display:flex;justify-content:space-between;gap:12px}
+.summary b{font-variant-numeric:tabular-nums}
+.check{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:var(--mut)}
+.check input{width:22px;height:22px;margin-top:1px;accent-color:var(--cobalt);flex:none}
+.next{display:flex;flex-direction:column;gap:10px}
+.next a{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;border:1px solid var(--line);text-decoration:none;font-weight:800}
+.next a small{display:block;font-weight:500;color:var(--mut);font-size:13px}
+.next a:hover{border-color:var(--cobalt)}
+.demo{font-size:12px;font-weight:700;color:var(--mut);letter-spacing:.06em;text-transform:uppercase}
+@media (prefers-reduced-motion:no-preference){.view{animation:in .35s ease both}@keyframes in{from{transform:translateY(6px)}to{transform:none}}}
+
+/* ===== DA v6 : couleurs du logo (cobalt, pervenche, lavande), dégradés vifs, jamais de bleu nuit ===== */
+:root{
+  --bg:#F4F6FF; --soft:#E9EEFF; --line:#D9E0F7;
+  --grad:linear-gradient(120deg,#2F54EB 0%,#4467FA 45%,#7C93F5 100%);
+  --grad-soft:linear-gradient(160deg,#EEF2FF 0%,#DFE6FF 100%);
+  --glow:rgba(47,84,235,.35);
+}
+.btn-main{background:var(--grad);background-size:160% 100%;background-position:0 0;box-shadow:0 14px 28px -14px var(--glow);transition:background-position .5s ease,transform .25s ease,box-shadow .25s ease}
+.btn-main:hover{filter:none;background-position:100% 0;transform:translateY(-2px);box-shadow:0 18px 32px -14px var(--glow)}
+.btn-ghost{background:var(--surface)}
+header.top{background:color-mix(in srgb,#F4F6FF 82%,transparent)}
+.eyebrow.pill{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:6px 14px 6px 10px;letter-spacing:.06em;border-radius:999px;background:var(--surface);box-shadow:0 0 0 1px var(--line),0 8px 20px -14px var(--glow)}
+h1 em,.head2 h2 em{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* Hero : halo de couleur et blocs du logo */
+.hero{position:relative;overflow:hidden;background:
+  radial-gradient(48% 60% at 82% 38%,rgba(124,147,245,.55),transparent 70%),
+  radial-gradient(36% 46% at 100% 100%,rgba(47,84,235,.30),transparent 70%),
+  radial-gradient(40% 40% at 0% 0%,rgba(185,198,251,.55),transparent 70%),
+  linear-gradient(180deg,#EEF2FF,#F4F6FF)}
+.hero>.wrap{position:relative;z-index:1}
+.deco{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.deco i{position:absolute;border-radius:28%;opacity:.9}
+.deco .b1{width:120px;height:330px;right:3%;top:-90px;background:#2F54EB;border-radius:48px;opacity:.12;transform:rotate(18deg)}
+.deco .b2{width:170px;height:96px;left:44%;top:40px;background:#7C93F5;border-radius:36px;opacity:.16;transform:rotate(-12deg)}
+.deco .b3{width:150px;height:84px;left:-40px;bottom:30px;background:#B9C6FB;border-radius:32px;opacity:.5;transform:rotate(14deg)}
+.devices::before{content:"";position:absolute;inset:8% 4% -4% 8%;background:var(--grad);filter:blur(70px);opacity:.28;border-radius:40%;z-index:-1}
+
+/* iPhone Pro Max : cadre titane, Dynamic Island, barre d'état */
+.iphone{position:relative;container-type:inline-size;background:linear-gradient(140deg,#D5D9E2 0%,#9097A8 30%,#EEF0F4 52%,#8D94A5 78%,#C7CCD6 100%);padding:1.3%;border-radius:16% / 7.4%;box-shadow:0 50px 80px -30px rgba(31,52,160,.5),0 0 0 1px rgba(16,26,61,.15)}
+.iphone::before{content:"";position:absolute;right:-.9%;top:27%;width:1.2%;height:13%;border-radius:0 3px 3px 0;background:#9AA1B2}
+.iphone::after{content:"";position:absolute;left:-.9%;top:19%;width:1.2%;height:21%;border-radius:3px 0 0 3px;background:linear-gradient(#9AA1B2 0 22%,transparent 22% 34%,#9AA1B2 34% 64%,transparent 64% 74%,#9AA1B2 74%)}
+.iphone .scr{border:2.6cqw solid #05070D;border-radius:14.6cqw;aspect-ratio:860/1864;box-sizing:content-box}
+.sb{position:absolute;left:0;right:0;top:0;height:12.5cqw;display:flex;align-items:center;justify-content:space-between;padding:0 7.5cqw 0 9cqw;z-index:3;color:#14213D;pointer-events:none}
+.sb .t{font:600 4cqw/1 -apple-system,'SF Pro Text',system-ui,sans-serif;letter-spacing:-.01em}
+.sb .ic{display:flex;align-items:center;gap:1.4cqw}
+.sb .ic svg{width:4.4cqw;height:3cqw;fill:#14213D}
+.sb .bat{display:block;width:6.6cqw;height:3.1cqw;border:.35cqw solid rgba(20,33,61,.45);border-radius:1cqw;padding:.35cqw;position:relative}
+.sb .bat i{display:block;height:100%;width:78%;background:#14213D;border-radius:.5cqw}
+.di{position:absolute;left:50%;top:2.6cqw;transform:translateX(-50%);width:29cqw;height:8.4cqw;background:#000;border-radius:99px;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:width .6s cubic-bezier(.3,1.3,.5,1),height .6s cubic-bezier(.3,1.3,.5,1)}
+.di .la{display:flex;align-items:center;gap:2cqw;color:#fff;font:600 3.4cqw/1 -apple-system,system-ui,sans-serif;white-space:nowrap;opacity:0;transition:opacity .3s}
+.di .la i{width:2.4cqw;height:2.4cqw;border-radius:50%;background:#32D74B;box-shadow:0 0 0 1cqw rgba(50,215,75,.25)}
+.di.live{width:74cqw;height:10cqw}
+.di.live .la{opacity:1;transition-delay:.25s}
+.iphone.hero-phone{position:absolute;width:29%;bottom:-6%}
+
+/* Bandeau Verger en couleur, puis métiers qui défilent */
+.pilot{background:var(--grad);color:#fff;border:0}
+.pilot b{color:#fff}
+.pilot .tag{background:rgba(255,255,255,.18);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.ticker{overflow:hidden;background:#E3E9FF;border-bottom:1px solid var(--line);padding-block:14px}
+.ticker .track{display:flex;gap:40px;width:max-content;font:800 15px var(--display);letter-spacing:-.01em;color:#2F54EB}
+.ticker span{display:inline-flex;align-items:center;gap:40px;white-space:nowrap}
+.ticker span::after{content:"";width:9px;height:9px;border-radius:3px;background:#7C93F5}
+
+/* « Comment ça marche » : bloc cobalt vif */
+section.vivid{background:
+  radial-gradient(50% 80% at 100% 0%,rgba(185,198,251,.45),transparent 70%),
+  radial-gradient(40% 70% at 0% 100%,rgba(124,147,245,.6),transparent 70%),
+  linear-gradient(125deg,#2F54EB,#4467FA);color:#fff;margin-top:84px}
+section.vivid .eyebrow{color:#C9D4FF}
+section.vivid .head2 p{color:rgba(255,255,255,.82)}
+section.vivid .step{color:var(--fg);border:0;box-shadow:0 30px 50px -30px rgba(10,20,80,.6)}
+.step .num{display:inline-flex;align-self:flex-start;align-items:center;height:28px;padding:0 10px;border-radius:8px;background:var(--soft)}
+.step h3{font-size:24px}
+
+/* Appli : bande lavande, halo derrière le téléphone */
+section.tint{background:var(--grad-soft);overflow-x:clip}
+.stick{isolation:isolate}
+.stick::before{content:"";position:absolute;left:50%;top:44%;width:120%;aspect-ratio:1;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(47,84,235,.42),rgba(124,147,245,.18) 45%,transparent 68%);z-index:-1}
+.chapters li.on button{box-shadow:0 24px 40px -24px var(--glow)}
+.chapters li.on .k{color:#fff;background:var(--grad);padding:4px 8px;border-radius:7px;align-self:flex-start}
+.bar i{background:var(--grad)}
+
+/* Bureau */
+.deskshow{position:relative;isolation:isolate}
+.deskshow::before{content:"";position:absolute;left:0;top:10%;width:70%;height:80%;background:var(--grad);filter:blur(80px);opacity:.22;z-index:-1}
+.tabs button[aria-selected="true"]{background:var(--grad);border-color:transparent;box-shadow:0 10px 22px -12px var(--glow)}
+
+/* Profils : dégradé pervenche */
+.band{background:linear-gradient(135deg,#DCE4FF 0%,#C4D1FF 55%,#B3C3FF 100%)}
+.band .ico{background:var(--grad);box-shadow:0 12px 24px -12px var(--glow)}
+.band .ico svg{stroke:#fff}
+
+/* Métiers et logiciels */
+.chip{background:#E3E9FF;color:#2442C4}
+.chip:not(.later)::before{content:"";width:8px;height:8px;border-radius:3px;background:#2F54EB}
+.integ div{background:linear-gradient(180deg,#fff,#F3F6FF)}
+
+/* Appel à l'action */
+.cta{position:relative;overflow:hidden;background:
+  radial-gradient(40% 90% at 100% 0%,rgba(185,198,251,.7),transparent 70%),
+  radial-gradient(40% 90% at 0% 100%,rgba(124,147,245,.8),transparent 70%),
+  linear-gradient(120deg,#2F54EB,#4467FA)}
+.cta>*{position:relative}
+.cta::after{content:"";position:absolute;right:-30px;bottom:-60px;width:220px;height:220px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect x='14' y='14' width='24' height='68' rx='10' fill='%23fff' fill-opacity='.18'/%3E%3Crect x='44' y='14' width='38' height='24' rx='10' fill='%23fff' fill-opacity='.28'/%3E%3Crect x='44' y='58' width='38' height='24' rx='10' fill='%23fff' fill-opacity='.4'/%3E%3C/svg%3E") no-repeat center/contain;transform:rotate(-10deg)}
+.faq details[open]{box-shadow:0 18px 30px -24px var(--glow);border-color:#C4D1FF}
+
+@media (prefers-reduced-motion:no-preference){
+  .ticker .track{animation:tick 38s linear infinite}
+  @keyframes tick{to{transform:translateX(-50%)}}
+  .deco .b1{animation:drift 14s ease-in-out infinite}
+  .deco .b2{animation:drift 11s ease-in-out infinite reverse}
+  .deco .b3{animation:drift 16s ease-in-out infinite}
+  @keyframes drift{50%{translate:0 18px}}
+}
+@media (max-width:700px){.deco .b2{display:none}.hero-phone{width:32%}section.vivid{margin-top:56px}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="blocs" viewBox="0 0 96 96"><rect x="14" y="14" width="24" height="68" rx="10" fill="#2F54EB"/><rect x="44" y="14" width="38" height="24" rx="10" fill="#7C93F5"/><rect x="44" y="58" width="38" height="24" rx="10" fill="#B9C6FB"/></symbol>
+  <symbol id="ok" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#accueil" data-go="accueil"><svg width="34" height="34"><use href="#blocs"/></svg>chantio</a>
+    <nav aria-label="Navigation principale">
+      <a href="#accueil" data-go="accueil" data-sec="comment">Comment ça marche</a>
+      <a href="#accueil" data-go="accueil" data-sec="images">L'application</a>
+      <a href="#accueil" data-go="accueil" data-sec="bureau">Le bureau</a>
+      <a href="#tarifs" data-go="tarifs">Tarifs</a>
+      <a href="#accueil" data-go="accueil" data-sec="questions">Questions</a>
+    </nav>
+    <div class="actions">
+      <a class="btn btn-ghost login" href="/connexion">Accès plateforme</a>
+      <a class="btn btn-main" href="#inscription" data-go="inscription">Essai gratuit</a>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ============ ACCUEIL ============ -->
+<div class="view" id="v-accueil">
+  <section class="hero">
+    <div class="deco" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+    <div class="wrap hero-grid">
+      <div class="intro">
+        <div class="eyebrow pill"><svg width="16" height="16"><use href="#blocs"/></svg>Logiciel de fiches d'intervention</div>
+        <h1>Vos interventions signées, validées et <em>prêtes à facturer le jour même.</em></h1>
+        <p class="lead">Chantio relie le bureau et le terrain. Le technicien complète sa fiche sur mobile en quelques gestes, le client signe sur place, et le bureau reçoit un rapport complet, prêt pour la facturation.</p>
+        <div class="ctas">
+          <a class="btn btn-main" href="#inscription" data-go="inscription">Démarrer l'essai gratuit</a>
+          <a class="btn btn-ghost" href="#accueil" data-go="accueil" data-sec="images">Découvrir l'application</a>
+        </div>
+        <div class="small">
+          <span><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>30 jours offerts</span>
+          <span><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Sans carte bancaire</span>
+          <span><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Opérationnel en 10 minutes</span>
+        </div>
+      </div>
+      <div class="devices" aria-label="Chantio sur ordinateur et sur téléphone">
+        <div class="mac">
+          <div class="lid"><div class="scr"><img class="on" src="img/web-dash.webp" width="2016" height="1260" alt="Le tableau de bord du bureau : interventions par statut, fiches à valider et équipe en direct"></div></div>
+          <div class="base"></div>
+        </div>
+        <div class="iphone hero-phone" id="heroPhone">
+          <div class="scr"><div class="sb" aria-hidden="true"><span class="t">9:41</span><span class="di"><span class="la"><i></i>Fiche signée · Mme Laurent</span></span><span class="ic"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.2c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.6 10.6 0 0 0 8 .4C5.1.4 2.4 1.5.5 3.4l1.3 1.3A8.8 8.8 0 0 1 8 2.2Zm0 3.6c1.4 0 2.7.5 3.6 1.4l1.3-1.3A7 7 0 0 0 8 4c-1.9 0-3.6.7-4.9 1.9l1.3 1.3c.9-.9 2.2-1.4 3.6-1.4Zm0 3.6c-.5 0-1 .2-1.3.5L8 11.2l1.3-1.3c-.3-.3-.8-.5-1.3-.5Z"/></svg><b class="bat"><i></i></b></span></div>
+            <img class="on" src="img/app-journee.webp" width="860" height="1864" alt="Écran Ma journée : la prochaine intervention à 8 h 30 chez Mme Laurent">
+            <img src="img/app-constat.webp" width="860" height="1864" alt="Écran Constat : le technicien choisit ce qu'il a trouvé">
+            <img src="img/app-mesures.webp" width="860" height="1864" alt="Écran Mesures : CO, CO₂ et température des fumées">
+            <img src="img/app-signature.webp" width="860" height="1864" alt="Écran Signature : le client signe sur le téléphone">
+            <img src="img/app-rapport.webp" width="860" height="1864" alt="Le rapport d'intervention terminé">
+          </div>
+        </div>
+        <div class="float f1"><div class="dot" style="background:#D1FADF;color:#027A48"><svg width="18" height="18"><use href="#ok"/></svg></div><div>Fiche signée à 10h42<small>Rapport envoyé au bureau</small></div></div>
+        <div class="float f2"><div class="dot" style="background:#E6ECFE;color:#2F54EB"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></div><div>CO mesuré : 12 ppm<small>Conforme</small></div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="pilot">
+    <div class="wrap">
+      <div>Conçu et testé avec <b>Verger</b>, entreprise de plomberie et de chauffage à Paris 16e depuis 1984.</div>
+      <div class="tags"><span class="tag">Artisans</span><span class="tag">TPE</span><span class="tag">PME jusqu'à 50 techniciens</span></div>
+    </div>
+  </div>
+
+  <div class="ticker" aria-hidden="true"><div class="track"><span>Plomberie</span><span>Chauffage</span><span>Génie climatique</span><span>Sanitaire</span><span>Dépannage</span><span>Entretien chaudière</span><span>Pompe à chaleur</span><span>Climatisation</span><span>Recherche de fuite</span><span>Mise en service</span><span>Plomberie</span><span>Chauffage</span><span>Génie climatique</span><span>Sanitaire</span><span>Dépannage</span><span>Entretien chaudière</span><span>Pompe à chaleur</span><span>Climatisation</span><span>Recherche de fuite</span><span>Mise en service</span></div></div>
+
+
+  <section class="block vivid" id="comment">
+    <div class="wrap">
+      <div class="head2 rv"><div class="eyebrow">Comment ça marche</div><h2>De la planification à la facture, un seul circuit.</h2><p>Chaque intervenant dispose exactement des informations dont il a besoin.</p></div>
+      <div class="steps rv">
+        <div class="step"><div class="num">1 · AU BUREAU</div><h3>Planifier</h3><p class="mut">L'intervention est créée en quelques clics et transmise instantanément sur le mobile du technicien.</p>
+          <ul><li>Planning hebdomadaire de l'équipe</li><li>Historique des clients et des équipements</li><li>Import de votre fichier clients Excel</li></ul></div>
+        <div class="step"><div class="num">2 · SUR LE CHANTIER</div><h3>Intervenir</h3><p class="mut">Une fiche guidée en quatre étapes : constat, mesures, pièces posées, signature.</p>
+          <ul><li>Photos avant et après</li><li>Mesures de combustion contrôlées</li><li>Temps passé et fournitures</li></ul></div>
+        <div class="step"><div class="num">3 · EN FIN DE JOURNÉE</div><h3>Valider et facturer</h3><p class="mut">Le bureau relit la fiche, la valide et la transmet à la facturation.</p>
+          <ul><li>Signature du client sur l'écran</li><li>Rapport PDF à votre en-tête</li><li>Export vers votre logiciel de gestion</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block app tint" id="images">
+    <div class="wrap">
+      <div class="head2 rv"><div class="eyebrow">L'application mobile</div><h2>Une fiche complète en quatre étapes.</h2><p>Une action par écran, des boutons dimensionnés pour le chantier et des valeurs déjà proposées.</p></div>
+      <div class="story">
+        <ol class="chapters" id="chapters">
+          <li data-i="0" class="on"><button type="button"><span class="k">Le matin</span><b>La journée du technicien</b><span class="d">Ses interventions dans l'ordre, l'adresse, le code d'accès et le mot du bureau. Un appui pour lancer l'itinéraire.</span></button></li>
+          <li data-i="1"><button type="button"><span class="k">Étape 1</span><b>Le constat</b><span class="d">Entretien, fuite, panne, odeur de gaz : le technicien sélectionne au lieu de rédiger.</span></button></li>
+          <li data-i="2"><button type="button"><span class="k">Étape 2</span><b>Les mesures</b><span class="d">CO, CO₂ et température des fumées. Chaque valeur est contrôlée et signalée hors norme.</span></button></li>
+          <li data-i="3"><button type="button"><span class="k">Étape 3</span><b>Les pièces posées</b><span class="d">Les fournitures courantes en un appui, avec les quantités. Elles alimentent directement la facture.</span></button></li>
+          <li data-i="4"><button type="button"><span class="k">Étape 4</span><b>La signature</b><span class="d">Le client relit et signe sur l'écran. En son absence, la fiche le mentionne et part quand même.</span></button></li>
+          <li data-i="5"><button type="button"><span class="k">Au bureau</span><b>Le rapport</b><span class="d">Un rapport clair à l'en-tête de l'entreprise, archivé avec l'historique de l'équipement.</span></button></li>
+        </ol>
+        <div class="stick">
+          <div class="iphone big" id="storyPhone">
+            <div class="scr"><div class="sb" aria-hidden="true"><span class="t">9:41</span><span class="di"><span class="la"><i></i>Fiche signée · Mme Laurent</span></span><span class="ic"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.2c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.6 10.6 0 0 0 8 .4C5.1.4 2.4 1.5.5 3.4l1.3 1.3A8.8 8.8 0 0 1 8 2.2Zm0 3.6c1.4 0 2.7.5 3.6 1.4l1.3-1.3A7 7 0 0 0 8 4c-1.9 0-3.6.7-4.9 1.9l1.3 1.3c.9-.9 2.2-1.4 3.6-1.4Zm0 3.6c-.5 0-1 .2-1.3.5L8 11.2l1.3-1.3c-.3-.3-.8-.5-1.3-.5Z"/></svg><b class="bat"><i></i></b></span></div>
+              <img class="on" src="img/app-journee.webp" width="860" height="1864" alt="Écran Ma journée du technicien" loading="lazy">
+              <img src="img/app-constat.webp" width="860" height="1864" alt="Écran Constat avec tuiles Entretien, Fuite, Panne" loading="lazy">
+              <img src="img/app-mesures.webp" width="860" height="1864" alt="Écran Mesures de combustion" loading="lazy">
+              <img src="img/app-pieces.webp" width="860" height="1864" alt="Écran Pièces posées" loading="lazy">
+              <img src="img/app-signature.webp" width="860" height="1864" alt="Écran Signature du client" loading="lazy">
+              <img src="img/app-rapport.webp" width="860" height="1864" alt="Rapport d'intervention" loading="lazy">
+            </div>
+          </div>
+          <div class="bar" aria-hidden="true"><i id="storyBar"></i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="bureau">
+    <div class="wrap">
+      <div class="head2 rv"><div class="eyebrow">L'espace bureau</div><h2>Toute l'activité de l'entreprise sur un seul écran.</h2></div>
+      <div class="tabs rv" role="tablist" aria-label="Écrans du bureau">
+        <button type="button" role="tab" id="t-dash" aria-selected="true" data-i="0" data-t="Tableau de bord" data-d="Les interventions du jour par statut, les fiches à relire et la position de chaque technicien.">Tableau de bord</button>
+        <button type="button" role="tab" id="t-plan" aria-selected="false" data-i="1" data-t="Planning" data-d="La semaine de toute l'équipe. Une intervention glissée sur un technicien apparaît aussitôt sur son mobile.">Planning</button>
+        <button type="button" role="tab" id="t-list" aria-selected="false" data-i="2" data-t="Interventions" data-d="Toutes les interventions, filtrées par statut : à planifier, en cours, à valider, validées.">Interventions</button>
+        <button type="button" role="tab" id="t-fiche" aria-selected="false" data-i="3" data-t="Fiche détaillée" data-d="Constat, mesures, temps passé et signature. Un clic pour valider et transmettre à la facturation.">Fiche détaillée</button>
+      </div>
+      <div class="deskshow rv" role="tabpanel" aria-labelledby="t-dash" id="webpanel">
+        <div class="mac wide">
+          <div class="lid"><div class="scr" id="deskScr">
+            <img class="on" src="img/web-dash.webp" width="2016" height="1260" alt="Tableau de bord" loading="lazy">
+            <img src="img/web-planning.webp" width="2016" height="1260" alt="Planning de la semaine" loading="lazy">
+            <img src="img/web-interventions.webp" width="2016" height="1260" alt="Liste des interventions" loading="lazy">
+            <img src="img/web-dfiche.webp" width="2016" height="1260" alt="Fiche d'intervention détaillée" loading="lazy">
+          </div></div>
+          <div class="base"></div>
+        </div>
+        <div class="txt"><h3 id="webt">Tableau de bord</h3><p class="mut" id="webd">Les interventions du jour par statut, les fiches à relire et la position de chaque technicien.</p><div class="bar" aria-hidden="true"><i id="deskBar"></i></div></div>
+      </div>
+      <p class="brandnote">Exemple : l'espace de l'entreprise Verger. Chaque entreprise retrouve son logo et ses couleurs.</p>
+    </div>
+  </section>
+
+  <section class="block" style="padding-top:0">
+    <div class="wrap">
+      <div class="band rv">
+        <div class="who"><div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2F54EB" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg></div><div class="k">DIRIGEANT</div><h3>Une vision complète de l'activité.</h3><p>Interventions du jour, fiches à valider, montants à facturer : l'essentiel en temps réel, sans papier égaré.</p></div>
+        <div class="who"><div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2F54EB" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7"/><path d="m15 17 2 2 4-4"/></svg></div><div class="k">CHEF DE CHANTIER</div><h3>Planification et contrôle qualité.</h3><p>Affectation des techniciens, relecture des fiches et traitement des anomalies avant qu'elles n'atteignent le client.</p></div>
+        <div class="who"><div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2F54EB" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/></svg></div><div class="k">TECHNICIEN</div><h3>Une saisie rapide, même avec des gants.</h3><p>Connexion mémorisée sur le téléphone, un écran par étape et une fiche terminée avant de quitter le chantier.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" style="padding-top:0">
+    <div class="wrap two rv">
+      <div class="panel" id="metiers">
+        <div class="eyebrow">Métiers</div>
+        <h3>Des modèles de fiche adaptés à chaque métier.</h3>
+        <p class="mut">Contrôles, mesures et mentions obligatoires sont intégrés à chaque modèle. Vous pouvez également créer les vôtres.</p>
+        <div class="chips">
+          <span class="chip">Plomberie</span><span class="chip">Chauffage</span><span class="chip">Génie climatique</span><span class="chip">Sanitaire</span><span class="chip">Dépannage</span>
+          <span class="chip later">Électricité · bientôt</span><span class="chip later">Menuiserie · bientôt</span><span class="chip later">Couverture · bientôt</span>
+        </div>
+      </div>
+      <div class="panel" id="logiciels">
+        <div class="eyebrow">Vos logiciels</div>
+        <h3>Compatible avec vos outils de devis et de facturation.</h3>
+        <p class="mut">Chantio gère le terrain et transmet les fiches validées au logiciel que vous utilisez déjà.</p>
+        <div class="integ">
+          <div>Sage Batigest</div>
+          <div>EBP Bâtiment</div>
+          <div>Obat</div>
+          <div>Votre expert-comptable<small class="mono">export CSV · PDF</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" style="padding-top:0">
+    <div class="wrap">
+      <div class="cta rv">
+        <div><h2>À partir de 19 € HT par mois. Essai gratuit de 30 jours.</h2><p>Quatre formules transparentes, sans frais de mise en service.</p></div>
+        <a class="btn" href="#tarifs" data-go="tarifs">Comparer les formules</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="questions" style="padding-top:0">
+    <div class="wrap">
+      <div class="head2 rv"><div class="eyebrow">Questions fréquentes</div><h2>Vos questions, nos réponses.</h2></div>
+      <div class="faq">
+        <details open><summary>Mes techniciens sont peu à l'aise avec le numérique. Est-ce adapté ?</summary><p>L'application a été conçue pour eux : une connexion mémorisée sur le téléphone, un écran par étape, des choix à sélectionner plutôt que du texte à saisir. Une fiche se complète en deux minutes environ.</p></details>
+        <details><summary>Que se passe-t-il en cave ou en sous-sol, sans réseau ?</summary><p>La fiche se remplit intégralement hors connexion, photos et signature comprises. Elle est transmise automatiquement dès le retour du réseau.</p></details>
+        <details><summary>Je travaille seul. Chantio est-il adapté ?</summary><p>Oui. La formule Solo réunit le bureau et le terrain dans une seule application, sans étape de validation superflue.</p></details>
+        <details><summary>La signature du client est-elle obligatoire ?</summary><p>Non. Si le client est absent ou refuse de signer, la fiche le mentionne et suit son circuit normalement.</p></details>
+        <details><summary>Où sont hébergées mes données ?</summary><p>En Europe, avec une sauvegarde quotidienne. Vous pouvez les exporter à tout moment.</p></details>
+        <details><summary>Puis-je résilier à tout moment ?</summary><p>Oui. Vous récupérez l'ensemble de vos fiches en PDF et de vos données au format Excel.</p></details>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ TARIFS ============ -->
+<div class="view" id="v-tarifs" hidden>
+  <div class="wrap ptop">
+    <div class="eyebrow">Tarifs</div>
+    <h1 style="margin-top:12px">Un prix clair, selon la taille de votre équipe.</h1>
+    <p>Prix hors taxes, par mois, en facturation annuelle. Tous les utilisateurs du bureau sont compris, vous ne payez que les techniciens sur le terrain.</p>
+    <div class="founder"><b>Offre fondateurs</b><span>Les 20 premières entreprises utilisent Chantio gratuitement pendant le pilote, puis paient moitié prix, à vie.</span><a href="#inscription" data-go="inscription" style="font-weight:800">Je veux en faire partie</a></div>
+  </div>
+
+  <div class="wrap">
+    <div class="plans">
+      <div class="plan">
+        <h3>Découverte</h3><p class="for">Pour tester sur vos vrais chantiers.</p>
+        <div class="price"><b>0 €</b><span>pour toujours</span></div>
+        <p class="note">1 utilisateur, 10 fiches par mois.</p>
+        <ul>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Application mobile complète</li>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Photos et signature client</li>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Rapport PDF au client</li>
+        </ul>
+        <a class="btn btn-ghost" href="#inscription" data-go="inscription" data-plan="decouverte">Commencer</a>
+      </div>
+      <div class="plan">
+        <h3>Solo</h3><p class="for">Pour l'artisan qui fait tout lui-même.</p>
+        <div class="price"><b>19 €</b><span>/ mois</span></div>
+        <p class="note">1 utilisateur. Ou 25 € par mois sans engagement.</p>
+        <ul>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Fiches illimitées</li>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>PDF à votre logo</li>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Historique par client et par appareil</li>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Export pour la facturation</li>
+        </ul>
+        <a class="btn btn-ghost" href="#inscription" data-go="inscription" data-plan="solo">Choisir Solo</a>
+      </div>
+      <div class="plan best">
+        <span class="badge">Le plus choisi</span>
+        <h3>Équipe</h3><p class="for">Pour un bureau et quelques techniciens.</p>
+        <div class="price"><b>49 €</b><span>/ mois</span></div>
+        <p class="note">2 techniciens compris, puis 19 € par technicien.</p>
+        <ul>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Tout Solo</li>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Planning de l'équipe</li>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Validation des fiches au bureau</li>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Vos propres gabarits de fiche</li>
+        </ul>
+        <a class="btn btn-main" href="#inscription" data-go="inscription" data-plan="equipe">Choisir Équipe</a>
+      </div>
+      <div class="plan">
+        <h3>Entreprise</h3><p class="for">Pour les PME avec chefs de chantier.</p>
+        <div class="price"><b>149 €</b><span>/ mois</span></div>
+        <p class="note">5 techniciens compris, puis 15 € par technicien.</p>
+        <ul>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Tout Équipe</li>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Rôle chef de chantier</li>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Connexion Batigest, EBP, Obat</li>
+          <li><svg width="16" height="16" style="color:var(--mint)"><use href="#ok"/></svg>Aide à la mise en route</li>
+        </ul>
+        <a class="btn btn-ghost" href="#inscription" data-go="inscription" data-plan="entreprise">Choisir Entreprise</a>
+      </div>
+    </div>
+
+    <section class="block" style="padding-block:56px">
+      <div class="head2"><div class="eyebrow">Combien pour vous ?</div><h2>Indiquez votre nombre de techniciens.</h2><p>On calcule le prix de chaque formule et on vous indique la moins chère.</p></div>
+      <div class="calc">
+        <div class="panel">
+          <span class="lbl" id="techLbl">Techniciens sur le terrain</span>
+          <div class="stepper" role="group" aria-labelledby="techLbl">
+            <button type="button" id="minus" aria-label="Un technicien de moins">−</button>
+            <output id="techs" aria-live="polite">4</output>
+            <button type="button" id="plus" aria-label="Un technicien de plus">+</button>
+          </div>
+          <p class="hint">Les comptes du bureau (dirigeant, secrétariat) sont toujours gratuits.</p>
+        </div>
+        <div class="res" aria-live="polite">
+          <div style="font-size:14px;color:var(--bandmut);font-weight:700" id="resLbl">Formule conseillée</div>
+          <div class="big" id="resPrice">–</div>
+          <div class="rows" id="resRows"></div>
+          <a class="btn btn-main" style="margin-top:12px" href="#inscription" data-go="inscription" id="resGo">Démarrer avec cette formule</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" style="padding-block:0 56px">
+      <div class="head2"><div class="eyebrow">Modules à la carte</div><h2>Ajoutez seulement ce qui vous sert.</h2><p>De 9 à 19 € par mois chacun, sur n'importe quelle formule payante.</p></div>
+      <div class="mods">
+        <div class="mod"><span class="soon">Bientôt</span><b>Contrats d'entretien</b><p>Les visites annuelles se planifient toutes seules et le client reçoit son rappel.</p></div>
+        <div class="mod"><span class="soon">Bientôt</span><b>Registre des fluides</b><p>Le suivi des fluides frigorigènes pour la climatisation, prêt pour un contrôle.</p></div>
+        <div class="mod"><span class="soon">Bientôt</span><b>Statistiques</b><p>Temps passé, interventions par technicien, délais de facturation.</p></div>
+        <div class="mod"><span class="soon">Bientôt</span><b>Lecture des devis PDF</b><p>Déposez un devis, Chantio crée l'intervention et la liste des fournitures.</p></div>
+      </div>
+    </section>
+
+    <section style="padding-bottom:40px">
+      <div class="head2"><h2>Le détail des formules</h2></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th scope="col">Fonction</th><th class="c" scope="col">Découverte</th><th class="c" scope="col">Solo</th><th class="c" scope="col">Équipe</th><th class="c" scope="col">Entreprise</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Fiches par mois</th><td class="c">10</td><td class="c">Illimitées</td><td class="c">Illimitées</td><td class="c">Illimitées</td></tr>
+            <tr><th scope="row">Techniciens compris</th><td class="c">1</td><td class="c">1</td><td class="c">2</td><td class="c">5</td></tr>
+            <tr><th scope="row">Technicien en plus</th><td class="c">–</td><td class="c">–</td><td class="c">19 €</td><td class="c">15 €</td></tr>
+            <tr><th scope="row">Application hors ligne, photos, signature</th><td class="c">Oui</td><td class="c">Oui</td><td class="c">Oui</td><td class="c">Oui</td></tr>
+            <tr><th scope="row">PDF à votre logo</th><td class="c">–</td><td class="c">Oui</td><td class="c">Oui</td><td class="c">Oui</td></tr>
+            <tr><th scope="row">Planning et validation au bureau</th><td class="c">–</td><td class="c">–</td><td class="c">Oui</td><td class="c">Oui</td></tr>
+            <tr><th scope="row">Gabarits de fiche personnalisés</th><td class="c">–</td><td class="c">–</td><td class="c">Oui</td><td class="c">Oui</td></tr>
+            <tr><th scope="row">Rôle chef de chantier</th><td class="c">–</td><td class="c">–</td><td class="c">–</td><td class="c">Oui</td></tr>
+            <tr><th scope="row">Connexion Batigest, EBP, Obat</th><td class="c">–</td><td class="c">Export</td><td class="c">Export</td><td class="c">Directe</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ============ INSCRIPTION ============ -->
+<div class="view" id="v-inscription" hidden>
+  <div class="wrap signup">
+    <div class="aside">
+      <div class="eyebrow">Créer mon compte</div>
+      <h1>Votre espace prêt en 10 minutes.</h1>
+      <p class="mut">Gratuit pendant 30 jours, sans carte bancaire. Vous choisirez votre formule à la fin de l'essai.</p>
+      <ol class="prog" id="prog">
+        <li class="on"><span class="n">1</span>Votre entreprise</li>
+        <li><span class="n">2</span>Votre équipe</li>
+        <li><span class="n">3</span>Votre accès</li>
+        <li><span class="n">4</span>C'est prêt</li>
+      </ol>
+    </div>
+
+    <form class="card" id="form" novalidate>
+      <!-- Étape 1 -->
+      <div class="stp" data-step="1">
+        <div style="display:flex;flex-direction:column;gap:22px">
+          <h2>Votre entreprise</h2>
+          <div class="fields">
+            <div class="f full"><label for="raison">Nom de l'entreprise</label><input type="text" id="raison" autocomplete="organization" placeholder="Ex. Plomberie Martin"><span class="err" id="e-raison" hidden>Indiquez le nom de votre entreprise.</span></div>
+            <div class="f"><label for="siret">SIRET</label><input type="text" id="siret" inputmode="numeric" placeholder="14 chiffres"><span class="hint">On remplit l'adresse pour vous.</span></div>
+            <div class="f"><label for="ville">Ville</label><input type="text" id="ville" autocomplete="address-level2" placeholder="Ex. Paris"></div>
+          </div>
+          <div class="f"><span class="lbl">Vos métiers</span>
+            <div class="pick" role="group" aria-label="Vos métiers">
+              <input type="checkbox" id="m1" checked><label for="m1">Plomberie</label>
+              <input type="checkbox" id="m2"><label for="m2">Chauffage</label>
+              <input type="checkbox" id="m3"><label for="m3">Génie climatique</label>
+              <input type="checkbox" id="m4"><label for="m4">Sanitaire</label>
+              <input type="checkbox" id="m5"><label for="m5">Autre métier</label>
+            </div>
+            <span class="hint">On prépare les fiches adaptées à chaque métier coché.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Étape 2 -->
+      <div class="stp" data-step="2" hidden>
+        <div style="display:flex;flex-direction:column;gap:22px">
+          <h2>Votre équipe</h2>
+          <div class="f"><span class="lbl" id="lblT2">Combien de techniciens sur le terrain ?</span>
+            <div class="stepper" role="group" aria-labelledby="lblT2">
+              <button type="button" id="minus2" aria-label="Un technicien de moins">−</button>
+              <output id="techs2" aria-live="polite">4</output>
+              <button type="button" id="plus2" aria-label="Un technicien de plus">+</button>
+            </div>
+          </div>
+          <div class="f"><span class="lbl">Votre formule après l'essai</span>
+            <div class="pick planpick" role="radiogroup" aria-label="Formule">
+              <input type="radio" name="plan" id="p-solo" value="solo"><label for="p-solo"><b>Solo · 19 €</b><span>Je travaille seul</span></label>
+              <input type="radio" name="plan" id="p-equipe" value="equipe"><label for="p-equipe"><b>Équipe · dès 49 €</b><span>2 techniciens compris</span></label>
+              <input type="radio" name="plan" id="p-entreprise" value="entreprise"><label for="p-entreprise"><b>Entreprise · dès 149 €</b><span>5 techniciens compris</span></label>
+              <input type="radio" name="plan" id="p-decouverte" value="decouverte"><label for="p-decouverte"><b>Découverte · 0 €</b><span>10 fiches par mois</span></label>
+            </div>
+          </div>
+          <div class="summary" id="sum2"></div>
+          <div class="f"><span class="lbl">Vous utilisez déjà</span>
+            <div class="pick" role="group" aria-label="Logiciels utilisés">
+              <input type="checkbox" id="l1"><label for="l1">Sage Batigest</label>
+              <input type="checkbox" id="l2"><label for="l2">EBP Bâtiment</label>
+              <input type="checkbox" id="l3"><label for="l3">Obat</label>
+              <input type="checkbox" id="l4"><label for="l4">Excel</label>
+              <input type="checkbox" id="l5"><label for="l5">Papier</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Étape 3 -->
+      <div class="stp" data-step="3" hidden>
+        <div style="display:flex;flex-direction:column;gap:22px">
+          <h2>Votre accès</h2>
+          <div class="fields">
+            <div class="f"><label for="prenom">Prénom</label><input type="text" id="prenom" autocomplete="given-name"></div>
+            <div class="f"><label for="nom">Nom</label><input type="text" id="nom" autocomplete="family-name"></div>
+            <div class="f full"><label for="email">E-mail professionnel</label><input type="email" id="email" autocomplete="email" placeholder="vous@entreprise.fr"><span class="err" id="e-email" hidden>Cet e-mail ne semble pas complet. Vérifiez le @ et le domaine.</span></div>
+            <div class="f full"><label for="tel">Téléphone mobile</label><input type="tel" id="tel" autocomplete="tel" placeholder="06 12 34 56 78"><span class="hint">Pour recevoir le lien de l'application sur votre téléphone.</span></div>
+            <div class="f full"><label for="mdp">Mot de passe</label><input type="password" id="mdp" autocomplete="new-password"><span class="hint">8 caractères minimum. Vos techniciens, eux, entreront avec un code à 4 chiffres.</span></div>
+          </div>
+          <label class="check" for="cgu"><input type="checkbox" id="cgu">J'accepte les conditions d'utilisation et la politique de confidentialité.</label>
+          <span class="err" id="e-cgu" hidden>Cochez cette case pour créer votre compte.</span>
+        </div>
+      </div>
+
+      <!-- Étape 4 -->
+      <div class="stp" data-step="4" hidden>
+        <div style="display:flex;flex-direction:column;gap:22px">
+          <div class="dot" style="width:56px;height:56px;border-radius:18px;background:#D1FADF;color:#027A48"><svg width="28" height="28"><use href="#ok"/></svg></div>
+          <h2 id="doneTitle">Votre espace est prêt.</h2>
+          <p class="mut" id="doneText">Vous êtes en essai gratuit pendant 30 jours.</p>
+          <div class="next">
+            <a href="#inscription"><div class="dot" style="background:var(--soft)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/></svg></div><div>Installer l'application sur votre téléphone<small>Le lien vient de partir par SMS</small></div></a>
+            <a href="#inscription"><div class="dot" style="background:var(--soft)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/></svg></div><div>Inviter vos techniciens<small>Ils reçoivent leur code à 4 chiffres</small></div></a>
+            <a href="#inscription"><div class="dot" style="background:var(--soft)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg></div><div>Importer vos clients depuis Excel<small>Un fichier, et vos clients sont là</small></div></a>
+          </div>
+          <p class="demo">Maquette : aucun compte n'est réellement créé.</p>
+        </div>
+      </div>
+
+      <div class="nav2" id="nav2">
+        <button type="button" class="btn btn-ghost" id="back">Retour</button>
+        <button type="submit" class="btn btn-main" id="nextBtn">Continuer</button>
+      </div>
+    </form>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="logo" href="#accueil" data-go="accueil" style="font-size:20px"><svg width="26" height="26"><use href="#blocs"/></svg>chantio</a>
+    <nav aria-label="Pied de page"><a href="#tarifs" data-go="tarifs">Tarifs</a><a href="#inscription" data-go="inscription">Créer un compte</a><a href="#accueil" data-go="accueil" data-sec="questions">Questions</a><span>Mentions légales</span><span>Confidentialité</span></nav>
+    <span>Les fiches d'intervention, simplement.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var views=['accueil','tarifs','inscription'];
+  function show(v,sec){
+    if(v==='inscription'){location.replace('/connexion');return;}
+    if(views.indexOf(v)<0)v='accueil';
+    views.forEach(function(x){document.getElementById('v-'+x).hidden=(x!==v);});
+    document.querySelectorAll('.top nav a').forEach(function(a){a.removeAttribute('aria-current');if(a.dataset.go===v&&v==='tarifs')a.setAttribute('aria-current','page');});
+    if(sec){var el=document.getElementById(sec);if(el){el.scrollIntoView({behavior:'smooth',block:'start'});return;}}
+    window.scrollTo(0,0);
+  }
+  document.addEventListener('click',function(e){
+    var a=e.target.closest('[data-go]');if(!a)return;
+    e.preventDefault();
+    if(a.dataset.go==='inscription'){location.href='/connexion';return;}
+    if(a.dataset.plan)setPlan(a.dataset.plan);
+    if(a.id==='resGo')setPlan(best.key);
+    try{history.replaceState(null,'','#'+a.dataset.go);}catch(_){}
+    show(a.dataset.go,a.dataset.sec);
+  });
+  window.addEventListener('hashchange',function(){show(location.hash.slice(1));});
+
+  // Prix
+  var euro=function(n){return n.toLocaleString('fr-FR')+' €';};
+  function prices(n){
+    return [
+      {key:'solo',name:'Solo',p:n===1?19:null},
+      {key:'equipe',name:'Équipe',p:49+19*Math.max(0,n-2)},
+      {key:'entreprise',name:'Entreprise',p:149+15*Math.max(0,n-5)}
+    ];
+  }
+  var techs=4,best={key:'equipe'};
+  function renderCalc(){
+    document.getElementById('techs').textContent=techs;
+    document.getElementById('techs2').textContent=techs;
+    var list=prices(techs).filter(function(x){return x.p!==null;});
+    best=list.reduce(function(a,b){return b.p<a.p?b:a;});
+    document.getElementById('resLbl').textContent='Formule conseillée : '+best.name;
+    document.getElementById('resPrice').textContent=euro(best.p)+' / mois';
+    document.getElementById('resRows').innerHTML=prices(techs).map(function(x){
+      return '<div class="'+(x.key===best.key?'on':'')+'"><span>'+x.name+'</span><span>'+(x.p===null?'1 technicien seulement':euro(x.p))+'</span></div>';
+    }).join('')+'<div><span>Soit par technicien</span><span>'+euro(Math.round(best.p/techs*10)/10)+'</span></div>';
+    renderSum();
+  }
+  function step(d){techs=Math.min(50,Math.max(1,techs+d));renderCalc();if(!chosen)setPlan(best.key,true);}
+  document.getElementById('minus').onclick=function(){step(-1);};
+  document.getElementById('plus').onclick=function(){step(1);};
+  document.getElementById('minus2').onclick=function(){step(-1);};
+  document.getElementById('plus2').onclick=function(){step(1);};
+
+  var chosen=false;
+  function setPlan(k,auto){var r=document.getElementById('p-'+k);if(r){r.checked=true;if(!auto)chosen=true;}renderSum();}
+  document.querySelectorAll('input[name=plan]').forEach(function(r){r.onchange=function(){chosen=true;renderSum();};});
+  function renderSum(){
+    var r=document.querySelector('input[name=plan]:checked');if(!r)return;
+    var k=r.value,p,det;
+    if(k==='decouverte'){p=0;det='1 utilisateur, 10 fiches par mois';}
+    else if(k==='solo'){p=19;det='1 technicien'+(techs>1?'. Attention, Solo ne compte qu\'un technicien.':'');}
+    else{var x=prices(techs).filter(function(y){return y.key===k;})[0];p=x.p;det=techs+' technicien'+(techs>1?'s':'');}
+    document.getElementById('sum2').innerHTML='<div><span>Pendant l\'essai de 30 jours</span><b>0 €</b></div><div><span>Ensuite, '+det+'</span><b>'+euro(p)+' HT / mois</b></div>';
+  }
+
+  // Parcours de création de compte
+  var cur=1,form=document.getElementById('form');
+  function goStep(n){
+    cur=n;
+    form.querySelectorAll('.stp').forEach(function(s){s.hidden=(+s.dataset.step!==n);});
+    document.querySelectorAll('#prog li').forEach(function(li,i){li.className=(i+1===n?'on':(i+1<n?'ok':''));});
+    document.getElementById('back').style.visibility=(n===1||n===4)?'hidden':'visible';
+    document.getElementById('nav2').hidden=(n===4);
+    document.getElementById('nextBtn').textContent=n===3?'Créer mon compte':'Continuer';
+    var f=form.querySelector('.stp[data-step="'+n+'"] input');if(f&&n<4)f.focus({preventScroll:true});
+  }
+  function bad(id,cond){document.getElementById('e-'+id).hidden=!cond;return cond;}
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    if(cur===1){if(bad('raison',!document.getElementById('raison').value.trim()))return;}
+    if(cur===3){
+      var em=document.getElementById('email').value.trim();
+      var b1=bad('email',!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em));
+      var b2=bad('cgu',!document.getElementById('cgu').checked);
+      if(b1||b2)return;
+      var pr=document.getElementById('prenom').value.trim();
+      document.getElementById('doneTitle').textContent=(pr?'Bienvenue '+pr+', ':'')+'votre espace est prêt.';
+      document.getElementById('doneText').textContent='L\'espace de '+document.getElementById('raison').value.trim()+' est en essai gratuit pendant 30 jours. Voici les trois choses à faire pour être prêt demain matin.';
+    }
+    goStep(cur+1);
+  });
+  document.getElementById('back').onclick=function(){if(cur>1)goStep(cur-1);};
+
+  setPlan('equipe',true);renderCalc();goStep(1);
+  show(location.hash.slice(1)||'accueil');
+})();
+</script>
+
+<script>
+/* Mouvements de l'accueil : téléphones qui défilent, histoire au scroll, onglets du bureau, apparitions */
+(function(){
+  var calm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function stack(root){
+    var imgs=[].slice.call(root.querySelectorAll('.scr img')),cur=0;
+    return {n:imgs.length,get i(){return cur},show:function(i){if(i===cur)return;var fwd=i>cur;imgs.forEach(function(im,k){im.classList.remove('out');if(k===i){im.style.transition='none';im.style.transform=fwd?'':'translateX(-10%)';void im.offsetWidth;im.style.transition='';im.style.transform='';}});imgs[cur].classList.remove('on');if(fwd)imgs[cur].classList.add('out');imgs[i].classList.add('on');cur=i;}};
+  }
+  // Téléphone du haut : enchaîne les écrans tout seul
+  var hp=document.getElementById('heroPhone');
+  if(hp&&!calm){var h=stack(hp);setInterval(function(){if(!document.getElementById('v-accueil').hidden)h.show((h.i+1)%h.n)},2600);}
+  // Histoire de l'appli
+  var sp=document.getElementById('storyPhone'),chs=[].slice.call(document.querySelectorAll('#chapters li')),bar=document.getElementById('storyBar');
+  if(sp){var s=stack(sp),narrow=matchMedia('(max-width:900px)'),auto=null;
+    function pick(i,fromScroll){chs.forEach(function(li,k){li.classList.toggle('on',k===i)});s.show(i);bar.style.width=((i+1)/chs.length*100)+'%';
+      if(narrow.matches&&!fromScroll){var li=chs[i],box=li.parentNode;box.scrollTo({left:li.offsetLeft-box.offsetLeft-(box.clientWidth-li.clientWidth)/2,behavior:calm?'auto':'smooth'});}}
+    pick(0,true);
+    chs.forEach(function(li,k){li.querySelector('button').addEventListener('click',function(){stopAuto();pick(k)})});
+    if('IntersectionObserver' in window){
+      var io=new IntersectionObserver(function(es){if(narrow.matches)return;es.forEach(function(e){if(e.isIntersecting)pick(+e.target.dataset.i,true)})},{rootMargin:'-45% 0px -45% 0px'});
+      chs.forEach(function(li){io.observe(li)});
+      var vis=new IntersectionObserver(function(es){es.forEach(function(e){if(narrow.matches&&e.isIntersecting&&!calm&&!auto&&auto!==false)auto=setInterval(function(){pick((s.i+1)%chs.length)},3200);})},{threshold:.4});
+      vis.observe(sp);
+    }
+    function stopAuto(){if(auto)clearInterval(auto);auto=false}
+    document.getElementById('chapters').addEventListener('touchstart',stopAuto,{passive:true});
+  }
+  // Bureau : onglets, avec défilement automatique tant qu'on n'a pas cliqué
+  var tabs=[].slice.call(document.querySelectorAll('#bureau [role=tab]')),dImgs=[].slice.call(document.querySelectorAll('#deskScr img')),dBar=document.getElementById('deskBar'),dAuto=null,di=0;
+  function dsel(i){di=i;tabs.forEach(function(t,k){t.setAttribute('aria-selected',String(k===i))});dImgs.forEach(function(im,k){im.classList.toggle('on',k===i)});
+    var t=tabs[i];document.getElementById('webt').textContent=t.dataset.t;document.getElementById('webd').textContent=t.dataset.d;document.getElementById('webpanel').setAttribute('aria-labelledby',t.id);
+    dBar.style.width=((i+1)/tabs.length*100)+'%';}
+  tabs.forEach(function(t,k){t.addEventListener('click',function(){if(dAuto)clearInterval(dAuto);dAuto=false;dsel(k)})});
+  dsel(0);
+  if(!calm&&'IntersectionObserver' in window){new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting&&dAuto===null)dAuto=setInterval(function(){dsel((di+1)%tabs.length)},4500)})},{threshold:.5}).observe(document.getElementById('deskScr'));}
+  // Apparitions au défilement : seulement pour ce qui est sous la ligne de flottaison au chargement
+  if(!calm&&'IntersectionObserver' in window){
+    var rio=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.remove('pre');rio.unobserve(e.target)}})},{rootMargin:'0px 0px -8% 0px'});
+    document.querySelectorAll('.rv').forEach(function(el){if(el.getBoundingClientRect().top>innerHeight){el.classList.add('pre');rio.observe(el)}});
+  }
+})();
+</script>
+<script>
+(function(){var d=document.querySelector('#heroPhone .di');if(!d||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  setTimeout(function loop(){d.classList.add('live');setTimeout(function(){d.classList.remove('live');setTimeout(loop,7000)},3200)},2600);})();
+</script>
+

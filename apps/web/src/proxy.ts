@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { SUPABASE_ANON_KEY, SUPABASE_URL, supabaseConfigure } from './lib/supabase/config';
 
-const PAGES_PUBLIQUES = ['/connexion', '/configuration'];
+const PAGES_PUBLIQUES = ['/connexion', '/configuration', '/site.html'];
 
 // Rafraîchit la session à chaque visite et renvoie vers la connexion
 // quiconque n'est pas connecté.
@@ -27,6 +27,11 @@ export async function proxy(request: NextRequest) {
 
   // Vérifie le jeton sur place et le rafraîchit s'il expire.
   const { data } = await supabase.auth.getClaims();
+
+  // Visiteur non connecté sur l'adresse principale : le site vitrine (bouton « Accès plateforme »).
+  if (!data?.claims && chemin === '/') {
+    return NextResponse.rewrite(new URL('/site.html', request.url));
+  }
 
   if (!data?.claims && !PAGES_PUBLIQUES.some((p) => chemin.startsWith(p))) {
     const url = request.nextUrl.clone();
