@@ -1,0 +1,46 @@
+name: Vérifications
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  code:
+    name: Code (partagé, web, mobile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Tests du code partagé
+        run: pnpm --filter @chantio/shared test
+      - name: Vérification des types
+        run: pnpm -r typecheck
+      - name: Relecture automatique (web)
+        run: pnpm --filter web lint
+      - name: Construction du site
+        run: pnpm --filter web build
+
+  base:
+    name: Base de données (sécurité)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migrations et tests de cloisonnement
+        run: bash supabase/tests/run.sh
