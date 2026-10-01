@@ -45,6 +45,12 @@
           "cameraPermission": "Chantio utilise l'appareil photo pour les photos du chantier et pour ta photo de profil.",
           "photosPermission": "Chantio accède à tes photos pour les joindre à tes fiches et choisir ta photo de profil."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Chantio utilise ta position pour te proposer l'ordre des chantiers qui fait rouler le moins."
+        }
       ]
     ],
     "experiments": {

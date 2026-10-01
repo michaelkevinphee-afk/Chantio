@@ -150,3 +150,26 @@ body {
   .carte-lien:hover { transform: none; }
   a.degrade:hover, button.degrade:hover { translate: none; }
 }
+
+/* Carte du jour (Pilotage) : pastilles numérotées comme dans l'appli mobile. */
+.pastille-carte {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  border: 3px solid #fff;
+  background: var(--color-cobalt);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  box-shadow: 0 6px 14px -6px rgba(47, 84, 235, 0.7);
+}
+.pastille-carte.en-cours {
+  background: var(--color-menthe);
+}
+.bulle-carte {
+  color: var(--color-encre);
+  font-family: inherit;
+  line-height: 1.4;
+}

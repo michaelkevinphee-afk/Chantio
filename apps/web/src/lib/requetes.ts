@@ -4,12 +4,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type InterventionListe = Intervention & {
   client: Pick<Client, 'id' | 'nom' | 'telephone'> | null;
-  site: Pick<Site, 'adresse' | 'code_postal' | 'ville'> | null;
+  site: Pick<Site, 'adresse' | 'code_postal' | 'ville' | 'latitude' | 'longitude'> | null;
   affectations: { membre: Pick<Membre, 'id' | 'prenom' | 'nom' | 'photo_chemin'> | null }[];
 };
 
 export const SELECT_LISTE =
-  '*, client:clients(id, nom, telephone), site:sites(adresse, code_postal, ville), affectations(membre:membres(id, prenom, nom, photo_chemin))';
+  '*, client:clients(id, nom, telephone), site:sites(adresse, code_postal, ville, latitude, longitude), affectations(membre:membres(id, prenom, nom, photo_chemin))';
 
 export function techniciens(i: InterventionListe): string {
   const noms = i.affectations.map((a) => a.membre?.prenom).filter(Boolean);
