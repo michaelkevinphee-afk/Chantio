@@ -7,27 +7,29 @@ import { supabaseServeur } from './supabase/server';
 /** Utilisateur connecté, sa fiche membre et son entreprise. */
 export const contexte = cache(async () => {
   const supabase = await supabaseServeur();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect('/connexion');
+  // getClaims vérifie le jeton sur place (clés de signature du projet),
+  // sans aller-retour vers Supabase à chaque page.
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims?.sub) redirect('/connexion');
+  const user = { id: data.claims.sub, email: data.claims.email as string | undefined };
 
-  let { data: membre } = await supabase.from('membres').select('*').eq('user_id', user.id).maybeSingle<Membre>();
-  if (!membre) {
+  // Fiche membre et entreprise en une seule requête.
+  type MembreEtEntreprise = Membre & { entreprise: Entreprise | null };
+  const lireMembre = () =>
+    supabase
+      .from('membres')
+      .select('*, entreprise:entreprises(*)')
+      .eq('user_id', user.id)
+      .maybeSingle<MembreEtEntreprise>();
+
+  let { data: ligne } = await lireMembre();
+  if (!ligne) {
     // Invitation faite après la création du compte : on relie maintenant.
     const { data: rejoint } = await supabase.rpc('rejoindre_entreprise');
-    if (rejoint) {
-      ({ data: membre } = await supabase.from('membres').select('*').eq('user_id', user.id).maybeSingle<Membre>());
-    }
+    if (rejoint) ({ data: ligne } = await lireMembre());
   }
-  if (!membre) redirect('/bienvenue');
-
-  const { data: entreprise } = await supabase
-    .from('entreprises')
-    .select('*')
-    .eq('id', membre.entreprise_id)
-    .single<Entreprise>();
-  if (!entreprise) redirect('/bienvenue');
+  if (!ligne?.entreprise) redirect('/bienvenue');
+  const { entreprise, ...membre } = ligne;
 
   return { supabase, user, membre, entreprise };
 });
