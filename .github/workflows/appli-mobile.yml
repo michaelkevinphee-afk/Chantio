@@ -1,0 +1,58 @@
+name: Appli mobile (Expo Go)
+
+# Publie l'appli mobile sur Expo à chaque changement de main.
+# Elle s'ouvre ensuite dans l'appli Expo Go sur iPhone ou Android, sans Mac
+# ni compte Apple. Il faut seulement le secret EXPO_TOKEN dans GitHub
+# (Settings → Secrets and variables → Actions).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/shared/**'
+      - '.github/workflows/appli-mobile.yml'
+
+jobs:
+  publier:
+    name: Publier sur Expo Go
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # Adresse et clé publique Supabase : elles sont faites pour être dans l'appli.
+      EXPO_PUBLIC_SUPABASE_URL: https://dnpyhefhtdxnoobqrgky.supabase.co
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_f3YiX6_5OB2WWCz4MflAPQ_qCZQ8-8C
+    steps:
+      - name: Vérifier le secret EXPO_TOKEN
+        id: secret
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::warning::Le secret EXPO_TOKEN manque dans GitHub (Settings → Secrets and variables → Actions) : rien n'est publié."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.secret.outputs.ok == 'true'
+      - uses: pnpm/action-setup@v4
+        if: steps.secret.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.secret.outputs.ok == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: steps.secret.outputs.ok == 'true'
+      - name: Lier le projet Expo
+        if: steps.secret.outputs.ok == 'true'
+        working-directory: apps/mobile
+        run: |
+          npx --yes eas-cli@latest init --non-interactive --force
+          node scripts/lier-projet-expo.mjs
+      - name: Publier la mise à jour
+        if: steps.secret.outputs.ok == 'true'
+        working-directory: apps/mobile
+        env:
+          MESSAGE: ${{ github.event.head_commit.message || 'Publication manuelle' }}
+        run: npx --yes eas-cli@latest update --branch main --message "$MESSAGE" --non-interactive
