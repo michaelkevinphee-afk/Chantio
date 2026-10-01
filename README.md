@@ -15,7 +15,7 @@ la reçoit, la valide et la passe en facturation.
 
 ## Ce que fait la V1 aujourd'hui
 
-1. **Connexion sans mot de passe** : on saisit son e-mail, on reçoit un code à 6 chiffres.
+1. **Connexion sans mot de passe** : on saisit son e-mail, on reçoit un code (6 à 8 chiffres).
 2. **Premier lancement** : l'artisan crée son entreprise et en devient le dirigeant (mode solo possible).
 3. **Équipe** : le dirigeant ajoute ses techniciens par e-mail ; leur compte est relié à leur première connexion.
 4. **Interventions** : le bureau crée une intervention (client, adresse, motif, date, technicien).
@@ -52,7 +52,7 @@ Cycle d'une intervention :
 1. **Supabase** : créer un projet (région Europe, par exemple Paris ou Francfort).
    - Envoyer la base : `npx supabase link --project-ref <ref>` puis `npx supabase db push`.
    - Dans *Authentication → Email Templates*, modèle « Magic Link » et « Confirm signup » :
-     coller le contenu de `supabase/templates/code.html` (il affiche le code à 6 chiffres).
+     coller le contenu de `supabase/templates/code.html` (il affiche le code reçu).
    - Noter l'adresse du projet et la clé `anon` (*Project Settings → API*).
 2. **Vercel** : importer le dépôt GitHub, dossier racine `apps/web`, et renseigner
    `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY`.

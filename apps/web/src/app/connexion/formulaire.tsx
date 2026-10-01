@@ -5,7 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Bouton } from '@/components/ui';
 import { supabaseNavigateur } from '@/lib/supabase/client';
 
-// Connexion sans mot de passe : un code à 6 chiffres arrive par e-mail.
+// Connexion sans mot de passe : un code arrive par e-mail (6 à 8 chiffres
+// selon le réglage « Email OTP Length » de Supabase).
+function messageEnvoi(m: string): string {
+  if (/rate|too many|security purposes/i.test(m)) return 'Trop de demandes. Attendez une minute avant de redemander un code.';
+  if (/invalid.*email|email.*invalid/i.test(m)) return 'Adresse e-mail invalide.';
+  return "Impossible d'envoyer le code pour le moment. Réessayez dans un instant.";
+}
+
 export default function FormulaireConnexion() {
   const router = useRouter();
   const [etape, setEtape] = useState<'email' | 'code'>('email');
@@ -23,7 +30,7 @@ export default function FormulaireConnexion() {
       options: { shouldCreateUser: true },
     });
     setEnCours(false);
-    if (error) return setErreur("Impossible d'envoyer le code. Vérifiez l'adresse e-mail.");
+    if (error) return setErreur(messageEnvoi(error.message));
     setEtape('code');
   }
 
@@ -47,13 +54,13 @@ export default function FormulaireConnexion() {
       <form onSubmit={verifierCode} className="mt-10">
         <h1 className="font-titre text-4xl font-extrabold uppercase text-marine">Votre code</h1>
         <p className="mt-2 text-gris">
-          Un code à 6 chiffres vient d’être envoyé à <b className="text-encre">{email}</b>.
+          Un code vient d’être envoyé à <b className="text-encre">{email}</b>.
         </p>
         <input
           className="champ mt-6 text-center text-3xl tracking-[0.5em]"
           inputMode="numeric"
           autoComplete="one-time-code"
-          maxLength={6}
+          maxLength={8}
           autoFocus
           required
           value={code}

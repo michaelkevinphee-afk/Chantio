@@ -67,7 +67,7 @@ export default function Connexion() {
         <Titre>{etape === 'email' ? 'Connexion' : 'Ton code'}</Titre>
         <Texte variante="doux" style={{ fontSize: 18 }}>
           {etape === 'email'
-            ? "Entre ton e-mail. On t'envoie un code à 6 chiffres, pas besoin de mot de passe."
+            ? "Entre ton e-mail. On t'envoie un code, pas besoin de mot de passe."
             : `On a envoyé un code à ${email.trim()}. Il arrive en général en moins d'une minute.`}
         </Texte>
       </View>
@@ -95,7 +95,6 @@ export default function Connexion() {
             onChangeText={(s) => {
               const chiffres = s.replace(/\D/g, '').slice(0, 8);
               setCode(chiffres);
-              if (chiffres.length === 6 && s.length <= 6) valider(chiffres);
             }}
             placeholder="••••••"
             placeholderTextColor="#B9BDC6"
