@@ -1,4 +1,4 @@
-import { ajouterJours, aujourdhui, type FicheAEnvoyer, type Membre } from '@chantio/shared';
+import { ajouterJours, aujourdhui, cheminPhotoProfil, type FicheAEnvoyer, type Membre } from '@chantio/shared';
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
 
@@ -90,5 +90,28 @@ export const sourceSupabase: SourceDonnees = {
   async envoyerFiche(fiche: FicheAEnvoyer) {
     const { error } = await supabase().rpc('envoyer_fiche', { p_fiche: fiche });
     if (error) throw enErreur(error);
+  },
+
+  async changerPhotoProfil(membre, uriLocale) {
+    // Nouveau fichier à chaque fois (pas d'écrasement), puis le membre pointe dessus.
+    const chemin = cheminPhotoProfil(membre.entreprise_id, membre.id);
+    const corps = await lireFichier(uriLocale);
+    const sb = supabase();
+    const { error } = await sb.storage.from('profils').upload(chemin, corps, { contentType: 'image/jpeg', upsert: false });
+    if (error) throw enErreur(error);
+    const { error: e2 } = await sb.rpc('definir_photo', { p_chemin: chemin });
+    if (e2) throw enErreur(e2);
+    return chemin;
+  },
+
+  async retirerPhotoProfil() {
+    const { error } = await supabase().rpc('definir_photo', { p_chemin: null });
+    if (error) throw enErreur(error);
+  },
+
+  async urlPhotoProfil(chemin) {
+    const { data, error } = await supabase().storage.from('profils').createSignedUrl(chemin, 60 * 60 * 24);
+    if (error) return null;
+    return data.signedUrl;
   },
 };

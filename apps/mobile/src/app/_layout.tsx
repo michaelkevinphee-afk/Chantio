@@ -69,6 +69,7 @@ function Navigation() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.beton }, animation: 'slide_from_right' }}>
       <Stack.Protected guard={etat === 'pret'}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="moi" />
         <Stack.Screen name="intervention/[id]" />
         <Stack.Screen name="fiche/[id]" options={{ gestureEnabled: false }} />
         <Stack.Screen name="envoyee" options={{ gestureEnabled: false, animation: 'fade' }} />

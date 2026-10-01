@@ -15,6 +15,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { Apparition, Pop, Segment } from '@/components/Anime';
 import { PastilleHorsLigne } from '@/components/Bandeau';
 import { Bouton, BoutonRond } from '@/components/Bouton';
 import { Carte } from '@/components/Carte';
@@ -22,9 +23,8 @@ import { Champ } from '@/components/Champ';
 import { Ecran } from '@/components/Ecran';
 import { Icone, type NomIcone } from '@/components/Icone';
 import { PhotoGrille } from '@/components/PhotoGrille';
-import { Puce } from '@/components/Puce';
 import { SignaturePad } from '@/components/SignaturePad';
-import { Stepper } from '@/components/Stepper';
+import { Quantite, Stepper, Vider } from '@/components/Stepper';
 import { Texte, Titre } from '@/components/Texte';
 import { GrilleTuiles, Tuile } from '@/components/Tuile';
 import {
@@ -161,7 +161,7 @@ export default function FicheGuidee() {
       const resultat = await s.envoyerFiche(b);
       router.replace({
         pathname: '/envoyee',
-        params: { etat: resultat, client: intervention?.client?.nom ?? '', resultat: b.resultat },
+        params: { etat: resultat, client: intervention?.client?.nom ?? '', resultat: b.resultat, id },
       });
     } catch (e) {
       fini.current = false;
@@ -175,6 +175,8 @@ export default function FicheGuidee() {
   const manquesActuels = manques.length && s.profil ? verifierFiche(versFiche(b, s.profil.entreprise.id)) : [];
   const mesuresVides = !Object.values(b.mesures).some((v) => v != null);
   const derniere = etape === ETAPES.length - 1;
+  const nbPieces = b.pieces.reduce((t, p) => t + p.quantite, 0);
+  const etatCo = etatMesure('co', b.mesures.co);
 
   const barre = (
     <>
@@ -193,18 +195,18 @@ export default function FicheGuidee() {
   return (
     <Ecran barre={barre} defilement={!signe} scrollRef={defilement}>
       <View style={styles.entete}>
-        <BoutonRond icone="x" label="Fermer la fiche (elle reste enregistrée)" onPress={() => router.back()} />
+        <BoutonRond rond icone="x" label="Fermer la fiche (elle reste enregistrée)" onPress={() => router.back()} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.petit} numberOfLines={1}>
-            Étape {etape + 1} sur {ETAPES.length} · {intervention?.client?.nom ?? ''}
+            Étape {etape + 1} sur {ETAPES.length}
           </Text>
-          <Text style={styles.nomEtape}>{ETAPES[etape]}</Text>
+          <Text style={styles.nomEtape} numberOfLines={1}>{ETAPES[etape]}</Text>
         </View>
         {s.horsLigne && <PastilleHorsLigne />}
       </View>
       <View style={styles.progression}>
         {ETAPES.map((e, i) => (
-          <View key={e} style={[styles.segment, i <= etape && { backgroundColor: c.jaune }]} />
+          <Segment key={e} rempli={i <= etape} fond="#DAD7CD" couleur={c.jaune} style={styles.segment} />
         ))}
       </View>
 
@@ -216,7 +218,9 @@ export default function FicheGuidee() {
 
       {etape === 0 && (
         <>
-          <Titre>Tu as trouvé quoi ?</Titre>
+          <Apparition>
+            <Titre>Tu as trouvé quoi ?</Titre>
+          </Apparition>
           <GrilleTuiles>
             {CONSTATS.map((k) => (
               <Tuile
@@ -230,6 +234,7 @@ export default function FicheGuidee() {
               />
             ))}
           </GrilleTuiles>
+          <Apparition rang={5} style={{ gap: 14 }}>
           <Champ
             label="Précisions"
             indice="(facultatif)"
@@ -245,40 +250,41 @@ export default function FicheGuidee() {
             onRetirer={retirerPhoto}
             enCours={photosEnCours === 'avant' ? 1 : 0}
           />
+          </Apparition>
         </>
       )}
 
       {etape === 1 && (
         <>
-          <Titre>Tes mesures</Titre>
-          <Texte variante="doux" style={{ fontSize: 18 }}>Facultatif. Laisse vide s'il n'y a rien à mesurer.</Texte>
-          {MESURES.map((d) => {
+          <Apparition style={{ gap: 4 }}>
+            <Titre>Mesures</Titre>
+            <Texte variante="doux" style={{ fontSize: 17 }}>Facultatif. Laisse vide s'il n'y a rien à mesurer.</Texte>
+          </Apparition>
+          {MESURES.map((d, n) => {
             const v = b.mesures[d.code];
             const e = etatMesure(d.code, v);
             return (
-              <Carte key={d.code} style={{ padding: 16 }}>
-                <View style={styles.ligneMesure}>
-                  <Texte variante="fort" style={{ flex: 1 }}>{d.libelle}</Texte>
-                  {e === 'ok' && <Puce texte="Dans la plage" ton="vert" icone="check" />}
-                  {e === 'alerte' && <Puce texte="Alerte" ton="rouge" icone="alerte" />}
-                </View>
-                <Stepper
-                  label={d.libelle}
-                  valeur={v}
-                  pas={d.pas}
-                  unite={d.unite}
-                  depart={DEPART_MESURE[d.code] ?? 0}
-                  onChange={(n) => maj((x) => ({ mesures: { ...x.mesures, [d.code]: n } }))}
-                />
-                <View style={styles.ligneMesure}>
-                  <Texte variante="doux" style={{ fontSize: 15, flex: 1 }}>{aideMesure(d)}</Texte>
-                  {v != null && (
-                    <Pressable hitSlop={8} onPress={() => maj((x) => ({ mesures: { ...x.mesures, [d.code]: null } }))}>
-                      <Texte variante="fort" style={{ fontSize: 15, textDecorationLine: 'underline' }}>Vider</Texte>
-                    </Pressable>
-                  )}
-                </View>
-              </Carte>
+              <Apparition key={d.code} rang={n + 1}>
+                <Carte style={styles.mesure}>
+                  <View style={styles.ligneMesure}>
+                    <Texte variante="fort" style={{ flex: 1 }}>{d.libelle}</Texte>
+                    {e === 'ok' && <Etiquette texte="Conforme" icone="check" fond="#DCFAE6" couleur="#067647" />}
+                    {e === 'alerte' && <Etiquette texte="Alerte" icone="alerte" fond={c.rougeDoux} couleur={c.rouge} />}
+                  </View>
+                  <Stepper
+                    label={d.libelle}
+                    valeur={v}
+                    pas={d.pas}
+                    unite={d.unite}
+                    depart={DEPART_MESURE[d.code] ?? 0}
+                    onChange={(x) => maj((y) => ({ mesures: { ...y.mesures, [d.code]: x } }))}
+                  />
+                  <View style={styles.ligneMesure}>
+                    <Texte variante="doux" style={{ fontSize: 15, flex: 1 }}>{aideMesure(d)}</Texte>
+                    {v != null && <Vider onPress={() => maj((x) => ({ mesures: { ...x.mesures, [d.code]: null } }))} />}
+                  </View>
+                </Carte>
+              </Apparition>
             );
           })}
         </>
@@ -286,31 +292,31 @@ export default function FicheGuidee() {
 
       {etape === 2 && (
         <>
-          <Titre>Pièces posées</Titre>
+          <Apparition>
+            <Titre>Pièces posées</Titre>
+          </Apparition>
           {!b.pieces.length && (
-            <Texte variante="doux" style={{ fontSize: 18 }}>
-              Aucune pièce pour l'instant. Touche une pièce courante ou écris son nom.
-            </Texte>
+            <Apparition rang={1}>
+              <Texte variante="doux" style={{ fontSize: 17 }}>
+                Aucune pièce pour l'instant. Touche une pièce courante ou écris son nom.
+              </Texte>
+            </Apparition>
           )}
           {b.pieces.map((p, n) => (
-            <Carte key={`${p.designation}-${n}`} style={{ padding: 14, gap: 8 }}>
-              <Texte variante="fort">{p.designation}</Texte>
-              <Stepper
-                petit
-                label={`Quantité de ${p.designation}`}
-                valeur={p.quantite}
-                min={0}
-                depart={1}
-                onChange={(q) =>
-                  maj((x) => ({
-                    pieces:
-                      q === 0
-                        ? x.pieces.filter((_, k) => k !== n)
-                        : x.pieces.map((y, k) => (k === n ? { ...y, quantite: q ?? 1 } : y)),
-                  }))
-                }
-              />
-            </Carte>
+            <Apparition key={`${p.designation}-${n}`} rang={n + 1}>
+              <View style={styles.piece}>
+                <Texte variante="fort" style={{ flex: 1 }}>{p.designation}</Texte>
+                <Quantite
+                  label={`Quantité de ${p.designation}`}
+                  valeur={p.quantite}
+                  onChange={(q) =>
+                    maj((x) => ({
+                      pieces: q === 0 ? x.pieces.filter((_, k) => k !== n) : x.pieces.map((y, k) => (k === n ? { ...y, quantite: q } : y)),
+                    }))
+                  }
+                />
+              </View>
+            </Apparition>
           ))}
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-end' }}>
             <View style={{ flex: 1 }}>
@@ -364,12 +370,20 @@ export default function FicheGuidee() {
 
       {etape === 3 && (
         <>
-          <Titre>C'est terminé ?</Titre>
+          <Apparition>
+            <Titre>C'est terminé ?</Titre>
+          </Apparition>
           <GrilleTuiles>
             {RESULTATS.map((r) => (
-              <Tuile key={r} texte={LIBELLE_RESULTAT[r]} icone={ICONE_RESULTAT[r]} choisie={b.resultat === r} onPress={() => maj(() => ({ resultat: r }))} />
+              <Tuile key={r} texte={r === 'termine' ? 'Oui, terminé' : LIBELLE_RESULTAT[r]} icone={ICONE_RESULTAT[r]} choisie={b.resultat === r} onPress={() => maj(() => ({ resultat: r }))} />
             ))}
           </GrilleTuiles>
+          <Apparition rang={3} style={styles.puces}>
+            {b.dureeMinutes != null && <PuceBlanche icone="horloge" texte={duree(b.dureeMinutes)} />}
+            {nbPieces > 0 && <PuceBlanche icone="boite" texte={`${nbPieces} pièce${nbPieces > 1 ? 's' : ''}`} />}
+            {etatCo === 'ok' && <PuceBlanche icone="check" texte="CO conforme" />}
+            {etatCo === 'alerte' && <PuceBlanche icone="alerte" texte="CO en alerte" couleur={c.rouge} />}
+          </Apparition>
           {b.resultat !== 'termine' && (
             <Champ
               label="Ce qu'il reste à faire"
@@ -391,7 +405,6 @@ export default function FicheGuidee() {
             <View style={styles.ligneMesure}>
               <Icone nom="horloge" taille={22} couleur={c.marine} />
               <Texte variante="fort" style={{ flex: 1 }}>Temps passé</Texte>
-              <Texte variante="doux">{duree(b.dureeMinutes)}</Texte>
             </View>
             <Stepper label="Temps passé en minutes" valeur={b.dureeMinutes} pas={5} min={0} unite="min" depart={5} onChange={(n) => maj(() => ({ dureeMinutes: n }))} />
           </Carte>
@@ -418,8 +431,8 @@ export default function FicheGuidee() {
             ) : (
               <>
                 <View style={styles.ligneMesure}>
-                  <Texte variante="fort" style={{ flex: 1 }}>
-                    Signature du client <Texte variante="doux">(facultatif)</Texte>
+                  <Texte variante="fort" style={{ flex: 1, fontSize: 16 }}>
+                    Signature {intervention?.client?.nom ? `de ${intervention.client.nom}` : 'du client'}
                   </Texte>
                   <Lien
                     texte="Effacer"
@@ -465,6 +478,26 @@ export default function FicheGuidee() {
   );
 }
 
+/** Étiquette « Conforme » / « Alerte » à côté d'une mesure. */
+function Etiquette({ texte, icone, fond, couleur }: { texte: string; icone: NomIcone; fond: string; couleur: string }) {
+  return (
+    <Pop style={[styles.etiquette, { backgroundColor: fond }]}>
+      <Icone nom={icone} taille={15} epaisseur={3} couleur={couleur} />
+      <Text style={{ fontFamily: polices.texte700, fontSize: 14, color: couleur }}>{texte}</Text>
+    </Pop>
+  );
+}
+
+/** Puce blanche du résumé (durée, pièces, CO). */
+function PuceBlanche({ icone, texte, couleur = c.marine }: { icone: NomIcone; texte: string; couleur?: string }) {
+  return (
+    <View style={styles.puceBlanche}>
+      <Icone nom={icone} taille={17} epaisseur={2.6} couleur={couleur} />
+      <Text style={{ fontFamily: polices.texte700, fontSize: 15, color: couleur }}>{texte}</Text>
+    </View>
+  );
+}
+
 function Lien({ texte, onPress }: { texte: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} hitSlop={10} style={{ paddingVertical: 6 }}>
@@ -475,9 +508,14 @@ function Lien({ texte, onPress }: { texte: string; onPress: () => void }) {
 
 const styles = StyleSheet.create({
   entete: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  petit: { fontFamily: polices.texte600, fontSize: 15, color: c.texteDoux },
-  nomEtape: { fontFamily: polices.titre, fontSize: 24, textTransform: 'uppercase', color: c.marine },
-  progression: { flexDirection: 'row', gap: 6 },
-  segment: { flex: 1, height: 6, borderRadius: 3, backgroundColor: '#DEDBD2' },
+  petit: { fontFamily: polices.texte600, fontSize: 15, lineHeight: 18, color: c.texteDoux },
+  nomEtape: { fontFamily: polices.titre, fontSize: 22, lineHeight: 25, textTransform: 'uppercase', color: c.marine },
+  progression: { flexDirection: 'row', gap: 6, marginBottom: 4 },
+  segment: { flex: 1, height: 7, borderRadius: 4 },
   ligneMesure: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  mesure: { borderRadius: 24, paddingVertical: 14, paddingHorizontal: 16, gap: 6 },
+  etiquette: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 9, paddingHorizontal: 9, paddingVertical: 5 },
+  piece: { backgroundColor: c.blanc, borderRadius: 22, paddingVertical: 14, paddingLeft: 16, paddingRight: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  puces: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  puceBlanche: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.blanc, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
 });

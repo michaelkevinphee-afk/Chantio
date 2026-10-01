@@ -3,16 +3,20 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { Apparition, Appui } from '@/components/Anime';
+import { Avatar } from '@/components/Avatar';
 import { Bandeau } from '@/components/Bandeau';
 import { BandeauEnvoi } from '@/components/BandeauEnvoi';
 import { Bouton, BoutonRond } from '@/components/Bouton';
 import { Carte } from '@/components/Carte';
 import { Ecran } from '@/components/Ecran';
+import { Icone } from '@/components/Icone';
 import { LigneIntervention, estTerminee } from '@/components/LigneIntervention';
 import { PropulsePar } from '@/components/Logo';
 import { BadgeUrgence } from '@/components/Puce';
 import { Texte, Titre } from '@/components/Texte';
 import type { InterventionVue } from '@/lib/donnees';
+import { delai, heureCourte, minutesAvant } from '@/lib/horaires';
 import { appeler } from '@/lib/liens';
 import { useSession } from '@/lib/session';
 import { c, polices } from '@/lib/theme';
@@ -49,27 +53,30 @@ export default function MaJournee() {
     router.push({ pathname: '/fiche/[id]', params: { id: i.id } });
   };
 
-  const resume = duJour.length
-    ? `${duJour.length} intervention${duJour.length > 1 ? 's' : ''} aujourd'hui, ${faites.length} terminée${faites.length > 1 ? 's' : ''}.`
-    : equipe
-      ? "Rien de prévu pour l'équipe aujourd'hui."
-      : "Rien de prévu pour toi aujourd'hui.";
+  const titre = duJour.length ? `${duJour.length} chantier${duJour.length > 1 ? 's' : ''}` : 'Journée libre';
+  const avant = suivante ? minutesAvant(suivante.date_prevue, suivante.heure_prevue) : null;
+  const pilule = suivante?.statut === 'en_cours' ? 'En cours' : avant == null || avant <= 90 ? 'Maintenant' : 'À suivre';
+  const lieu = suivante ? [suivante.client?.nom, adresseCourte(suivante)].filter(Boolean).join(' · ') : '';
+  let rang = 0;
 
   return (
     <Ecran refreshControl={<RefreshControl refreshing={s.chargementListe} onRefresh={s.rafraichir} tintColor={c.marine} />}>
-      <View style={styles.entete}>
-        <Text style={styles.marque} numberOfLines={1}>{profil?.entreprise.nom}</Text>
-      </View>
-      <View style={{ gap: 4 }}>
-        <Text style={styles.date}>{capitaliser(dateLongue(t))}</Text>
-        <Titre>Salut {profil?.membre.prenom}</Titre>
-        <Texte variante="doux" style={{ fontSize: 18 }}>{resume}</Texte>
-      </View>
+      <Apparition rang={rang++} style={styles.entete}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles.date} numberOfLines={1}>{capitaliser(dateLongue(t))}</Text>
+          <Titre numberOfLines={1} adjustsFontSizeToFit style={{ marginTop: 2 }}>{titre}</Titre>
+        </View>
+        <Appui accessibilityRole="button" accessibilityLabel="Mon profil" onPress={() => router.push('/moi')} hitSlop={8} echelle={0.92}>
+          {profil && <Avatar uri={s.photo} prenom={profil.membre.prenom} nom={profil.membre.nom} taille={60} anneau={3} />}
+        </Appui>
+      </Apparition>
 
       {s.source?.mode === 'demo' && (
-        <Pressable onPress={s.quitterDemo}>
-          <Bandeau jaune texte="Mode démo : rien n'est enregistré. Touche ici pour quitter." />
-        </Pressable>
+        <Apparition rang={rang++}>
+          <Pressable onPress={s.quitterDemo}>
+            <Bandeau jaune texte="Mode démo : rien n'est enregistré. Touche ici pour quitter." />
+          </Pressable>
+        </Apparition>
       )}
       <BandeauEnvoi />
       {s.erreurListe && (
@@ -77,7 +84,7 @@ export default function MaJournee() {
       )}
 
       {bureau && (
-        <View style={styles.bascule}>
+        <Apparition rang={rang++} style={styles.bascule}>
           {[
             { v: false, l: 'Les miennes' },
             { v: true, l: "Toute l'équipe" },
@@ -92,20 +99,27 @@ export default function MaJournee() {
               <Text style={[styles.optionTexte, equipe === o.v && { color: c.blanc }]}>{o.l}</Text>
             </Pressable>
           ))}
-        </View>
+        </Apparition>
       )}
 
       {suivante ? (
-        <Pressable onPress={() => ouvrir(suivante)}>
-          <Carte sombre style={{ borderRadius: 30, padding: 20, gap: 4 }}>
-            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-              <Text style={styles.pilule}>{suivante.statut === 'en_cours' ? 'En cours' : 'À suivre'}</Text>
-              <BadgeUrgence urgence={suivante.urgence} />
-              <Text style={styles.motifSuivante} numberOfLines={1}>{suivante.motif}</Text>
+        <Apparition rang={rang++} key={suivante.id}>
+          <Appui accessibilityRole="button" onPress={() => ouvrir(suivante)} echelle={0.985} style={styles.carteSuivante}>
+            <View style={styles.ligneHaut}>
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <Text style={styles.pilule}>{pilule}</Text>
+                <BadgeUrgence urgence={suivante.urgence} />
+              </View>
+              {avant != null && avant > 0 && suivante.statut !== 'en_cours' ? (
+                <View style={styles.eta}>
+                  <Icone nom="horloge" taille={18} couleur={c.marineSoft} />
+                  <Text style={styles.etaTexte}>{delai(avant)}</Text>
+                </View>
+              ) : null}
             </View>
-            <Text style={styles.grandeHeure}>{suivante.heure_prevue?.slice(0, 5) ?? '--:--'}</Text>
-            <Text style={styles.clientSuivante}>{suivante.client?.nom}</Text>
-            <Text style={styles.adresseSuivante}>{adresseComplete(suivante.site)}</Text>
+            <Text style={styles.grandeHeure}>{heureCourte(suivante.heure_prevue)}</Text>
+            <Text style={styles.motifSuivante}>{suivante.motif}</Text>
+            {lieu ? <Text style={styles.adresseSuivante}>{lieu}</Text> : null}
             {equipe && <Text style={styles.adresseSuivante}>{suivante.intervenants.map((m) => m.prenom).join(', ') || 'Pas attribuée'}</Text>}
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
               <Bouton
@@ -118,67 +132,80 @@ export default function MaJournee() {
                 <BoutonRond grand icone="telephone" label={`Appeler ${suivante.client.telephone}`} onPress={() => appeler(suivante.client!.telephone!)} fond="rgba(255,255,255,0.12)" couleur={c.blanc} />
               ) : null}
             </View>
-          </Carte>
-        </Pressable>
+          </Appui>
+        </Apparition>
       ) : (
-        <Carte style={{ padding: 22 }}>
-          <Titre taille={26}>{duJour.length ? 'Tout est fait' : 'Journée libre'}</Titre>
-          <Texte variante="doux">
-            {duJour.length
-              ? 'Toutes les fiches du jour sont envoyées.'
-              : "Les interventions que le bureau te donne pour aujourd'hui s'afficheront ici."}
-          </Texte>
-        </Carte>
+        <Apparition rang={rang++}>
+          <Carte style={{ padding: 22 }}>
+            <Titre taille={26}>{duJour.length ? 'Tout est fait' : 'Rien de prévu'}</Titre>
+            <Texte variante="doux">
+              {duJour.length
+                ? 'Toutes les fiches du jour sont envoyées.'
+                : equipe
+                  ? "Rien de prévu pour l'équipe aujourd'hui."
+                  : "Les interventions que le bureau te donne pour aujourd'hui s'afficheront ici."}
+            </Texte>
+          </Carte>
+        </Apparition>
       )}
 
-      <Section titre="Ensuite" liste={ensuite} ouvrir={ouvrir} equipe={equipe} />
-      <Section titre="Terminées" liste={faites} ouvrir={ouvrir} equipe={equipe} />
-      <Section titre="Demain" liste={deDemain} ouvrir={ouvrir} equipe={equipe} />
-      <Section titre="Plus tard" liste={plusTard} ouvrir={ouvrir} equipe={equipe} avecJour />
+      <Section titre="Ensuite" liste={ensuite} ouvrir={ouvrir} equipe={equipe} rang={rang} />
+      <Section titre="Terminées" liste={faites} ouvrir={ouvrir} equipe={equipe} rang={rang + ensuite.length + 1} />
+      <Section titre="Demain" liste={deDemain} ouvrir={ouvrir} equipe={equipe} rang={rang + ensuite.length + faites.length + 2} />
+      <Section titre="Plus tard" liste={plusTard} ouvrir={ouvrir} equipe={equipe} avecJour rang={8} />
 
-      <View style={{ marginTop: 24, gap: 14, alignItems: 'center' }}>
-        <Pressable onPress={s.deconnecter} hitSlop={10} disabled={s.enAttente.length > 0}>
-          <Texte variante="doux" style={{ textDecorationLine: 'underline', opacity: s.enAttente.length ? 0.4 : 1 }}>
-            {s.source?.mode === 'demo' ? 'Quitter le mode démo' : 'Se déconnecter'}
-          </Texte>
-        </Pressable>
+      <View style={{ marginTop: 24, alignItems: 'center' }}>
         <PropulsePar />
       </View>
     </Ecran>
   );
 }
 
-function Section({ titre, liste, ouvrir, equipe, avecJour }: {
+/** « 12 rue des Tilleuls, Paris » : sans le code postal, pour tenir sur la carte. */
+function adresseCourte(i: InterventionVue): string {
+  if (!i.site) return '';
+  return [i.site.adresse, i.site.ville].filter(Boolean).join(', ') || adresseComplete(i.site);
+}
+
+function Section({ titre, liste, ouvrir, equipe, avecJour, rang }: {
   titre: string;
   liste: InterventionVue[];
   ouvrir: (i: InterventionVue) => void;
   equipe: boolean;
   avecJour?: boolean;
+  rang: number;
 }) {
   if (!liste.length) return null;
   return (
     <View style={{ gap: 10 }}>
-      <Texte variante="section" style={{ marginTop: 10 }}>{titre}</Texte>
-      {liste.map((i) => (
-        <LigneIntervention key={i.id} intervention={i} onPress={() => ouvrir(i)} avecJour={avecJour} avecTechniciens={equipe} />
+      <Apparition rang={rang}>
+        <Texte variante="section" style={{ marginTop: 6, fontSize: 15 }}>{titre}</Texte>
+      </Apparition>
+      {liste.map((i, n) => (
+        <Apparition key={i.id} rang={rang + n + 1}>
+          <LigneIntervention intervention={i} onPress={() => ouvrir(i)} avecJour={avecJour} avecTechniciens={equipe} />
+        </Apparition>
       ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
-  marque: { fontFamily: polices.titre, fontSize: 24, letterSpacing: 0.8, textTransform: 'uppercase', color: c.marine, flexShrink: 1 },
+  entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 6 },
   date: { fontFamily: polices.texte600, fontSize: 18, color: c.texteDoux },
+  carteSuivante: { backgroundColor: c.marine, borderRadius: 30, padding: 20, gap: 4 },
+  ligneHaut: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  eta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  etaTexte: { fontFamily: polices.texte600, fontSize: 16, color: c.marineSoft },
   bascule: { flexDirection: 'row', backgroundColor: c.blanc, borderRadius: 18, padding: 4, gap: 4 },
   option: { flex: 1, minHeight: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   optionOn: { backgroundColor: c.marine },
   optionTexte: { fontFamily: polices.texte700, fontSize: 17, color: c.marine },
   pilule: {
     fontFamily: polices.texte700,
-    fontSize: 13,
+    fontSize: 14,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.85,
     backgroundColor: c.jaune,
     color: c.marine,
     paddingHorizontal: 10,
@@ -186,8 +213,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
   },
-  motifSuivante: { flex: 1, fontFamily: polices.texte600, fontSize: 16, color: c.marineSoft, textAlign: 'right' },
-  grandeHeure: { fontFamily: polices.titre, fontSize: 64, lineHeight: 68, color: c.blanc, marginTop: 6 },
-  clientSuivante: { fontFamily: polices.texte700, fontSize: 24, color: c.blanc },
-  adresseSuivante: { fontFamily: polices.texte, fontSize: 17, color: c.marineSoft },
+  grandeHeure: { fontFamily: polices.titre, fontSize: 64, lineHeight: 66, color: c.blanc, marginTop: 6 },
+  motifSuivante: { fontFamily: polices.texte700, fontSize: 24, lineHeight: 28, color: c.blanc },
+  adresseSuivante: { fontFamily: polices.texte, fontSize: 17, lineHeight: 21, color: c.marineSoft },
 });

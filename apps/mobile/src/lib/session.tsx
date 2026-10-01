@@ -27,6 +27,10 @@ interface Session {
   majLe: string | null;
   horsLigne: boolean;
   enAttente: Operation[];
+  /** Photo de profil affichable (lien signé ou fichier local), sinon null. */
+  photo: string | null;
+  changerPhoto(uriLocale: string): Promise<void>;
+  retirerPhoto(): Promise<void>;
   activerDemo(): void;
   quitterDemo(): void;
   envoyerCode(email: string): Promise<void>;
@@ -79,6 +83,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [majLe, setMajLe] = useState<string | null>(null);
   const [horsLigne, setHorsLigne] = useState(false);
   const [enAttente, setEnAttente] = useState<Operation[]>([]);
+  const [photo, setPhoto] = useState<{ chemin: string; url: string | null } | null>(null);
 
   const source: SourceDonnees | null = demo ? sourceDemo : configurationOk ? sourceSupabase : null;
   const sourceRef = useRef(source);
@@ -151,6 +156,30 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [vider]);
 
   const membreId = profil?.membre.id;
+  const cheminPhoto = profil?.membre.photo_chemin ?? null;
+
+  // Lien d'affichage de la photo de profil (signé, valable 24 h).
+  useEffect(() => {
+    const s = sourceRef.current;
+    if (!s || !cheminPhoto) return;
+    if (photo?.chemin === cheminPhoto && photo.url) return;
+    let annule = false;
+    s.urlPhotoProfil(cheminPhoto)
+      .then((url) => {
+        if (!annule) setPhoto({ chemin: cheminPhoto, url });
+      })
+      .catch(() => {});
+    return () => {
+      annule = true;
+    };
+  }, [cheminPhoto]);
+
+  const majMembre = async (photo_chemin: string | null) => {
+    if (!profil) return;
+    const p = { ...profil, membre: { ...profil.membre, photo_chemin } };
+    setProfil(p);
+    if (uid) await ecrire(cleProfil(uid), p);
+  };
 
   const rafraichir = useCallback(async () => {
     const s = sourceRef.current;
@@ -219,6 +248,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     majLe,
     horsLigne,
     enAttente,
+    photo: cheminPhoto && photo?.chemin === cheminPhoto ? photo.url : null,
+    async changerPhoto(uriLocale) {
+      if (!profil || !source) throw new Error('Session expirée');
+      if (horsLigne) throw new Error('Pas de réseau. Réessaie quand tu auras du réseau.');
+      const chemin = await source.changerPhotoProfil(profil.membre, uriLocale);
+      // Affichage immédiat avec le fichier local, sans attendre le lien signé.
+      setPhoto({ chemin, url: uriLocale });
+      await majMembre(chemin);
+    },
+    async retirerPhoto() {
+      if (!source) return;
+      if (horsLigne) throw new Error('Pas de réseau. Réessaie quand tu auras du réseau.');
+      await source.retirerPhotoProfil();
+      setPhoto(null);
+      await majMembre(null);
+    },
     activerDemo: () => changerMode(true),
     quitterDemo: () => changerMode(false),
     async envoyerCode(email) {

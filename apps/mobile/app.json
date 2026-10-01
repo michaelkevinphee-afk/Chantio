@@ -39,8 +39,8 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Chantio utilise l'appareil photo pour joindre des photos du chantier à tes fiches.",
-          "photosPermission": "Chantio accède à tes photos pour les joindre à tes fiches d'intervention."
+          "cameraPermission": "Chantio utilise l'appareil photo pour les photos du chantier et pour ta photo de profil.",
+          "photosPermission": "Chantio accède à tes photos pour les joindre à tes fiches et choisir ta photo de profil."
         }
       ]
     ],
