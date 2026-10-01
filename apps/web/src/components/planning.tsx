@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { initiales } from '@chantio/shared';
 import { planifier, type Planning as ValeursPlanning } from '@/app/(bureau)/interventions/actions';
 import { annoncer, Coche, Roue } from './retour';
+import { Icone } from './icones';
 import { Avatar } from './ui';
 
 type Personne = { id: string; prenom: string; nom: string | null };
@@ -30,10 +31,11 @@ export function Planning({
   async function enregistrer(v: ValeursPlanning, message: string) {
     const n = ++envois.current;
     setEtat('envoi');
-    const { erreur } = await planifier(interventionId, v).catch(() => ({ erreur: 'Pas de réseau : réessaie.' }));
+    const { erreur, invites } = await planifier(interventionId, v).catch(() => ({ erreur: 'Pas de réseau : réessaie.', invites: [] }));
     if (n !== envois.current) return; // un changement plus récent est parti entre-temps
     setEtat(erreur ? 'erreur' : 'ok');
     annoncer(erreur ?? message, erreur ? 'erreur' : 'ok');
+    if (invites?.length) annoncer(`Invitation agenda envoyée à ${invites.join(', ')}`);
   }
 
   function changer(v: ValeursPlanning, message: string, attendre = 0) {
@@ -93,6 +95,15 @@ export function Planning({
           onChange={(e) => changer({ ...valeurs, heure_prevue: e.target.value || null }, 'Heure enregistrée', 900)}
         />
       </div>
+
+      {valeurs.date_prevue && (
+        <a
+          href={`/interventions/${interventionId}/agenda`}
+          className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-bold text-cobalt hover:underline"
+        >
+          <Icone nom="calendrier" taille={16} /> Ajouter à mon agenda
+        </a>
+      )}
 
       <p className="mt-5 mb-2 text-xs font-bold tracking-wide text-gris uppercase">Technicien</p>
       <div className="space-y-1.5">

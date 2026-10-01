@@ -18,6 +18,7 @@ const TRACES = {
   email: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2M22 6l-10 7L2 6',
   lieu: 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6',
   calendrier: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2',
+  gauche: 'M15 18l-6-6 6-6',
 } as const;
 
 export type NomIcone = keyof typeof TRACES;

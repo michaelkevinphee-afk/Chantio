@@ -243,3 +243,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .volet-entree, .volet-sortie, .volet-fond, .volet-fond-sortie { animation: none; }
 }
+
+/* Planning : colonne des techniciens puis une colonne par jour. */
+.grille-planning {
+  display: grid;
+  grid-template-columns: 170px repeat(var(--jours, 6), minmax(0, 1fr));
+}
