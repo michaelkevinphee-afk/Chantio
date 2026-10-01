@@ -33,8 +33,12 @@ interface Session {
   retirerPhoto(): Promise<void>;
   activerDemo(): void;
   quitterDemo(): void;
+  /** Connexion habituelle : e-mail + mot de passe. */
+  connecter(email: string, motDePasse: string): Promise<void>;
+  /** Première connexion ou mot de passe oublié : un code arrive par e-mail. */
   envoyerCode(email: string): Promise<void>;
-  verifierCode(email: string, code: string): Promise<void>;
+  /** Valide le code (donc l'adresse e-mail) puis enregistre le nouveau mot de passe. */
+  verifierCode(email: string, code: string, motDePasse: string): Promise<void>;
   creerEntreprise(nom: string, prenom: string): Promise<void>;
   deconnecter(): Promise<void>;
   rechargerProfil(): void;
@@ -266,13 +270,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     },
     activerDemo: () => changerMode(true),
     quitterDemo: () => changerMode(false),
+    async connecter(email, motDePasse) {
+      const { error } = await supabase().auth.signInWithPassword({ email, password: motDePasse });
+      if (error) throw enErreur(error);
+    },
     async envoyerCode(email) {
       const { error } = await supabase().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
       if (error) throw enErreur(error);
     },
-    async verifierCode(email, code) {
-      const { error } = await supabase().auth.verifyOtp({ email, token: code, type: 'email' });
+    async verifierCode(email, code, motDePasse) {
+      const sb = supabase();
+      const { error } = await sb.auth.verifyOtp({ email, token: code, type: 'email' });
       if (error) throw enErreur(error);
+      const { error: errMdp } = await sb.auth.updateUser({ password: motDePasse });
+      // Remettre le même mot de passe n'est pas une erreur pour le technicien.
+      if (errMdp && !/different/i.test(errMdp.message)) throw enErreur(errMdp);
     },
     async creerEntreprise(nom, prenom) {
       if (!source) return;
