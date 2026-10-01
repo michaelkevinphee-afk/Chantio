@@ -2,7 +2,8 @@ import type { StatutIntervention } from '@chantio/shared';
 import { LienBouton, Titre } from '@/components/ui';
 import { contexteBureau } from '@/lib/session';
 import { SELECT_LISTE, techniciens, type InterventionListe } from '@/lib/requetes';
-import { FILTRES, ListeInterventions } from './liste';
+import { FILTRES } from './filtres';
+import { ListeInterventions } from './liste';
 
 export const metadata = { title: 'Interventions · Chantio' };
 
