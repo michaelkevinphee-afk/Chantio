@@ -25,11 +25,10 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Vérifie le jeton sur place et le rafraîchit s'il expire.
+  const { data } = await supabase.auth.getClaims();
 
-  if (!user && !PAGES_PUBLIQUES.some((p) => chemin.startsWith(p))) {
+  if (!data?.claims && !PAGES_PUBLIQUES.some((p) => chemin.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = '/connexion';
     url.search = '';
