@@ -181,25 +181,44 @@ body {
   a.degrade:hover, button.degrade:hover { translate: none; }
 }
 
-/* Carte du jour (Pilotage) : pastilles numérotées comme dans l'appli mobile. */
+/* Carte du jour (Pilotage) : fond clair MapLibre, pastilles numérotées comme dans l'appli mobile. */
+.carte-fond {
+  background: #F7F8FD;
+}
 .pastille-carte {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 9999px;
   border: 3px solid #fff;
   background: var(--color-cobalt);
   color: #fff;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 14px;
+  cursor: pointer;
   box-shadow: 0 6px 14px -6px rgba(47, 84, 235, 0.7);
+  transition: transform 0.15s ease;
+}
+.pastille-carte:hover {
+  transform: scale(1.12);
 }
 .pastille-carte.en-cours {
   background: var(--color-menthe);
+  box-shadow: 0 0 0 6px rgb(18 183 106 / 0.18);
 }
 .bulle-carte {
   color: var(--color-encre);
-  font-family: inherit;
-  line-height: 1.4;
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.maplibregl-popup-content {
+  border-radius: 14px !important;
+  padding: 10px 14px !important;
+  box-shadow: 0 16px 32px -16px rgb(16 26 61 / 0.35) !important;
+}
+.maplibregl-ctrl-group {
+  border-radius: 12px !important;
+  box-shadow: 0 6px 16px -8px rgb(16 26 61 / 0.3) !important;
 }

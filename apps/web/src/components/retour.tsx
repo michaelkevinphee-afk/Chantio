@@ -51,10 +51,10 @@ export function BoutonEnvoi({
 }
 
 /** Lien-bouton discret d'un formulaire (« Désactiver », « Renvoyer l'e-mail »), avec roue pendant l'envoi. */
-export function LienEnvoi({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export function LienEnvoi({ children, className = '', titre }: { children: React.ReactNode; className?: string; titre?: string }) {
   const { pending } = useFormStatus();
   return (
-    <button disabled={pending} aria-busy={pending} className={`inline-flex items-center gap-1.5 disabled:opacity-60 ${className}`}>
+    <button disabled={pending} aria-busy={pending} title={titre} className={`inline-flex items-center gap-1.5 disabled:opacity-60 ${className}`}>
       {pending && <Roue taille={14} />}
       {children}
     </button>
