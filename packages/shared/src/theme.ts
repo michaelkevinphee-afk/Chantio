@@ -1,27 +1,34 @@
-// Couleurs de Chantio (style v2 validé : marine + jaune chantier, fond béton).
+// Couleurs de Chantio : la charte du site (bleu cobalt, pervenche, lavande du logo),
+// fond bleuté clair, dégradés vifs. Le bleu encre sert au texte, jamais en aplat.
 
 export const couleurs = {
-  marine: '#14213D',
-  marineClair: '#2A3B5F',
-  jaune: '#F2B705',
-  jauneDoux: '#FDF3D0',
-  beton: '#F2F1EC',
+  encre: '#101A3D',
+  cobalt: '#2F54EB',
+  cobaltVif: '#4467FA',
+  pervenche: '#7C93F5',
+  lavande: '#B9C6FB',
+  fond: '#F4F6FF',
+  doux: '#E9EEFF',
+  trait: '#D9E0F7',
   blanc: '#FFFFFF',
-  encre: '#14213D',
-  gris: '#6B7280',
-  grisClair: '#E5E3DC',
-  vert: '#1F8A4C',
-  vertDoux: '#DDF3E5',
-  rouge: '#C0392B',
-  rougeDoux: '#FBE3E0',
-  bleu: '#2563EB',
-  bleuDoux: '#E0EAFD',
+  gris: '#5B6480',
+  menthe: '#12B76A',
+  vert: '#067647',
+  vertDoux: '#DCFAE6',
+  ambre: '#B54708',
+  ambreDoux: '#FEF0C7',
+  rouge: '#D92D20',
+  rougeDoux: '#FEE4E2',
 } as const;
 
+/** Dégradé des boutons et bandeaux du site (120°, du cobalt à la pervenche). */
+export const degrade = [couleurs.cobalt, couleurs.cobaltVif, couleurs.pervenche] as const;
+
 export const tons = {
-  gris: { fond: '#ECEBE6', texte: '#4B5563' },
-  bleu: { fond: couleurs.bleuDoux, texte: '#1E40AF' },
-  jaune: { fond: couleurs.jauneDoux, texte: '#8A6100' },
+  gris: { fond: '#EEF1FB', texte: couleurs.gris },
+  bleu: { fond: '#E3E9FF', texte: '#2442C4' },
+  cobalt: { fond: couleurs.cobalt, texte: couleurs.blanc },
+  ambre: { fond: couleurs.ambreDoux, texte: couleurs.ambre },
   vert: { fond: couleurs.vertDoux, texte: couleurs.vert },
   rouge: { fond: couleurs.rougeDoux, texte: couleurs.rouge },
 } as const;
