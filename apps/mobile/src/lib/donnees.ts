@@ -4,7 +4,7 @@ import type { Entreprise, FicheAEnvoyer, Intervention, Membre, Site } from '@cha
 
 export interface InterventionVue extends Intervention {
   client: { nom: string; telephone: string | null; contact: string | null } | null;
-  site: Pick<Site, 'adresse' | 'code_postal' | 'ville' | 'acces' | 'consignes'> | null;
+  site: Pick<Site, 'adresse' | 'code_postal' | 'ville' | 'acces' | 'consignes'> & Partial<Pick<Site, 'latitude' | 'longitude'>> | null;
   intervenants: { id: string; prenom: string }[];
 }
 

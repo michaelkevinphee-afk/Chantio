@@ -16,6 +16,7 @@ import { LigneIntervention, estTerminee } from '@/components/LigneIntervention';
 import { PropulsePar } from '@/components/Logo';
 import { BadgeUrgence } from '@/components/Puce';
 import { Texte, Titre } from '@/components/Texte';
+import { Tournee } from '@/components/Tournee';
 import type { InterventionVue } from '@/lib/donnees';
 import { delai, heureCourte, minutesAvant } from '@/lib/horaires';
 import { appeler } from '@/lib/liens';
@@ -32,6 +33,7 @@ export default function MaJournee() {
   const { profil, interventions } = s;
   const bureau = estBureau(profil?.membre.role);
   const [equipe, setEquipe] = useState(false);
+  const [carte, setCarte] = useState(false);
   const moi = profil?.membre.id;
 
   const t = aujourdhui();
@@ -103,7 +105,28 @@ export default function MaJournee() {
         </Apparition>
       )}
 
-      {suivante ? (
+      <Apparition rang={rang++} style={styles.bascule}>
+        {[
+          { v: false, l: 'Liste' },
+          { v: true, l: 'Carte' },
+        ].map((o) => (
+          <Pressable
+            key={o.l}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: carte === o.v }}
+            onPress={() => setCarte(o.v)}
+            style={[styles.option, carte === o.v && styles.optionOn]}
+          >
+            <Text style={[styles.optionTexte, carte === o.v && { color: c.blanc }]}>{o.l}</Text>
+          </Pressable>
+        ))}
+      </Apparition>
+
+      {carte ? (
+        <Apparition rang={rang++}>
+          <Tournee liste={ouvertes} optimiser={!equipe} ouvrir={ouvrir} />
+        </Apparition>
+      ) : suivante ? (
         <Apparition rang={rang++} key={suivante.id}>
           <Appui accessibilityRole="button" onPress={() => ouvrir(suivante)} echelle={0.985} style={styles.carteSuivante}>
             <Degrade rayon={RAYON_SUIVANTE} halo />
@@ -152,10 +175,14 @@ export default function MaJournee() {
         </Apparition>
       )}
 
-      <Section titre="Ensuite" liste={ensuite} ouvrir={ouvrir} equipe={equipe} rang={rang} />
-      <Section titre="Terminées" liste={faites} ouvrir={ouvrir} equipe={equipe} rang={rang + ensuite.length + 1} />
-      <Section titre="Demain" liste={deDemain} ouvrir={ouvrir} equipe={equipe} rang={rang + ensuite.length + faites.length + 2} />
-      <Section titre="Plus tard" liste={plusTard} ouvrir={ouvrir} equipe={equipe} avecJour rang={8} />
+      {!carte && (
+        <>
+          <Section titre="Ensuite" liste={ensuite} ouvrir={ouvrir} equipe={equipe} rang={rang} />
+          <Section titre="Terminées" liste={faites} ouvrir={ouvrir} equipe={equipe} rang={rang + ensuite.length + 1} />
+          <Section titre="Demain" liste={deDemain} ouvrir={ouvrir} equipe={equipe} rang={rang + ensuite.length + faites.length + 2} />
+          <Section titre="Plus tard" liste={plusTard} ouvrir={ouvrir} equipe={equipe} avecJour rang={8} />
+        </>
+      )}
 
       <View style={{ marginTop: 24, alignItems: 'center' }}>
         <PropulsePar />

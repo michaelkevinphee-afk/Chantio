@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { aujourdhui, dateCourte, dateLongue, initiales, type Membre, type StatutIntervention } from '@chantio/shared';
+import { CarteDuJour } from '@/components/carte-du-jour';
 import { Compteur } from '@/components/compteur';
 import { Icone } from '@/components/icones';
 import { Avatar, PuceStatut, Titre } from '@/components/ui';
@@ -75,127 +76,141 @@ export default async function Pilotage() {
 
   return (
     <>
-      <Titre
-        sous={<span className="inline-block first-letter:uppercase">{dateLongue(jour)} · Bonjour {membre.prenom}</span>}
-        actions={<Avatar url={photo(membre)} initiales={initiales(membre.prenom, membre.nom)} taille={64} anneau />}
-      >
-        Pilotage
-      </Titre>
+        <Titre
+          sous={<span className="inline-block first-letter:uppercase">{dateLongue(jour)} · Bonjour {membre.prenom}</span>}
+          actions={<Avatar url={photo(membre)} initiales={initiales(membre.prenom, membre.nom)} taille={64} anneau />}
+        >
+          Pilotage
+        </Titre>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {tuiles.map((t, n) => (
-              <div
-                key={t.libelle}
-                style={cascade(n)}
-                className={`carte apparition p-5 ${t.alerte ? 'border-[#FECDCA] bg-rouge-doux' : ''}`}
-              >
-                <p className="flex items-center gap-2 text-sm font-bold text-gris">
-                  <span className={`h-2 w-2 rounded-[3px] ${t.point}`} />
-                  {t.libelle}
-                </p>
-                <p className={`mt-2 text-5xl font-extrabold leading-none tracking-[-0.03em] ${t.couleur}`}>
-                  <Compteur valeur={t.valeur} />
-                </p>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {tuiles.map((t, n) => (
+                <div
+                  key={t.libelle}
+                  style={cascade(n)}
+                  className={`carte apparition p-5 ${t.alerte ? 'border-[#FECDCA] bg-rouge-doux' : ''}`}
+                >
+                  <p className="flex items-center gap-2 text-sm font-bold text-gris">
+                    <span className={`h-2 w-2 rounded-[3px] ${t.point}`} />
+                    {t.libelle}
+                  </p>
+                  <p className={`mt-2 text-5xl font-extrabold leading-none tracking-[-0.03em] ${t.couleur}`}>
+                    <Compteur valeur={t.valeur} />
+                  </p>
+                </div>
+              ))}
+            </div>
 
-          <div className="space-y-3">
-            {aReprendre.length > 0 && (
+            <div className="space-y-3">
+              {aReprendre.length > 0 && (
+                <Link
+                  href="/interventions?statut=a_reprendre"
+                  style={cascade(4)}
+                  className="carte carte-lien apparition flex items-center gap-4 border-[#FECDCA] bg-rouge-doux px-5 py-4 text-rouge hover:border-[#FDA29B]"
+                >
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white">
+                    <Icone nom="alerte" taille={24} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-lg font-extrabold">
+                      {aReprendre.length} intervention{aReprendre.length > 1 ? 's' : ''} à reprendre
+                    </span>
+                    <span className="block truncate text-encre/70">
+                      {aReprendre[0].client?.nom} · {aReprendre[0].motif}
+                    </span>
+                  </span>
+                  <Icone nom="chevron" />
+                </Link>
+              )}
               <Link
-                href="/interventions?statut=a_reprendre"
-                style={cascade(4)}
-                className="carte carte-lien apparition flex items-center gap-4 border-[#FECDCA] bg-rouge-doux px-5 py-4 text-rouge hover:border-[#FDA29B]"
+                href="/interventions?statut=terminee"
+                style={cascade(5)}
+                className={`carte-lien apparition flex items-center gap-4 rounded-[20px] px-5 py-4 ${
+                  aValider.length ? 'bandeau text-white' : 'carte'
+                }`}
               >
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white">
-                  <Icone nom="alerte" taille={24} />
+                <span
+                  className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${
+                    aValider.length ? 'bg-white/20 ring-1 ring-white/30 ring-inset' : 'bg-doux text-cobalt'
+                  }`}
+                >
+                  <Icone nom="valider" taille={24} />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-lg font-extrabold">
-                    {aReprendre.length} intervention{aReprendre.length > 1 ? 's' : ''} à reprendre
+                    {aValider.length
+                      ? `${aValider.length} fiche${aValider.length > 1 ? 's' : ''} à valider`
+                      : 'Aucune fiche à valider'}
                   </span>
-                  <span className="block truncate text-encre/70">
-                    {aReprendre[0].client?.nom} · {aReprendre[0].motif}
+                  <span className="block truncate opacity-85">
+                    {aValider.length
+                      ? `La plus ancienne : ${aValider[0].client?.nom}, ${dateCourte(aValider[0].modifie_le.slice(0, 10)).toLowerCase()}`
+                      : 'Les fiches envoyées par les techniciens arrivent ici.'}
                   </span>
                 </span>
                 <Icone nom="chevron" />
               </Link>
-            )}
-            <Link
-              href="/interventions?statut=terminee"
-              style={cascade(5)}
-              className={`carte-lien apparition flex items-center gap-4 rounded-[20px] px-5 py-4 ${
-                aValider.length ? 'bandeau text-white' : 'carte'
-              }`}
-            >
-              <span
-                className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${
-                  aValider.length ? 'bg-white/20 ring-1 ring-white/30 ring-inset' : 'bg-doux text-cobalt'
-                }`}
-              >
-                <Icone nom="valider" taille={24} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-lg font-extrabold">
-                  {aValider.length
-                    ? `${aValider.length} fiche${aValider.length > 1 ? 's' : ''} à valider`
-                    : 'Aucune fiche à valider'}
-                </span>
-                <span className="block truncate opacity-85">
-                  {aValider.length
-                    ? `La plus ancienne : ${aValider[0].client?.nom}, ${dateCourte(aValider[0].modifie_le.slice(0, 10)).toLowerCase()}`
-                    : 'Les fiches envoyées par les techniciens arrivent ici.'}
-                </span>
-              </span>
-              <Icone nom="chevron" />
-            </Link>
-          </div>
+            </div>
 
-          <section style={cascade(6)} className="apparition">
-            <h2 className="surtitre mb-3">Aujourd’hui</h2>
-            {jourListe.length === 0 ? (
-              <div className="carte px-6 py-10 text-center">
-                <p className="font-bold">Rien de prévu aujourd’hui</p>
-                <Link href="/interventions/nouvelle" className="mt-2 inline-block text-sm font-bold text-cobalt underline">
-                  Planifier une intervention
-                </Link>
-              </div>
-            ) : (
-              <ul className="space-y-2.5">
-                {jourListe.map((i, n) => {
-                  const tech = i.affectations[0]?.membre;
-                  return (
-                    <li key={i.id} style={cascade(7 + n)} className="apparition">
-                      <Link
-                        href={`/interventions/${i.id}`}
-                        className="carte carte-lien flex items-center gap-4 p-3 pr-5"
-                      >
-                        <span className={`w-20 shrink-0 rounded-[14px] px-2 py-3 text-center ${BLOC[i.statut]}`}>
-                          <span className="block text-xl font-extrabold leading-none tracking-[-0.02em] tabular-nums">
-                            {hhmm(i.heure_prevue) || '—'}
+            <section style={cascade(6)} className="apparition">
+              <h2 className="surtitre mb-3">Aujourd’hui</h2>
+              {jourListe.length === 0 ? (
+                <div className="carte px-6 py-10 text-center">
+                  <p className="font-bold">Rien de prévu aujourd’hui</p>
+                  <Link href="/interventions/nouvelle" className="mt-2 inline-block text-sm font-bold text-cobalt underline">
+                    Planifier une intervention
+                  </Link>
+                </div>
+              ) : (
+                <>
+                <div className="mb-3">
+                  <CarteDuJour
+                    arrets={jourListe.map((i) => ({
+                      id: i.id,
+                      heure: hhmm(i.heure_prevue) || 'Sans heure',
+                      titre: i.client?.nom ?? i.motif,
+                      detail: [i.motif, techniciens(i)].filter((t) => t && t !== '—').join(' · '),
+                      enCours: i.statut === 'en_cours',
+                      site: i.site,
+                    }))}
+                  />
+                </div>
+                <ul className="space-y-2.5">
+                  {jourListe.map((i, n) => {
+                    const tech = i.affectations[0]?.membre;
+                    return (
+                      <li key={i.id} style={cascade(7 + n)} className="apparition">
+                        <Link
+                          href={`/interventions/${i.id}`}
+                          className="carte carte-lien flex items-center gap-4 p-3 pr-5"
+                        >
+                          <span className={`w-20 shrink-0 rounded-[14px] px-2 py-3 text-center ${BLOC[i.statut]}`}>
+                            <span className="block text-xl font-extrabold leading-none tracking-[-0.02em] tabular-nums">
+                              {hhmm(i.heure_prevue) || '—'}
+                            </span>
                           </span>
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-lg font-extrabold">{i.client?.nom}</span>
-                          <span className="block truncate text-gris">
-                            {i.motif}
-                            {i.site?.ville ? ` · ${i.site.ville}` : ''}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-lg font-extrabold">{i.client?.nom}</span>
+                            <span className="block truncate text-gris">
+                              {i.motif}
+                              {i.site?.ville ? ` · ${i.site.ville}` : ''}
+                            </span>
                           </span>
-                        </span>
-                        {tech && (
-                          <span className="hidden items-center gap-2 sm:flex">
-                            <Avatar url={photo(tech)} initiales={initiales(tech.prenom, tech.nom)} taille={32} />
-                            <span className="text-sm font-bold text-gris">{techniciens(i)}</span>
-                          </span>
-                        )}
-                        <PuceStatut statut={i.statut} />
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+                          {tech && (
+                            <span className="hidden items-center gap-2 sm:flex">
+                              <Avatar url={photo(tech)} initiales={initiales(tech.prenom, tech.nom)} taille={32} />
+                              <span className="text-sm font-bold text-gris">{techniciens(i)}</span>
+                            </span>
+                          )}
+                          <PuceStatut statut={i.statut} />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
             )}
           </section>
         </div>
