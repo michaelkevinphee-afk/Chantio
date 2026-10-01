@@ -1,0 +1,13 @@
+{
+  "name": "chantio",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:mobile": "pnpm --filter mobile start",
+    "build:web": "pnpm --filter web build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:db": "bash supabase/tests/run.sh"
+  },
+  "packageManager": "pnpm@10.28.0"
+}
