@@ -5,3 +5,4 @@ export * from './fiche.ts';
 export * from './format.ts';
 export * from './theme.ts';
 export * from './tournee.ts';
+export * from './agenda.ts';

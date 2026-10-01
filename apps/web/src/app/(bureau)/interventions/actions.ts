@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { TypeIntervention, Urgence } from '@chantio/shared';
+import { envoyerInvitations, invitationsActives } from '@/lib/invitations';
 import { contexteBureau } from '@/lib/session';
 
 type Bureau = Awaited<ReturnType<typeof contexteBureau>>;
@@ -103,21 +104,46 @@ async function affecter(supabase: Bureau['supabase'], interventionId: string, me
   return e2;
 }
 
+type Personne = { id: string; prenom: string; nom: string | null; email: string | null };
+
 export type Planning = { date_prevue: string | null; heure_prevue: string | null; techniciens: string[] };
 
 // Appelée depuis la page (sans rechargement) : renvoie l'erreur éventuelle au lieu de rediriger,
 // pour que l'écran confirme tout de suite « Enregistré » ou explique le problème.
-export async function planifier(interventionId: string, p: Planning): Promise<{ erreur: string | null }> {
+export async function planifier(
+  interventionId: string,
+  p: Planning,
+): Promise<{ erreur: string | null; invites?: string[] }> {
   const { supabase, entreprise } = await contexteBureau();
-  const { error } = await supabase
+  // L'état d'avant, pour ne prévenir que les personnes concernées par le changement.
+  const { data: avant } = await supabase
     .from('interventions')
-    .update({ date_prevue: p.date_prevue || null, heure_prevue: p.heure_prevue || null })
-    .eq('id', interventionId);
+    .select('date_prevue, heure_prevue, affectations(membre:membres(id, prenom, nom, email))')
+    .eq('id', interventionId)
+    .maybeSingle<{ date_prevue: string | null; heure_prevue: string | null; affectations: { membre: Personne | null }[] }>();
+
+  const date_prevue = p.date_prevue || null;
+  const heure_prevue = p.heure_prevue || null;
+  const { error } = await supabase.from('interventions').update({ date_prevue, heure_prevue }).eq('id', interventionId);
   const eAffect = error ? null : await affecter(supabase, interventionId, p.techniciens, entreprise.id);
   revalidatePath('/', 'layout');
   if (error) return { erreur: 'La date n’a pas pu être modifiée.' };
   if (eAffect) return { erreur: 'Le technicien n’a pas pu être changé.' };
-  return { erreur: null };
+
+  // Invitations d'agenda : aux nouveaux, à tous si la date ou l'heure change, annulation aux retirés.
+  if (!invitationsActives) return { erreur: null };
+  const anciens = (avant?.affectations ?? []).flatMap((a) => (a.membre ? [a.membre] : []));
+  const { data: nouveaux } = p.techniciens.length
+    ? await supabase.from('membres').select('id, prenom, nom, email').in('id', p.techniciens)
+    : { data: [] as Personne[] };
+  const horaireChange = avant?.date_prevue !== date_prevue || (avant?.heure_prevue?.slice(0, 5) ?? null) !== (heure_prevue?.slice(0, 5) ?? null);
+  const dejaPrevenus = new Set(anciens.map((m) => m.id));
+  const aPrevenir = (nouveaux ?? []).filter((m) => horaireChange || !dejaPrevenus.has(m.id));
+  const gardes = new Set(p.techniciens);
+  const retires = date_prevue ? anciens.filter((m) => !gardes.has(m.id)) : anciens;
+  if (!aPrevenir.length && !retires.length) return { erreur: null };
+  const invites = await envoyerInvitations(supabase, interventionId, retires, date_prevue ? aPrevenir : []).catch(() => []);
+  return { erreur: null, invites };
 }
 
 // Changements d'état : passent par les fonctions de la base, qui vérifient les droits.
