@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type Ref } from 'react';
 import { Platform, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { c, polices } from '@/lib/theme';
@@ -11,15 +11,22 @@ import { Texte } from './Texte';
  * `dictee` ajoute un bouton « Dicter » : il ouvre le clavier et rappelle où se trouve
  * le micro du clavier (dictée de l'iPhone ou d'Android, en français, sans rien installer).
  */
-export function Champ({ label, indice, multiligne, dictee, style, ...props }: TextInputProps & {
+export function Champ({ label, indice, multiligne, dictee, style, ref, ...props }: TextInputProps & {
   label?: string;
   indice?: string;
   multiligne?: boolean;
   dictee?: boolean;
+  ref?: Ref<TextInput>;
 }) {
   const [focus, setFocus] = useState(false);
   const [aideDictee, setAideDictee] = useState(false);
-  const champ = useRef<TextInput>(null);
+  const champ = useRef<TextInput | null>(null);
+  // Garde la référence interne (bouton Dicter) et transmet celle de l'écran (passer au champ suivant).
+  const relier = (noeud: TextInput | null) => {
+    champ.current = noeud;
+    if (typeof ref === 'function') ref(noeud);
+    else if (ref) ref.current = noeud;
+  };
   const avecDictee = dictee && Platform.OS !== 'web';
   return (
     <View style={{ gap: 6 }}>
@@ -46,7 +53,7 @@ export function Champ({ label, indice, multiligne, dictee, style, ...props }: Te
         </View>
       ) : null}
       <TextInput
-        ref={champ}
+        ref={relier}
         placeholderTextColor={c.grisClair}
         multiline={multiligne}
         textAlignVertical={multiligne ? 'top' : 'center'}

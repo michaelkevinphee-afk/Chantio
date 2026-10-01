@@ -33,8 +33,18 @@ interface Session {
   retirerPhoto(): Promise<void>;
   activerDemo(): void;
   quitterDemo(): void;
+  /** Connexion habituelle : e-mail + mot de passe. */
+  connecter(email: string, motDePasse: string): Promise<void>;
+  /** Première connexion ou mot de passe oublié : un code arrive par e-mail. */
   envoyerCode(email: string): Promise<void>;
-  verifierCode(email: string, code: string): Promise<void>;
+  /**
+   * Valide le code (donc l'adresse e-mail) puis enregistre le nouveau mot de passe.
+   * Si le mot de passe est refusé, lève `ErreurMotDePasse` : l'écran reste affiché et
+   * un nouvel essai se fait avec `code = null` (le code est déjà utilisé).
+   */
+  verifierCode(email: string, code: string | null, motDePasse: string): Promise<void>;
+  /** Abandonne la création du mot de passe après un code validé (déconnecte). */
+  annulerMotDePasse(): Promise<void>;
   creerEntreprise(nom: string, prenom: string): Promise<void>;
   deconnecter(): Promise<void>;
   rechargerProfil(): void;
@@ -42,6 +52,9 @@ interface Session {
   demarrer(intervention: InterventionVue): void;
   envoyerFiche(brouillon: Brouillon): Promise<'envoyee' | 'en_attente'>;
 }
+
+/** Code accepté mais mot de passe refusé : l'écran de connexion propose de réessayer. */
+export class ErreurMotDePasse extends Error {}
 
 const Contexte = createContext<Session | null>(null);
 
@@ -89,12 +102,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const sourceRef = useRef(source);
   sourceRef.current = source;
 
+  // Pendant la création du mot de passe (après le code), on garde la session de côté :
+  // sinon l'appli quitterait l'écran de connexion avant que le mot de passe soit enregistré.
+  const mdpEnCours = useRef(false);
+  const sessionEnAttente = useRef<SessionAuth | null>(null);
+
   // Connexion Supabase : session persistée, puis suivi des changements.
   useEffect(() => {
     if (demo || !configurationOk) return;
     const sb = supabase();
     sb.auth.getSession().then(({ data }) => setAuth(data.session));
     const { data } = sb.auth.onAuthStateChange((_evt, session) => {
+      if (mdpEnCours.current) {
+        sessionEnAttente.current = session;
+        return;
+      }
       // Ne pas appeler Supabase dans ce rappel : on diffère.
       setTimeout(() => setAuth(session), 0);
     });
@@ -266,13 +288,37 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     },
     activerDemo: () => changerMode(true),
     quitterDemo: () => changerMode(false),
+    async connecter(email, motDePasse) {
+      const { error } = await supabase().auth.signInWithPassword({ email, password: motDePasse });
+      if (error) throw enErreur(error);
+    },
     async envoyerCode(email) {
       const { error } = await supabase().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
       if (error) throw enErreur(error);
     },
-    async verifierCode(email, code) {
-      const { error } = await supabase().auth.verifyOtp({ email, token: code, type: 'email' });
-      if (error) throw enErreur(error);
+    async verifierCode(email, code, motDePasse) {
+      const sb = supabase();
+      mdpEnCours.current = true;
+      if (code) {
+        const { error } = await sb.auth.verifyOtp({ email, token: code, type: 'email' });
+        if (error) {
+          mdpEnCours.current = false;
+          throw enErreur(error);
+        }
+      }
+      const { error: errMdp } = await sb.auth.updateUser({ password: motDePasse });
+      // Remettre le même mot de passe n'est pas une erreur pour le technicien.
+      if (errMdp && errMdp.code !== 'same_password') throw new ErreurMotDePasse(errMdp.message);
+      mdpEnCours.current = false;
+      const session = sessionEnAttente.current ?? (await sb.auth.getSession()).data.session;
+      sessionEnAttente.current = null;
+      setAuth(session);
+    },
+    async annulerMotDePasse() {
+      if (!mdpEnCours.current) return;
+      mdpEnCours.current = false;
+      sessionEnAttente.current = null;
+      await supabase().auth.signOut();
     },
     async creerEntreprise(nom, prenom) {
       if (!source) return;
