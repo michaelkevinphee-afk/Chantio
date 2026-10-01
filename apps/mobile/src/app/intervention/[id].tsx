@@ -55,7 +55,7 @@ export default function DetailIntervention() {
 
   let action: React.ReactNode = null;
   if (enAttente) action = <Bouton titre="Fiche en attente d'envoi" desactive style={{ flex: 1 }} />;
-  else if (close) action = <Bouton titre="Fiche envoyée" iconeAvant="check" desactive variante="blanc" style={{ flex: 1 }} />;
+  else if (close) action = <Bouton titre="Fiche envoyée" iconeAvant="check" desactive variante="secondaire" style={{ flex: 1 }} />;
   else if (!apprenti) {
     const reprendre = brouillon || i.statut === 'en_cours';
     action = (
@@ -84,13 +84,13 @@ export default function DetailIntervention() {
       <BandeauEnvoi />
 
       <Apparition rang={rang++}>
-        <Carte style={{ borderRadius: 26, padding: 18, gap: 6 }}>
+        <Carte style={{ borderRadius: 24, padding: 18, gap: 6 }}>
           <Text style={styles.surtitre}>
             {[LIBELLE_TYPE[i.type], heureCourte(i.heure_prevue), i.date_prevue === aujourdhui() ? null : dateCourte(i.date_prevue)]
               .filter((x) => x && x !== '--:--')
               .join(' · ')}
           </Text>
-          <Titre taille={34} style={{ marginTop: 2 }}>{i.client?.nom ?? 'Client'}</Titre>
+          <Titre taille={30} style={{ marginTop: 2 }}>{i.client?.nom ?? 'Client'}</Titre>
           {adresse ? <Texte style={{ fontSize: 18 }}>{adresse}</Texte> : null}
           {(i.statut !== 'planifiee' || i.urgence !== 'normale') && (
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
@@ -104,7 +104,7 @@ export default function DetailIntervention() {
             <View style={styles.faits}>
               {faits.map((f) => (
                 <View key={f} style={styles.fait}>
-                  <Icone nom={iconeAcces(f)} taille={18} couleur={c.marine} epaisseur={2.4} />
+                  <Icone nom={iconeAcces(f)} taille={18} couleur={c.cobalt} epaisseur={2.4} />
                   <Text style={styles.faitTexte}>{f}</Text>
                 </View>
               ))}
@@ -121,8 +121,8 @@ export default function DetailIntervention() {
 
       <Apparition rang={rang++}>
         <Carte style={styles.carteLigne}>
-          <View style={[styles.ti, { backgroundColor: '#FFF4D1' }]}>
-            <Icone nom={ICONE_TYPE[i.type] ?? 'cle_molette'} taille={26} couleur="#C2410C" />
+          <View style={styles.ti}>
+            <Icone nom={ICONE_TYPE[i.type] ?? 'cle_molette'} taille={26} couleur={c.cobalt} />
           </View>
           <View style={{ flex: 1, gap: 2 }}>
             <Texte variante="fort">{i.motif}</Texte>
@@ -134,7 +134,7 @@ export default function DetailIntervention() {
       {i.site?.consignes ? (
         <Apparition rang={rang++}>
           <View style={styles.mot}>
-            <Icone nom="info" taille={20} couleur="#4A3A00" />
+            <Icone nom="info" taille={20} couleur={c.cobalt} />
             <View style={{ flex: 1 }}>
               <Text style={styles.motTitre}>Mot du bureau</Text>
               <Text style={styles.motTexte}>{i.site.consignes}</Text>
@@ -147,7 +147,7 @@ export default function DetailIntervention() {
         <Apparition rang={rang++}>
           <Carte style={styles.carteLigne}>
             <View style={styles.ti}>
-              <Icone nom="telephone" taille={24} couleur={c.marine} />
+              <Icone nom="telephone" taille={24} couleur={c.cobalt} />
             </View>
             <View style={{ flex: 1 }}>
               <Texte variante="doux" style={{ fontSize: 15 }}>Contact sur place</Texte>
@@ -160,7 +160,7 @@ export default function DetailIntervention() {
       <Apparition rang={rang++}>
         <Carte style={styles.carteLigne}>
           <View style={styles.ti}>
-            <Icone nom="personne" taille={24} couleur={c.marine} />
+            <Icone nom="personne" taille={24} couleur={c.cobalt} />
           </View>
           <View style={{ flex: 1 }}>
             <Texte variante="doux" style={{ fontSize: 15 }}>Intervenants</Texte>
@@ -187,11 +187,11 @@ function iconeAcces(f: string): NomIcone {
   return 'info';
 }
 
-/** Bouton clair sur fond béton (« Y aller », « Appeler »). */
+/** Bouton doux bleu pâle (« Y aller », « Appeler »). */
 function Fantome({ icone, texte, onPress }: { icone: NomIcone; texte: string; onPress: () => void }) {
   return (
     <Appui accessibilityRole="button" onPress={onPress} echelle={0.96} style={styles.fantome}>
-      <Icone nom={icone} taille={22} couleur={c.marine} />
+      <Icone nom={icone} taille={22} couleur={c.cobalt} />
       <Text style={styles.fantomeTexte}>{texte}</Text>
     </Appui>
   );
@@ -199,17 +199,17 @@ function Fantome({ icone, texte, onPress }: { icone: NomIcone; texte: string; on
 
 const styles = StyleSheet.create({
   haut: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  numero: { fontFamily: polices.texte700, fontSize: 15, color: c.texteDoux },
-  surtitre: { fontFamily: polices.texte700, fontSize: 14, color: c.texteDoux, textTransform: 'uppercase', letterSpacing: 1 },
+  numero: { fontFamily: polices.texte700, fontSize: 15, color: c.gris },
+  surtitre: { fontFamily: polices.texte700, fontSize: 13, color: c.cobalt, textTransform: 'uppercase', letterSpacing: 1.05 },
   faits: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 },
-  fait: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.beton, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
-  faitTexte: { fontFamily: polices.texte700, fontSize: 16, color: c.marine },
+  fait: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.puce, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  faitTexte: { fontFamily: polices.texte700, fontSize: 15, color: c.puceTexte },
   deux: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  fantome: { flex: 1, height: 56, borderRadius: 18, backgroundColor: c.beton, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  fantomeTexte: { fontFamily: polices.texte700, fontSize: 18, color: c.marine },
-  carteLigne: { borderRadius: 26, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  ti: { width: 58, height: 58, borderRadius: 18, backgroundColor: c.beton, alignItems: 'center', justifyContent: 'center' },
-  mot: { backgroundColor: '#FFF4D1', borderRadius: 22, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  motTitre: { fontFamily: polices.texte700, fontSize: 15, color: '#4A3A00', textTransform: 'uppercase', letterSpacing: 0.9 },
-  motTexte: { fontFamily: polices.texte, fontSize: 17, lineHeight: 22, color: '#4A3A00' },
+  fantome: { flex: 1, height: 56, borderRadius: 16, backgroundColor: c.doux, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  fantomeTexte: { fontFamily: polices.texte800, fontSize: 17, color: c.encre },
+  carteLigne: { borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  ti: { width: 56, height: 56, borderRadius: 16, backgroundColor: c.doux, alignItems: 'center', justifyContent: 'center' },
+  mot: { backgroundColor: c.puce, borderRadius: 22, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  motTitre: { fontFamily: polices.texte700, fontSize: 13, color: c.puceTexte, textTransform: 'uppercase', letterSpacing: 1.05, marginBottom: 2 },
+  motTexte: { fontFamily: polices.texte, fontSize: 17, lineHeight: 23, color: c.encre },
 });

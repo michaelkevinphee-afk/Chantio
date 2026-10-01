@@ -36,7 +36,7 @@ import {
 } from '@/lib/brouillons';
 import { choisirPhotos, supprimerPhotoLocale } from '@/lib/photos';
 import { useSession } from '@/lib/session';
-import { c, polices } from '@/lib/theme';
+import { c, polices, serre } from '@/lib/theme';
 
 const ETAPES = ['Constat', 'Mesures', 'Pièces', 'Résultat'];
 
@@ -115,8 +115,8 @@ export default function FicheGuidee() {
 
   if (!b) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.beton }}>
-        <ActivityIndicator size="large" color={c.marine} />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.fond }}>
+        <ActivityIndicator size="large" color={c.cobalt} />
       </View>
     );
   }
@@ -206,12 +206,12 @@ export default function FicheGuidee() {
       </View>
       <View style={styles.progression}>
         {ETAPES.map((e, i) => (
-          <Segment key={e} rempli={i <= etape} fond="#DAD7CD" couleur={c.jaune} style={styles.segment} />
+          <Segment key={e} rempli={i <= etape} fond={c.trait} couleur={c.cobalt} style={styles.segment} />
         ))}
       </View>
 
       {message ? (
-        <Carte style={{ backgroundColor: c.rougeDoux }}>
+        <Carte alerte>
           <Texte style={{ color: c.rouge, fontFamily: polices.texte700 }}>{message}</Texte>
         </Carte>
       ) : null}
@@ -268,7 +268,7 @@ export default function FicheGuidee() {
                 <Carte style={styles.mesure}>
                   <View style={styles.ligneMesure}>
                     <Texte variante="fort" style={{ flex: 1 }}>{d.libelle}</Texte>
-                    {e === 'ok' && <Etiquette texte="Conforme" icone="check" fond="#DCFAE6" couleur="#067647" />}
+                    {e === 'ok' && <Etiquette texte="Conforme" icone="check" fond={c.vertDoux} couleur={c.vert} />}
                     {e === 'alerte' && <Etiquette texte="Alerte" icone="alerte" fond={c.rougeDoux} couleur={c.rouge} />}
                   </View>
                   <Stepper
@@ -336,7 +336,7 @@ export default function FicheGuidee() {
               grand
               icone="plus"
               label="Ajouter la pièce"
-              fond={c.marine}
+              fond={c.cobalt}
               couleur={c.blanc}
               onPress={() => {
                 const d = nouvellePiece.trim();
@@ -379,10 +379,10 @@ export default function FicheGuidee() {
             ))}
           </GrilleTuiles>
           <Apparition rang={3} style={styles.puces}>
-            {b.dureeMinutes != null && <PuceBlanche icone="horloge" texte={duree(b.dureeMinutes)} />}
-            {nbPieces > 0 && <PuceBlanche icone="boite" texte={`${nbPieces} pièce${nbPieces > 1 ? 's' : ''}`} />}
-            {etatCo === 'ok' && <PuceBlanche icone="check" texte="CO conforme" />}
-            {etatCo === 'alerte' && <PuceBlanche icone="alerte" texte="CO en alerte" couleur={c.rouge} />}
+            {b.dureeMinutes != null && <PuceResume icone="horloge" texte={duree(b.dureeMinutes)} />}
+            {nbPieces > 0 && <PuceResume icone="boite" texte={`${nbPieces} pièce${nbPieces > 1 ? 's' : ''}`} />}
+            {etatCo === 'ok' && <PuceResume icone="check" texte="CO conforme" />}
+            {etatCo === 'alerte' && <PuceResume icone="alerte" texte="CO en alerte" alerte />}
           </Apparition>
           {b.resultat !== 'termine' && (
             <Champ
@@ -403,7 +403,7 @@ export default function FicheGuidee() {
 
           <Carte style={{ padding: 16 }}>
             <View style={styles.ligneMesure}>
-              <Icone nom="horloge" taille={22} couleur={c.marine} />
+              <Icone nom="horloge" taille={22} couleur={c.cobalt} />
               <Texte variante="fort" style={{ flex: 1 }}>Temps passé</Texte>
             </View>
             <Stepper label="Temps passé en minutes" valeur={b.dureeMinutes} pas={5} min={0} unite="min" depart={5} onChange={(n) => maj(() => ({ dureeMinutes: n }))} />
@@ -465,7 +465,7 @@ export default function FicheGuidee() {
           )}
 
           {manquesActuels.length > 0 && (
-            <Carte style={{ backgroundColor: c.rougeDoux }}>
+            <Carte alerte>
               <Texte variante="fort" style={{ color: c.rouge }}>Avant d'envoyer :</Texte>
               {manquesActuels.map((m) => (
                 <Texte key={m} style={{ color: c.rouge }}>• {m}</Texte>
@@ -488,10 +488,11 @@ function Etiquette({ texte, icone, fond, couleur }: { texte: string; icone: NomI
   );
 }
 
-/** Puce blanche du résumé (durée, pièces, CO). */
-function PuceBlanche({ icone, texte, couleur = c.marine }: { icone: NomIcone; texte: string; couleur?: string }) {
+/** Puce bleue du résumé (durée, pièces, CO), rouge pâle en cas d'alerte. */
+function PuceResume({ icone, texte, alerte }: { icone: NomIcone; texte: string; alerte?: boolean }) {
+  const couleur = alerte ? c.rouge : c.puceTexte;
   return (
-    <View style={styles.puceBlanche}>
+    <View style={[styles.puceResume, alerte && { backgroundColor: c.rougeDoux }]}>
       <Icone nom={icone} taille={17} epaisseur={2.6} couleur={couleur} />
       <Text style={{ fontFamily: polices.texte700, fontSize: 15, color: couleur }}>{texte}</Text>
     </View>
@@ -501,21 +502,21 @@ function PuceBlanche({ icone, texte, couleur = c.marine }: { icone: NomIcone; te
 function Lien({ texte, onPress }: { texte: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} hitSlop={10} style={{ paddingVertical: 6 }}>
-      <Texte variante="fort" style={{ fontSize: 17, textDecorationLine: 'underline' }}>{texte}</Texte>
+      <Texte variante="fort" style={{ fontSize: 17, color: c.cobalt, textDecorationLine: 'underline' }}>{texte}</Texte>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   entete: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  petit: { fontFamily: polices.texte600, fontSize: 15, lineHeight: 18, color: c.texteDoux },
-  nomEtape: { fontFamily: polices.titre, fontSize: 22, lineHeight: 25, textTransform: 'uppercase', color: c.marine },
+  petit: { fontFamily: polices.texte600, fontSize: 15, lineHeight: 18, color: c.gris },
+  nomEtape: { fontFamily: polices.titre, fontSize: 22, lineHeight: 27, letterSpacing: serre(22), color: c.encre },
   progression: { flexDirection: 'row', gap: 6, marginBottom: 4 },
   segment: { flex: 1, height: 7, borderRadius: 4 },
   ligneMesure: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  mesure: { borderRadius: 24, paddingVertical: 14, paddingHorizontal: 16, gap: 6 },
-  etiquette: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 9, paddingHorizontal: 9, paddingVertical: 5 },
-  piece: { backgroundColor: c.blanc, borderRadius: 22, paddingVertical: 14, paddingLeft: 16, paddingRight: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  mesure: { borderRadius: 22, paddingVertical: 14, paddingHorizontal: 16, gap: 6 },
+  etiquette: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
+  piece: { backgroundColor: c.blanc, borderWidth: 1, borderColor: c.trait, borderRadius: 20, paddingVertical: 14, paddingLeft: 16, paddingRight: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
   puces: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  puceBlanche: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.blanc, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  puceResume: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.puce, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
 });

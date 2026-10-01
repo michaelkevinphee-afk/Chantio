@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { InterventionVue } from '@/lib/donnees';
 import { heureCourte } from '@/lib/horaires';
-import { c, polices } from '@/lib/theme';
+import { c, ombres, polices } from '@/lib/theme';
 import { Appui } from './Anime';
 import { Icone } from './Icone';
 import { BadgeUrgence, Puce } from './Puce';
@@ -44,17 +44,28 @@ export function LigneIntervention({ intervention: i, onPress, avecJour, avecTech
         <Text style={styles.motif} numberOfLines={1}>{i.motif}</Text>
         <Text style={styles.sous} numberOfLines={1}>{[sous, techs].filter(Boolean).join(' · ')}</Text>
       </View>
-      <Icone nom="droite" taille={22} couleur="#9AA2B3" />
+      <Icone nom="droite" taille={22} couleur={c.grisClair} />
     </Appui>
   );
 }
 
 const styles = StyleSheet.create({
-  ligne: { backgroundColor: c.blanc, borderRadius: 22, padding: 14, paddingLeft: 16, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  temps: { minWidth: 62 },
-  heure: { fontFamily: polices.titre, fontSize: 28, lineHeight: 30, color: c.marine },
-  jour: { fontFamily: polices.texte700, fontSize: 13, color: c.texteDoux, marginTop: 2 },
+  ligne: {
+    backgroundColor: c.blanc,
+    borderWidth: 1,
+    borderColor: c.trait,
+    borderRadius: 20,
+    padding: 14,
+    paddingLeft: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    boxShadow: ombres.carte,
+  },
+  temps: { minWidth: 66 },
+  heure: { fontFamily: polices.titre, fontSize: 24, lineHeight: 30, letterSpacing: -0.7, color: c.encre },
+  jour: { fontFamily: polices.texte700, fontSize: 13, color: c.gris, marginTop: 2 },
   texte: { flex: 1, minWidth: 0 },
-  motif: { fontFamily: polices.texte700, fontSize: 18, lineHeight: 21, color: c.marine },
-  sous: { fontFamily: polices.texte, fontSize: 15, color: c.texteDoux },
+  motif: { fontFamily: polices.texte700, fontSize: 17, lineHeight: 22, color: c.encre },
+  sous: { fontFamily: polices.texte, fontSize: 15, color: c.gris },
 });

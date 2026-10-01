@@ -66,13 +66,13 @@ export function SignaturePad({ valeur, onChange, onDebut, onFin }: {
         setLargeur(l);
         dims.current = { l, h: l / 2 };
       }}
-      style={{ width: '100%', aspectRatio: 2, borderBottomWidth: 2, borderBottomColor: c.ligne }}
+      style={{ width: '100%', aspectRatio: 2, borderBottomWidth: 2, borderBottomColor: c.trait }}
       accessibilityLabel="Zone de signature"
       {...gestes.panHandlers}
     >
       {largeur > 0 && (
         <Svg width={largeur} height={hauteur} viewBox={`0 0 ${LARGEUR_SIGNATURE} ${HAUTEUR_SIGNATURE}`} pointerEvents="none">
-          <Path d={trace || 'M0 0'} stroke={c.marine} strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d={trace || 'M0 0'} stroke={c.encre} strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       )}
     </View>

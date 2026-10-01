@@ -7,7 +7,7 @@ import { Icone, type NomIcone } from './Icone';
 function Ajout({ icone, texte, onPress }: { icone: NomIcone; texte: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.case, styles.ajout, pressed && { opacity: 0.7 }]}>
-      <Icone nom={icone} taille={30} couleur={c.marine} />
+      <Icone nom={icone} taille={30} couleur={c.cobalt} />
       <Text style={styles.texteAjout}>{texte}</Text>
     </Pressable>
   );
@@ -34,7 +34,7 @@ export function PhotoGrille({ photos, onAjouter, onRetirer, enCours = 0 }: {
       ))}
       {Array.from({ length: enCours }, (_, i) => (
         <View key={`attente-${i}`} style={[styles.case, styles.attente]}>
-          <ActivityIndicator color={c.marine} />
+          <ActivityIndicator color={c.cobalt} />
         </View>
       ))}
     </View>
@@ -43,10 +43,10 @@ export function PhotoGrille({ photos, onAjouter, onRetirer, enCours = 0 }: {
 
 const styles = StyleSheet.create({
   grille: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  case: { width: '31%', aspectRatio: 1, borderRadius: 18, overflow: 'hidden', backgroundColor: '#E3E1D9' },
-  ajout: { backgroundColor: 'transparent', borderWidth: 2.5, borderStyle: 'dashed', borderColor: '#B9BDC6', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  texteAjout: { fontFamily: polices.texte700, fontSize: 16, color: c.marine },
+  case: { width: '31%', aspectRatio: 1, borderRadius: 18, overflow: 'hidden', backgroundColor: c.doux },
+  ajout: { backgroundColor: 'transparent', borderWidth: 2.5, borderStyle: 'dashed', borderColor: c.pervenche, alignItems: 'center', justifyContent: 'center', gap: 6 },
+  texteAjout: { fontFamily: polices.texte700, fontSize: 15, color: c.cobalt },
   image: { width: '100%', height: '100%' },
-  retirer: { position: 'absolute', right: 6, top: 6, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(20,33,61,0.8)', alignItems: 'center', justifyContent: 'center' },
+  retirer: { position: 'absolute', right: 6, top: 6, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(47,84,235,0.9)', alignItems: 'center', justifyContent: 'center' },
   attente: { alignItems: 'center', justifyContent: 'center' },
 });

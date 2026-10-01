@@ -20,7 +20,7 @@ export function Champ({ label, indice, multiligne, style, ...props }: TextInputP
         </Texte>
       ) : null}
       <TextInput
-        placeholderTextColor="#9AA2B3"
+        placeholderTextColor={c.grisClair}
         multiline={multiligne}
         textAlignVertical={multiligne ? 'top' : 'center'}
         {...props}
@@ -32,7 +32,7 @@ export function Champ({ label, indice, multiligne, style, ...props }: TextInputP
           setFocus(false);
           props.onBlur?.(e);
         }}
-        style={[styles.champ, multiligne && styles.multi, focus && { borderColor: c.marine }, style]}
+        style={[styles.champ, multiligne && styles.multi, focus && { borderColor: c.cobalt }, style]}
       />
     </View>
   );
@@ -45,8 +45,8 @@ const styles = StyleSheet.create({
     color: c.encre,
     backgroundColor: c.blanc,
     borderWidth: 2,
-    borderColor: c.ligne,
-    borderRadius: 16,
+    borderColor: c.trait,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     minHeight: 58,
