@@ -5,11 +5,14 @@ import { useState } from 'react';
 export function ChoixClient({
   clients,
   types,
+  initial,
 }: {
   clients: { id: string; nom: string }[];
+  /** Client déjà choisi (depuis sa fiche). */
+  initial?: string;
   types: { valeur: string; libelle: string }[];
 }) {
-  const [choix, setChoix] = useState(clients.length ? '' : 'nouveau');
+  const [choix, setChoix] = useState(initial ?? (clients.length ? '' : 'nouveau'));
   return (
     <>
       <div>

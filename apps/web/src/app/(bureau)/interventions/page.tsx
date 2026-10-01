@@ -8,8 +8,10 @@ import {
   type StatutIntervention,
 } from '@chantio/shared';
 import { LienBouton, Puce, PuceStatut, Titre, Vide } from '@/components/ui';
+import { LigneCliquable } from '@/components/volet';
 import { contexteBureau } from '@/lib/session';
 import { SELECT_LISTE, techniciens, type InterventionListe } from '@/lib/requetes';
+import { VoletIntervention } from './volet-intervention';
 
 export const metadata = { title: 'Interventions · Chantio' };
 
@@ -26,7 +28,7 @@ const FILTRES: (StatutIntervention | 'toutes')[] = [
 
 export default async function Interventions({ searchParams }: PageProps<'/interventions'>) {
   const { supabase } = await contexteBureau();
-  const { statut, q } = await searchParams;
+  const { statut, q, fiche } = await searchParams;
   const filtre = typeof statut === 'string' && FILTRES.includes(statut as StatutIntervention) ? statut : 'toutes';
   const recherche = typeof q === 'string' ? q.trim() : '';
 
@@ -41,10 +43,11 @@ export default async function Interventions({ searchParams }: PageProps<'/interv
   const { data } = await requete;
   const liste = (data ?? []) as InterventionListe[];
 
-  const lien = (s: string) => {
+  const lien = (s: string, ficheId?: string) => {
     const p = new URLSearchParams();
     if (s !== 'toutes') p.set('statut', s);
     if (recherche) p.set('q', recherche);
+    if (ficheId) p.set('fiche', ficheId);
     const qs = p.toString();
     return qs ? `/interventions?${qs}` : '/interventions';
   };
@@ -91,17 +94,15 @@ export default async function Interventions({ searchParams }: PageProps<'/interv
             </thead>
             <tbody className="divide-y divide-trait">
               {liste.map((i) => (
-                <tr key={i.id} className="hover:bg-fond">
+                <LigneCliquable key={i.id} href={lien(filtre, i.id)}>
                   <td className="px-4 py-3 font-mono text-xs text-gris">
-                    <Link href={`/interventions/${i.id}`}>{numero(i.numero)}</Link>
+                    {numero(i.numero)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     {dateCourte(i.date_prevue)} {heure(i.heure_prevue)}
                   </td>
                   <td className="px-4 py-3 font-semibold">
-                    <Link href={`/interventions/${i.id}`} className="hover:underline">
-                      {i.client?.nom}
-                    </Link>
+                    {i.client?.nom}
                     {i.site?.ville && <span className="block text-xs font-normal text-gris">{i.site.ville}</span>}
                   </td>
                   <td className="px-4 py-3">
@@ -112,12 +113,14 @@ export default async function Interventions({ searchParams }: PageProps<'/interv
                   <td className="px-4 py-3">
                     <PuceStatut statut={i.statut} />
                   </td>
-                </tr>
+                </LigneCliquable>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {typeof fiche === 'string' && <VoletIntervention key={fiche} id={fiche} fermer={lien(filtre)} />}
     </>
   );
 }

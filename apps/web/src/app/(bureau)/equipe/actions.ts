@@ -25,7 +25,7 @@ export async function inviter(d: FormData) {
   });
   if (error) {
     const message = error.code === '23505' ? 'Cette adresse e-mail fait déjà partie de l’équipe.' : 'Ajout impossible.';
-    redirect(`/equipe?erreur=${encodeURIComponent(message)}`);
+    redirect(`/equipe?nouveau=1&erreur=${encodeURIComponent(message)}`);
   }
   const errEnvoi = await envoyerCode(email ?? '');
   revalidatePath('/equipe');
