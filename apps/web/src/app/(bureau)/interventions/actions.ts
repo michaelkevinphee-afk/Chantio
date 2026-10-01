@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import type { TypeIntervention, Urgence } from '@chantio/shared';
 import { contexteBureau } from '@/lib/session';
 
+type Bureau = Awaited<ReturnType<typeof contexteBureau>>;
+
 const texte = (d: FormData, cle: string) => {
   const v = String(d.get(cle) ?? '').trim();
   return v === '' ? null : v;
@@ -86,30 +88,36 @@ export async function creerIntervention(d: FormData) {
     .single();
   if (error || !intervention) retour(page, 'L’intervention n’a pas pu être créée.');
 
-  await affecter(intervention.id as string, d.getAll('techniciens').map(String), entreprise.id);
+  await affecter(supabase, intervention.id as string, d.getAll('techniciens').map(String), entreprise.id);
   revalidatePath('/', 'layout');
   redirect(`/interventions/${intervention.id}`);
 }
 
-async function affecter(interventionId: string, membres: string[], entrepriseId: string) {
-  const { supabase } = await contexteBureau();
-  await supabase.from('affectations').delete().eq('intervention_id', interventionId);
-  if (membres.length) {
-    await supabase
-      .from('affectations')
-      .insert(membres.map((m) => ({ intervention_id: interventionId, membre_id: m, entreprise_id: entrepriseId })));
-  }
+async function affecter(supabase: Bureau['supabase'], interventionId: string, membres: string[], entrepriseId: string) {
+  const { error } = await supabase.from('affectations').delete().eq('intervention_id', interventionId);
+  if (error) return error;
+  if (!membres.length) return null;
+  const { error: e2 } = await supabase
+    .from('affectations')
+    .insert(membres.map((m) => ({ intervention_id: interventionId, membre_id: m, entreprise_id: entrepriseId })));
+  return e2;
 }
 
-export async function planifier(interventionId: string, d: FormData) {
+export type Planning = { date_prevue: string | null; heure_prevue: string | null; techniciens: string[] };
+
+// Appelée depuis la page (sans rechargement) : renvoie l'erreur éventuelle au lieu de rediriger,
+// pour que l'écran confirme tout de suite « Enregistré » ou explique le problème.
+export async function planifier(interventionId: string, p: Planning): Promise<{ erreur: string | null }> {
   const { supabase, entreprise } = await contexteBureau();
   const { error } = await supabase
     .from('interventions')
-    .update({ date_prevue: texte(d, 'date_prevue'), heure_prevue: texte(d, 'heure_prevue') })
+    .update({ date_prevue: p.date_prevue || null, heure_prevue: p.heure_prevue || null })
     .eq('id', interventionId);
-  if (error) retour(`/interventions/${interventionId}`, 'La date n’a pas pu être modifiée.');
-  await affecter(interventionId, d.getAll('techniciens').map(String), entreprise.id);
+  const eAffect = error ? null : await affecter(supabase, interventionId, p.techniciens, entreprise.id);
   revalidatePath('/', 'layout');
+  if (error) return { erreur: 'La date n’a pas pu être modifiée.' };
+  if (eAffect) return { erreur: 'Le technicien n’a pas pu être changé.' };
+  return { erreur: null };
 }
 
 // Changements d'état : passent par les fonctions de la base, qui vérifient les droits.

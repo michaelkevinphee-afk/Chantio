@@ -145,8 +145,38 @@ body {
   animation: pulsation 1.8s ease-in-out infinite;
 }
 
+/* Bulle « Enregistré » : arrive du bas avec un léger rebond, la coche se dessine. */
+@keyframes annonce {
+  0% { opacity: 0; transform: translateY(16px) scale(0.92); }
+  12% { opacity: 1; transform: translateY(-3px) scale(1.02); }
+  18% { transform: none; }
+  85% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(8px); }
+}
+.annonce {
+  animation: annonce 2.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes coche {
+  from { transform: scale(0.4) rotate(-20deg); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  to { transform: none; }
+}
+.coche {
+  animation: coche 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) 0.08s both;
+}
+/* Petit sursaut d'un élément qui vient d'être enregistré. */
+@keyframes rebond {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.rebond {
+  animation: rebond 0.35s ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .apparition, .remplissage, .en-direct { animation: none; }
+  .apparition, .remplissage, .en-direct, .coche, .rebond { animation: none; }
+  .annonce { animation-name: none; }
   .carte-lien:hover { transform: none; }
   a.degrade:hover, button.degrade:hover { translate: none; }
 }
