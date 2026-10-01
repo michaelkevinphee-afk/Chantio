@@ -1,7 +1,8 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Le code partagé avec l'appli mobile est en TypeScript, compilé par Next.
+  transpilePackages: ['@chantio/shared'],
 };
 
 export default nextConfig;
