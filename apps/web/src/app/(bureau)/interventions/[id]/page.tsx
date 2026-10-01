@@ -93,7 +93,7 @@ export default async function DetailIntervention({ params, searchParams }: PageP
 
       {erreur && <p className="mb-6 rounded-xl bg-rouge-doux px-4 py-3 text-sm font-semibold text-rouge">{erreur}</p>}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
           {fiches.length === 0 ? (
             <div className="carte p-6">

@@ -1,7 +1,8 @@
 import { Children, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { c, polices } from '@/lib/theme';
+import { Appui, Apparition, Pop } from './Anime';
 import { Icone, type NomIcone } from './Icone';
 
 /** Réponse en grosse tuile : on touche au lieu de choisir dans une liste. */
@@ -12,11 +13,12 @@ export function Tuile({ texte, choisie, onPress, icone }: {
   icone?: NomIcone;
 }) {
   return (
-    <Pressable
+    <Appui
       accessibilityRole="checkbox"
       accessibilityState={{ checked: choisie }}
       onPress={onPress}
-      style={({ pressed }) => [styles.tuile, choisie && styles.choisie, pressed && { opacity: 0.85 }]}
+      echelle={0.96}
+      style={[styles.tuile, icone ? styles.avecIcone : styles.sansIcone, choisie && styles.choisie]}
     >
       {icone && (
         <View style={[styles.icone, choisie && { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
@@ -25,11 +27,11 @@ export function Tuile({ texte, choisie, onPress, icone }: {
       )}
       <Text style={[styles.texte, choisie && { color: c.blanc }]}>{texte}</Text>
       {choisie && (
-        <View style={styles.coche}>
-          <Icone nom="check" taille={16} epaisseur={3} couleur={c.marine} />
-        </View>
+        <Pop style={styles.coche}>
+          <Icone nom="check" taille={18} epaisseur={3} couleur={c.marine} />
+        </Pop>
       )}
-    </Pressable>
+    </Appui>
   );
 }
 
@@ -41,10 +43,10 @@ export function GrilleTuiles({ children }: { children: ReactNode }) {
   return (
     <View style={styles.grille}>
       {lignes.map((ligne, i) => (
-        <View key={i} style={styles.ligne}>
+        <Apparition key={i} rang={i + 1} style={styles.ligne}>
           {ligne}
           {ligne.length === 1 && <View style={{ flex: 1 }} />}
-        </View>
+        </Apparition>
       ))}
     </View>
   );
@@ -55,23 +57,26 @@ const styles = StyleSheet.create({
   ligne: { flexDirection: 'row', gap: 12 },
   tuile: {
     flex: 1,
-    minHeight: 96,
     backgroundColor: c.blanc,
     borderRadius: 24,
-    padding: 16,
+    padding: 14,
     justifyContent: 'space-between',
     gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: c.ombre,
   },
-  choisie: { backgroundColor: c.marine },
-  icone: { width: 48, height: 48, borderRadius: 15, backgroundColor: c.beton, alignItems: 'center', justifyContent: 'center' },
-  texte: { fontFamily: polices.texte700, fontSize: 19, lineHeight: 22, color: c.marine, paddingRight: 28 },
+  avecIcone: { minHeight: 118 },
+  sansIcone: { minHeight: 76, justifyContent: 'center' },
+  choisie: { backgroundColor: c.marine, borderBottomColor: c.marine },
+  icone: { width: 50, height: 50, borderRadius: 16, backgroundColor: '#EEF0F5', alignItems: 'center', justifyContent: 'center' },
+  texte: { fontFamily: polices.texte700, fontSize: 19, lineHeight: 22, color: c.marine, paddingRight: 30 },
   coche: {
     position: 'absolute',
-    right: 14,
-    top: 14,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    right: 12,
+    top: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: c.jaune,
     alignItems: 'center',
     justifyContent: 'center',

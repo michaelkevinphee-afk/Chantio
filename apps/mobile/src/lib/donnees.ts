@@ -23,6 +23,12 @@ export interface SourceDonnees {
   demarrer(interventionId: string): Promise<void>;
   envoyerPhoto(chemin: string, uriLocale: string): Promise<void>;
   envoyerFiche(fiche: FicheAEnvoyer): Promise<void>;
+  /** Dépose une nouvelle photo de profil (JPEG local) et l'enregistre sur le membre. Retourne son chemin. */
+  changerPhotoProfil(membre: Pick<Membre, 'id' | 'entreprise_id'>, uriLocale: string): Promise<string>;
+  /** Retire la photo de profil du membre connecté. */
+  retirerPhotoProfil(): Promise<void>;
+  /** Adresse affichable d'une photo de profil (lien signé, ou fichier local en démo). */
+  urlPhotoProfil(chemin: string): Promise<string | null>;
 }
 
 /** Transforme une erreur Supabase (objet simple) en vraie Error lisible. */

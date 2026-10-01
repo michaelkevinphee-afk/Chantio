@@ -1,6 +1,7 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { c, polices } from '@/lib/theme';
+import { Appui } from './Anime';
 import { Icone, type NomIcone } from './Icone';
 
 type Variante = 'jaune' | 'marine' | 'blanc';
@@ -32,7 +33,7 @@ export function Bouton({
   const encre = ENCRE[variante];
   const inactif = desactive || chargement;
   return (
-    <Pressable
+    <Appui
       accessibilityRole="button"
       accessibilityState={{ disabled: !!inactif }}
       disabled={inactif}
@@ -42,7 +43,6 @@ export function Bouton({
         petit && styles.petit,
         { backgroundColor: FOND[variante], opacity: inactif ? 0.5 : pressed ? 0.85 : 1 },
         variante === 'blanc' && styles.ombre,
-        pressed && { transform: [{ scale: 0.98 }] },
         style,
       ]}
     >
@@ -57,33 +57,36 @@ export function Bouton({
           {icone && <Icone nom={icone} couleur={encre} taille={petit ? 22 : 26} epaisseur={2.8} />}
         </View>
       )}
-    </Pressable>
+    </Appui>
   );
 }
 
-/** Bouton carré (retour, fermer, appeler…). */
-export function BoutonRond({ icone, onPress, label, grand, fond = c.blanc, couleur = c.marine }: {
+/** Bouton carré (retour, appeler…) ou rond (fermer, retour en haut d'écran). */
+export function BoutonRond({ icone, onPress, label, grand, rond, fond = c.blanc, couleur = c.marine }: {
   icone: NomIcone;
   onPress: () => void;
   label: string;
   grand?: boolean;
+  /** Cercle de 52 px, comme en haut des écrans de la maquette. */
+  rond?: boolean;
   fond?: string;
   couleur?: string;
 }) {
-  const t = grand ? 68 : 56;
+  const t = grand ? 68 : rond ? 52 : 56;
   return (
-    <Pressable
+    <Appui
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
       hitSlop={6}
+      echelle={0.92}
       style={({ pressed }) => [
-        { width: t, height: t, borderRadius: grand ? 22 : 20, backgroundColor: fond, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.8 : 1 },
+        { width: t, height: t, borderRadius: rond ? t / 2 : grand ? 22 : 20, backgroundColor: fond, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1 },
         fond === c.blanc && styles.ombre,
       ]}
     >
-      <Icone nom={icone} couleur={couleur} taille={grand ? 28 : 26} epaisseur={2.6} />
-    </Pressable>
+      <Icone nom={icone} couleur={couleur} taille={grand ? 28 : rond ? 24 : 26} epaisseur={2.6} />
+    </Appui>
   );
 }
 

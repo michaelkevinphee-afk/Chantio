@@ -15,7 +15,7 @@ export default async function NouvelleIntervention({ searchParams }: PageProps<'
   return (
     <>
       <Titre>Nouvelle intervention</Titre>
-      <form action={creerIntervention} className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <form action={creerIntervention} className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
           <fieldset className="carte space-y-4 p-6">
             <legend className="px-1 font-titre text-xl font-extrabold uppercase">Client</legend>

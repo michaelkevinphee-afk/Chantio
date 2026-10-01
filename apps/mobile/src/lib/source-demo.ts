@@ -13,10 +13,11 @@ const membreDemo: Membre = {
   user_id: null,
   email: 'demo@chantio.fr',
   prenom: MOI.prenom,
-  nom: null,
+  nom: 'Rambla',
   telephone: null,
   role: 'dirigeant',
   actif: true,
+  photo_chemin: null,
   cree_le: new Date().toISOString(),
 };
 
@@ -111,6 +112,8 @@ function exemples(): InterventionVue[] {
 }
 
 let donnees: InterventionVue[] = exemples();
+// Photo de profil choisie en démo : gardée sur le téléphone, rien n'est envoyé.
+let photoDemo: string | null = null;
 
 function changerStatut(id: string, statut: Intervention['statut']) {
   donnees = donnees.map((i) => (i.id === id ? { ...i, statut } : i));
@@ -120,7 +123,7 @@ export const sourceDemo: SourceDonnees = {
   mode: 'demo',
   async chargerProfil(): Promise<Profil> {
     donnees = exemples();
-    return { membre: membreDemo, entreprise: ENTREPRISE };
+    return { membre: { ...membreDemo, photo_chemin: photoDemo }, entreprise: ENTREPRISE };
   },
   async creerEntreprise() {},
   async listerInterventions() {
@@ -136,5 +139,17 @@ export const sourceDemo: SourceDonnees = {
   async envoyerFiche(fiche) {
     await attendre(400);
     changerStatut(fiche.intervention_id, fiche.resultat === 'termine' ? 'terminee' : 'a_reprendre');
+  },
+  async changerPhotoProfil(_membre, uriLocale) {
+    await attendre(250);
+    photoDemo = uriLocale;
+    return uriLocale;
+  },
+  async retirerPhotoProfil() {
+    photoDemo = null;
+  },
+  async urlPhotoProfil(chemin) {
+    // En démo, le « chemin » est directement le fichier local.
+    return chemin;
   },
 };

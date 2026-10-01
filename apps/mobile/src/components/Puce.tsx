@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 
-import { c, polices, tons } from '@/lib/theme';
+import { polices, tons } from '@/lib/theme';
 import type { Ton } from '@chantio/shared';
 import { Icone, type NomIcone } from './Icone';
 
@@ -14,12 +14,12 @@ export function Puce({ texte, ton = 'gris', icone }: { texte: string; ton?: Ton;
   );
 }
 
-/** Pastille jaune ou rouge pour l'urgence. */
+/** Pastille rouge pâle pour l'urgence (« Urgent », « Astreinte »). */
 export function BadgeUrgence({ urgence }: { urgence: 'normale' | 'urgente' | 'astreinte' }) {
   if (urgence === 'normale') return null;
   return (
-    <View style={{ alignSelf: 'flex-start', backgroundColor: c.rouge, borderRadius: 9, paddingHorizontal: 9, paddingVertical: 5 }}>
-      <Text style={{ fontFamily: polices.texte700, fontSize: 13, color: c.blanc, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+    <View style={{ alignSelf: 'flex-start', backgroundColor: '#FEE4E2', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+      <Text style={{ fontFamily: polices.texte700, fontSize: 13, color: '#B42318' }}>
         {urgence === 'urgente' ? 'Urgent' : 'Astreinte'}
       </Text>
     </View>

@@ -1,36 +1,80 @@
 @import "tailwindcss";
 
-/* Couleurs Chantio : marine + jaune chantier, fond béton clair. */
+/* Couleurs Chantio (maquettes v2) : marine + jaune chantier, fond béton clair. */
 @theme inline {
   --color-marine: #14213D;
   --color-marine-clair: #2A3B5F;
   --color-jaune: #F2B705;
   --color-jaune-doux: #FDF3D0;
   --color-beton: #F2F1EC;
-  --color-trait: #E5E3DC;
+  --color-trait: #E4E2DA;
   --color-encre: #14213D;
-  --color-gris: #6B7280;
+  --color-gris: #5E6678;
   --color-vert: #1F8A4C;
   --color-vert-doux: #DDF3E5;
-  --color-rouge: #C0392B;
+  --color-orange: #D9822B;
+  --color-orange-doux: #FCEBD9;
+  --color-rouge: #D93A2B;
   --color-rouge-doux: #FBE3E0;
   --color-bleu: #1E40AF;
   --color-bleu-doux: #E0EAFD;
-  --font-sans: var(--font-jakarta);
+  --font-sans: var(--font-texte);
   --font-titre: var(--font-barlow);
 }
 
 body {
   background: var(--color-beton);
   color: var(--color-encre);
+  font-weight: 500;
 }
 
 .champ {
-  @apply w-full rounded-xl border border-trait bg-white px-3.5 py-2.5 text-[15px] outline-none transition focus:border-marine focus:ring-2 focus:ring-marine/15;
+  @apply w-full rounded-2xl border border-trait bg-white px-4 py-3 text-base outline-none transition focus:border-marine focus:ring-2 focus:ring-marine/15;
 }
 .etiquette {
-  @apply mb-1.5 block text-sm font-semibold text-encre;
+  @apply mb-1.5 block text-sm font-bold text-encre;
 }
+/* Cartes blanches arrondies, ombre légère comme sur les maquettes. */
 .carte {
-  @apply rounded-2xl border border-trait bg-white;
+  @apply rounded-[22px] bg-white;
+  box-shadow: 0 1px 0 #DDDAD0, 0 2px 6px rgb(20 33 61 / 0.06);
+}
+.carte-lien {
+  @apply transition duration-200;
+}
+.carte-lien:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 0 #DDDAD0, 0 10px 24px -8px rgb(20 33 61 / 0.18);
+}
+.surtitre {
+  @apply text-xs font-extrabold uppercase tracking-[0.12em] text-gris;
+}
+
+/* Apparition en cascade : style={{ '--i': n }} décale chaque élément. */
+@keyframes apparition {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.apparition {
+  animation: apparition 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+@keyframes remplissage {
+  from { transform: scaleX(0); }
+}
+.remplissage {
+  transform-origin: left;
+  animation: remplissage 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 0.25s both;
+}
+@keyframes pulsation {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(242 183 5 / 0.55); }
+  50% { box-shadow: 0 0 0 6px rgb(242 183 5 / 0); }
+}
+.en-direct {
+  animation: pulsation 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apparition, .remplissage, .en-direct { animation: none; }
+  .carte-lien:hover { transform: none; }
 }

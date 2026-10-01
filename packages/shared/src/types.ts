@@ -54,6 +54,8 @@ export interface Membre {
   telephone: string | null;
   role: RoleMembre;
   actif: boolean;
+  /** Photo de profil dans le stockage « profils ». */
+  photo_chemin: string | null;
   cree_le: string;
 }
 

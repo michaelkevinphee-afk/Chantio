@@ -3,23 +3,26 @@ import {
   LIBELLE_TYPE,
   TON_STATUT,
   adresseComplete,
+  aujourdhui,
   dateCourte,
-  heure,
   numero,
 } from '@chantio/shared';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { Apparition, Appui } from '@/components/Anime';
 import { Bandeau } from '@/components/Bandeau';
 import { BandeauEnvoi } from '@/components/BandeauEnvoi';
 import { Bouton, BoutonRond } from '@/components/Bouton';
 import { Carte } from '@/components/Carte';
 import { Ecran } from '@/components/Ecran';
-import { Icone } from '@/components/Icone';
+import { Icone, type NomIcone } from '@/components/Icone';
 import { BadgeUrgence, Puce } from '@/components/Puce';
 import { Texte, Titre } from '@/components/Texte';
 import { lireBrouillon } from '@/lib/brouillons';
+import type { InterventionVue } from '@/lib/donnees';
+import { heureCourte } from '@/lib/horaires';
 import { appeler, ouvrirCarte } from '@/lib/liens';
 import { useSession } from '@/lib/session';
 import { c, polices } from '@/lib/theme';
@@ -68,72 +71,145 @@ export default function DetailIntervention() {
     );
   }
 
+  const faits = (i.site?.acces ?? '').split(/\s*·\s*/).filter(Boolean);
+  const termine = ['terminee', 'validee', 'facturee'].includes(i.statut);
+  let rang = 0;
+
   return (
     <Ecran barre={action}>
       <View style={styles.haut}>
-        <BoutonRond icone="gauche" label="Retour" onPress={() => router.back()} />
+        <BoutonRond rond icone="gauche" label="Retour" onPress={() => router.back()} />
         <Text style={styles.numero}>{numero(i.numero)}</Text>
       </View>
       <BandeauEnvoi />
 
-      <Carte style={{ borderRadius: 26, padding: 20, gap: 8 }}>
-        <Text style={styles.surtitre}>
-          {[LIBELLE_TYPE[i.type], heure(i.heure_prevue), dateCourte(i.date_prevue)].filter(Boolean).join(' · ')}
-        </Text>
-        <Titre taille={34}>{i.client?.nom ?? 'Client'}</Titre>
-        {adresse ? <Texte style={{ fontSize: 18 }}>{adresse}</Texte> : null}
-        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-          <Puce texte={LIBELLE_STATUT_TERRAIN[i.statut]} ton={TON_STATUT[i.statut]} />
-          <BadgeUrgence urgence={i.urgence} />
-        </View>
-        <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
-          {adresse ? (
-            <Bouton titre="Y aller" iconeAvant="aller" variante="marine" petit onPress={() => ouvrirCarte(adresse)} style={{ flexGrow: 1 }} />
+      <Apparition rang={rang++}>
+        <Carte style={{ borderRadius: 26, padding: 18, gap: 6 }}>
+          <Text style={styles.surtitre}>
+            {[LIBELLE_TYPE[i.type], heureCourte(i.heure_prevue), i.date_prevue === aujourdhui() ? null : dateCourte(i.date_prevue)]
+              .filter((x) => x && x !== '--:--')
+              .join(' · ')}
+          </Text>
+          <Titre taille={34} style={{ marginTop: 2 }}>{i.client?.nom ?? 'Client'}</Titre>
+          {adresse ? <Texte style={{ fontSize: 18 }}>{adresse}</Texte> : null}
+          {(i.statut !== 'planifiee' || i.urgence !== 'normale') && (
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+              {i.statut !== 'planifiee' && (
+                <Puce texte={LIBELLE_STATUT_TERRAIN[i.statut]} ton={TON_STATUT[i.statut]} icone={termine ? 'check' : undefined} />
+              )}
+              <BadgeUrgence urgence={i.urgence} />
+            </View>
+          )}
+          {faits.length > 0 && (
+            <View style={styles.faits}>
+              {faits.map((f) => (
+                <View key={f} style={styles.fait}>
+                  <Icone nom={iconeAcces(f)} taille={18} couleur={c.marine} epaisseur={2.4} />
+                  <Text style={styles.faitTexte}>{f}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {adresse || i.client?.telephone ? (
+            <View style={styles.deux}>
+              {adresse ? <Fantome icone="aller" texte="Y aller" onPress={() => ouvrirCarte(adresse)} /> : null}
+              {i.client?.telephone ? <Fantome icone="telephone" texte="Appeler" onPress={() => appeler(i.client!.telephone!)} /> : null}
+            </View>
           ) : null}
-          {i.client?.telephone ? (
-            <Bouton titre={i.client.telephone} iconeAvant="telephone" variante="marine" petit onPress={() => appeler(i.client!.telephone!)} style={{ flexGrow: 1 }} />
-          ) : null}
-        </View>
-      </Carte>
+        </Carte>
+      </Apparition>
 
-      {i.site?.acces ? <Info icone="cle" titre="Accès" texte={i.site.acces} /> : null}
-      {i.site?.consignes ? <Info icone="alerte" titre="Consignes" texte={i.site.consignes} jaune /> : null}
-      {i.client?.contact ? <Info icone="telephone" titre="Contact sur place" texte={i.client.contact} /> : null}
+      <Apparition rang={rang++}>
+        <Carte style={styles.carteLigne}>
+          <View style={[styles.ti, { backgroundColor: '#FFF4D1' }]}>
+            <Icone nom={ICONE_TYPE[i.type] ?? 'cle_molette'} taille={26} couleur="#C2410C" />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Texte variante="fort">{i.motif}</Texte>
+            {i.description ? <Texte variante="doux" style={{ fontSize: 15 }}>{i.description}</Texte> : null}
+          </View>
+        </Carte>
+      </Apparition>
 
-      <Carte>
-        <Texte variante="section">Motif</Texte>
-        <Texte variante="fort" style={{ fontSize: 20 }}>{i.motif}</Texte>
-        {i.description ? <Texte>{i.description}</Texte> : null}
-      </Carte>
+      {i.site?.consignes ? (
+        <Apparition rang={rang++}>
+          <View style={styles.mot}>
+            <Icone nom="info" taille={20} couleur="#4A3A00" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.motTitre}>Mot du bureau</Text>
+              <Text style={styles.motTexte}>{i.site.consignes}</Text>
+            </View>
+          </View>
+        </Apparition>
+      ) : null}
 
-      <Carte>
-        <Texte variante="section">Intervenants</Texte>
-        <Texte variante="fort">{i.intervenants.map((m) => m.prenom).join(', ') || 'Pas encore attribuée'}</Texte>
-      </Carte>
+      {i.client?.contact ? (
+        <Apparition rang={rang++}>
+          <Carte style={styles.carteLigne}>
+            <View style={styles.ti}>
+              <Icone nom="telephone" taille={24} couleur={c.marine} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Texte variante="doux" style={{ fontSize: 15 }}>Contact sur place</Texte>
+              <Texte variante="fort">{i.client.contact}</Texte>
+            </View>
+          </Carte>
+        </Apparition>
+      ) : null}
+
+      <Apparition rang={rang++}>
+        <Carte style={styles.carteLigne}>
+          <View style={styles.ti}>
+            <Icone nom="personne" taille={24} couleur={c.marine} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Texte variante="doux" style={{ fontSize: 15 }}>Intervenants</Texte>
+            <Texte variante="fort">{i.intervenants.map((m) => m.prenom).join(', ') || 'Pas encore attribuée'}</Texte>
+          </View>
+        </Carte>
+      </Apparition>
 
       {apprenti && !close ? <Bandeau texte="La fiche est remplie par le technicien avec qui tu travailles." /> : null}
     </Ecran>
   );
 }
 
-function Info({ icone, titre, texte, jaune }: { icone: 'cle' | 'alerte' | 'telephone'; titre: string; texte: string; jaune?: boolean }) {
+const ICONE_TYPE: Partial<Record<InterventionVue['type'], NomIcone>> = {
+  entretien: 'flamme',
+  depannage: 'cle_molette',
+  sav: 'cle_molette',
+  installation: 'boite',
+};
+
+function iconeAcces(f: string): NomIcone {
+  if (/code|badge|cl[ée]/i.test(f)) return 'cle';
+  if (/[ée]tage|niveau/i.test(f)) return 'couches';
+  return 'info';
+}
+
+/** Bouton clair sur fond béton (« Y aller », « Appeler »). */
+function Fantome({ icone, texte, onPress }: { icone: NomIcone; texte: string; onPress: () => void }) {
   return (
-    <View style={[styles.info, jaune && { backgroundColor: c.jauneDoux }]}>
-      <View style={styles.infoIcone}>
-        <Icone nom={icone} taille={22} couleur={c.marine} />
-      </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Texte variante="doux" style={{ fontSize: 15 }}>{titre}</Texte>
-        <Texte variante="fort">{texte}</Texte>
-      </View>
-    </View>
+    <Appui accessibilityRole="button" onPress={onPress} echelle={0.96} style={styles.fantome}>
+      <Icone nom={icone} taille={22} couleur={c.marine} />
+      <Text style={styles.fantomeTexte}>{texte}</Text>
+    </Appui>
   );
 }
 
 const styles = StyleSheet.create({
   haut: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   numero: { fontFamily: polices.texte700, fontSize: 15, color: c.texteDoux },
-  surtitre: { fontFamily: polices.texte700, fontSize: 13, color: c.texteDoux, textTransform: 'uppercase', letterSpacing: 1 },
-  info: { backgroundColor: c.blanc, borderRadius: 22, padding: 14, flexDirection: 'row', gap: 14, alignItems: 'center' },
-  infoIcone: { width: 48, height: 48, borderRadius: 15, backgroundColor: c.beton, alignItems: 'center', justifyContent: 'center' },
+  surtitre: { fontFamily: polices.texte700, fontSize: 14, color: c.texteDoux, textTransform: 'uppercase', letterSpacing: 1 },
+  faits: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 },
+  fait: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.beton, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  faitTexte: { fontFamily: polices.texte700, fontSize: 16, color: c.marine },
+  deux: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  fantome: { flex: 1, height: 56, borderRadius: 18, backgroundColor: c.beton, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  fantomeTexte: { fontFamily: polices.texte700, fontSize: 18, color: c.marine },
+  carteLigne: { borderRadius: 26, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  ti: { width: 58, height: 58, borderRadius: 18, backgroundColor: c.beton, alignItems: 'center', justifyContent: 'center' },
+  mot: { backgroundColor: '#FFF4D1', borderRadius: 22, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  motTitre: { fontFamily: polices.texte700, fontSize: 15, color: '#4A3A00', textTransform: 'uppercase', letterSpacing: 0.9 },
+  motTexte: { fontFamily: polices.texte, fontSize: 17, lineHeight: 22, color: '#4A3A00' },
 });
