@@ -1,3 +1,4 @@
+import type { ReglagesFacturation } from './devis.ts';
 // Types des données stockées dans Supabase (voir supabase/migrations).
 
 export type RoleMembre =
@@ -41,6 +42,8 @@ export interface Entreprise {
   email: string | null;
   metiers: string[];
   logo_chemin: string | null;
+  /** Mentions de facturation (assurance, médiateur, objectif…), voir devis.ts. */
+  facturation?: ReglagesFacturation | null;
   cree_le: string;
 }
 

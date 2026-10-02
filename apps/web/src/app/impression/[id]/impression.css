@@ -1,0 +1,24 @@
+/* Page à imprimer : deux feuilles A4 (document + conditions particulières). */
+.df.impression { min-height: 100vh; padding: 24px 16px 48px; }
+.df.impression .barre-impression {
+  max-width: 210mm; margin: 0 auto 16px; display: flex; gap: 12px; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; font-size: 14px; color: var(--gris);
+}
+.df.impression .barre-impression b { color: var(--encre); }
+.df.impression .feuilles { max-width: 210mm; margin: 0 auto; }
+
+@page { size: A4; margin: 0; }
+@media print {
+  html, body { background: #fff !important; }
+  .df.impression { padding: 0; animation: none; }
+  .df.impression .barre-impression { display: none; }
+  .df.impression .feuilles { max-width: none; padding: 0; border: 0; border-radius: 0; background: none; gap: 0; display: block; }
+  .df.impression .papier {
+    /* Le papier de l'aperçu, agrandi d'un quart pour remplir la feuille. */
+    zoom: 1.25; width: calc(210mm / 1.25); height: calc(296mm / 1.25); min-height: 0; aspect-ratio: auto;
+    box-shadow: none; border-radius: 0; padding: 11mm 11mm 8mm; break-after: page; overflow: hidden;
+  }
+  .df.impression .papier.page2 { break-after: auto; }
+  .df.impression .papier .totaux .ttc { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .df.impression * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

@@ -9,6 +9,7 @@ const LIENS: { href: string; libelle: string; icone: NomIcone }[] = [
   { href: '/planning', libelle: 'Planning', icone: 'calendrier' },
   { href: '/interventions', libelle: 'Interventions', icone: 'interventions' },
   { href: '/clients', libelle: 'Clients', icone: 'clients' },
+  { href: '/devis', libelle: 'Devis et factures', icone: 'devis' },
   { href: '/equipe', libelle: 'Équipe', icone: 'equipe' },
 ];
 

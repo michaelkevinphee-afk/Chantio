@@ -15,6 +15,7 @@ const TRACES = {
   plus: 'M12 5v14M5 12h14',
   calendrier: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2',
   gauche: 'M15 18l-6-6 6-6',
+  devis: 'M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5',
 } as const;
 
 export type NomIcone = keyof typeof TRACES;
