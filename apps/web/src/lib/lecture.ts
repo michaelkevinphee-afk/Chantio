@@ -118,6 +118,23 @@ export async function lireFichierImporte(fichier: Buffer, typeMime: string, nom:
     return JSON.parse(texte.text) as ChampsLus;
   } catch (e) {
     console.error('Lecture automatique', e);
-    return { message: 'La lecture automatique a échoué : complétez les champs à la main.' };
+    return { message: raisonEchec(e) };
   }
+}
+
+/** Traduit l'erreur de l'API en une phrase qui dit quoi faire. */
+function raisonEchec(e: unknown): string {
+  if (e instanceof Anthropic.APIConnectionTimeoutError) return 'La lecture a pris trop de temps : relancez-la.';
+  if (e instanceof Anthropic.APIError) {
+    const detail = String(e.message ?? '');
+    if (e.status === 401) return 'Clé ANTHROPIC_API_KEY refusée : vérifiez-la dans Vercel, puis redéployez.';
+    if (e.status === 403) return 'Cette clé n’a pas le droit de lire les documents : vérifiez le compte Anthropic.';
+    if (/credit balance/i.test(detail)) return 'Crédit Anthropic épuisé : ajoutez du crédit dans Billing sur console.anthropic.com.';
+    if (e.status === 404) return 'Modèle de lecture introuvable sur ce compte Anthropic.';
+    if (e.status === 413) return 'Fichier trop lourd pour la lecture automatique.';
+    if (e.status === 429) return 'Trop de lectures en même temps : relancez dans une minute.';
+    if (e.status && e.status >= 500) return 'Le service de lecture est surchargé : relancez dans quelques minutes.';
+    return `La lecture automatique a échoué (${e.status ?? 'réseau'}) : ${detail.slice(0, 160)}`;
+  }
+  return 'La lecture automatique a échoué : complétez les champs à la main.';
 }
