@@ -102,7 +102,10 @@ export async function lireFichierImporte(fichier: Buffer, typeMime: string, nom:
       };
 
   try {
-    const client = new Anthropic();
+    // Une clé créée au niveau de l'organisation (sans espace de travail) exige
+    // l'identifiant de l'espace : il se pose dans Vercel sous ANTHROPIC_WORKSPACE_ID.
+    const espace = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
+    const client = new Anthropic(espace ? { defaultHeaders: { 'anthropic-workspace-id': espace } } : {});
     const reponse = await client.messages.create({
       model: MODELE,
       max_tokens: 16000,
@@ -129,12 +132,16 @@ function raisonEchec(e: unknown): string {
     const detail = String(e.message ?? '');
     if (e.status === 401) return 'Clé ANTHROPIC_API_KEY refusée : vérifiez-la dans Vercel, puis redéployez.';
     if (e.status === 403) return 'Cette clé n’a pas le droit de lire les documents : vérifiez le compte Anthropic.';
+    if (/not scoped to a workspace/i.test(detail))
+      return 'Clé Anthropic sans espace de travail : créez une clé dans l’espace « Default » de la console Anthropic, ou ajoutez ANTHROPIC_WORKSPACE_ID dans Vercel.';
+    if (/workspace/i.test(detail) && (e.status === 400 || e.status === 404))
+      return 'Espace de travail Anthropic introuvable : vérifiez ANTHROPIC_WORKSPACE_ID dans Vercel.';
     if (/credit balance/i.test(detail)) return 'Crédit Anthropic épuisé : ajoutez du crédit dans Billing sur console.anthropic.com.';
     if (e.status === 404) return 'Modèle de lecture introuvable sur ce compte Anthropic.';
     if (e.status === 413) return 'Fichier trop lourd pour la lecture automatique.';
     if (e.status === 429) return 'Trop de lectures en même temps : relancez dans une minute.';
     if (e.status && e.status >= 500) return 'Le service de lecture est surchargé : relancez dans quelques minutes.';
-    return `La lecture automatique a échoué (${e.status ?? 'réseau'}) : ${detail.slice(0, 160)}`;
+    return `La lecture automatique a échoué (${e.status ?? 'réseau'}) : ${detail.slice(0, 300)}`;
   }
   return 'La lecture automatique a échoué : complétez les champs à la main.';
 }
