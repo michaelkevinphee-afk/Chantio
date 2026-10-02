@@ -4,6 +4,9 @@ import { lectureActivee } from '@/lib/lecture';
 import { contexteBureau } from '@/lib/session';
 import { Verification } from './verification';
 
+// La lecture d'un document peut prendre jusqu'à une minute.
+export const maxDuration = 60;
+
 export const metadata = { title: 'Vérifier la lecture · Chantio' };
 
 export default async function PageVerification({ params }: PageProps<'/devis/import/[id]'>) {
