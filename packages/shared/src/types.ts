@@ -69,6 +69,26 @@ export interface Client {
   email: string | null;
   adresse_facturation: string | null;
   notes: string | null;
+  civilite: string | null;
+  mobile: string | null;
+  siren: string | null;
+  siret: string | null;
+  forme_juridique: string | null;
+  activite: string | null;
+  tva_intracom: string | null;
+  site_web: string | null;
+  cree_le: string;
+}
+
+/** Personne à joindre chez un client (gestionnaire, gardien, comptable…). */
+export interface ContactClient {
+  id: string;
+  entreprise_id: string;
+  client_id: string;
+  nom: string;
+  fonction: string | null;
+  telephone: string | null;
+  email: string | null;
   cree_le: string;
 }
 

@@ -2,14 +2,16 @@ import type { StatutIntervention } from '@chantio/shared';
 import { LienBouton, Titre } from '@/components/ui';
 import { contexteBureau } from '@/lib/session';
 import { SELECT_LISTE, techniciens, type InterventionListe } from '@/lib/requetes';
+import { adresse } from './adresse';
 import { FILTRES } from './filtres';
 import { ListeInterventions } from './liste';
+import { VoletIntervention } from './volet-intervention';
 
 export const metadata = { title: 'Interventions · Chantio' };
 
 export default async function Interventions({ searchParams }: PageProps<'/interventions'>) {
   const { supabase } = await contexteBureau();
-  const { statut, q } = await searchParams;
+  const { statut, q, fiche } = await searchParams;
   const filtre = typeof statut === 'string' && FILTRES.includes(statut as StatutIntervention) ? (statut as StatutIntervention) : 'toutes';
   const recherche = typeof q === 'string' ? q.trim() : '';
 
@@ -44,6 +46,10 @@ export default async function Interventions({ searchParams }: PageProps<'/interv
           techniciens: techniciens(i),
         }))}
       />
+
+      {typeof fiche === 'string' && (
+        <VoletIntervention key={fiche} id={fiche} fermer={adresse(filtre, recherche)} />
+      )}
     </>
   );
 }

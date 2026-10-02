@@ -223,6 +223,27 @@ body {
   box-shadow: 0 6px 16px -8px rgb(16 26 61 / 0.3) !important;
 }
 
+/* Fiches qui glissent depuis la droite (components/volet.tsx). */
+@keyframes volet-entree {
+  from { transform: translateX(48px); opacity: 0; }
+}
+@keyframes volet-sortie {
+  to { transform: translateX(48px); opacity: 0; }
+}
+@keyframes volet-fond {
+  from { opacity: 0; }
+}
+@keyframes volet-fond-sortie {
+  to { opacity: 0; }
+}
+.volet-entree { animation: volet-entree 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.volet-sortie { animation: volet-sortie 0.18s ease-in both; }
+.volet-fond { animation: volet-fond 0.25s ease both; }
+.volet-fond-sortie { animation: volet-fond-sortie 0.18s ease-in both; }
+@media (prefers-reduced-motion: reduce) {
+  .volet-entree, .volet-sortie, .volet-fond, .volet-fond-sortie { animation: none; }
+}
+
 /* Planning : colonne des techniciens puis une colonne par jour. */
 .grille-planning {
   display: grid;

@@ -1,20 +1,20 @@
 import type { CSSProperties } from 'react';
-import { initiales, LIBELLE_ROLE, type Membre, type RoleMembre } from '@chantio/shared';
+import { initiales, LIBELLE_ROLE, type Membre } from '@chantio/shared';
 import { EnvoiPhoto } from '@/components/envoi-photo';
 import { Icone } from '@/components/icones';
-import { BoutonEnvoi, LienEnvoi } from '@/components/retour';
+import { LienEnvoi } from '@/components/retour';
 import { Avatar, LienBouton, Panneau, Puce, Titre } from '@/components/ui';
+import { Volet } from '@/components/volet';
 import { liensProfils } from '@/lib/profils';
 import { contexteBureau } from '@/lib/session';
-import { changerActif, inviter, renvoyer } from './actions';
+import { changerActif, renvoyer } from './actions';
+import { FormulaireCollaborateur } from './formulaire-collaborateur';
 
 export const metadata = { title: 'Équipe · Chantio' };
 
-const ROLES_INVITABLES: RoleMembre[] = ['technicien', 'chef_chantier', 'assistant', 'apprenti', 'sous_traitant', 'dirigeant'];
-
 export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
   const { supabase, membre: moi, entreprise } = await contexteBureau();
-  const { erreur, invite, renvoi, sansmail } = await searchParams;
+  const { erreur, invite, renvoi, sansmail, nouveau } = await searchParams;
   const { data } = await supabase.from('membres').select('*').order('actif', { ascending: false }).order('prenom');
   const membres = (data ?? []) as Membre[];
   const dirigeant = moi.role === 'dirigeant';
@@ -30,8 +30,8 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
         sous="Les personnes qui utilisent Chantio dans votre entreprise"
         actions={
           dirigeant && (
-            <LienBouton href="#ajouter">
-              <Icone nom="plus" taille={18} /> Ajouter un collaborateur
+            <LienBouton href="/equipe?nouveau=1" scroll={false}>
+              <Icone nom="plus" taille={18} /> Nouveau collaborateur
             </LienBouton>
           )
         }
@@ -39,6 +39,16 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
         Équipe
       </Titre>
 
+      {erreur && !nouveau && (
+        <p className="apparition mb-6 rounded-[14px] bg-rouge-doux px-4 py-3 text-sm font-semibold text-rouge">{erreur}</p>
+      )}
+      {invite && (
+        <p className="apparition mb-6 rounded-[14px] bg-vert-doux px-4 py-3 text-sm font-semibold text-vert">
+          {sansmail
+            ? `${invite} fait partie de l’équipe, mais l’e-mail n’a pas pu partir (${sansmail}). Dites-lui d’installer l’appli Chantio et de toucher « Première connexion ou mot de passe oublié » avec son adresse.`
+            : `✓ ${invite} fait partie de l’équipe. Un e-mail avec un code vient de partir : dites-lui d’installer l’appli Chantio et de toucher « Première connexion ou mot de passe oublié » (pensez aux spams).`}
+        </p>
+      )}
       {renvoi && (
         <p className={`apparition mb-6 rounded-[14px] px-4 py-3 text-sm font-semibold ${sansmail ? 'bg-rouge-doux text-rouge' : 'bg-vert-doux text-vert'}`}>
           {sansmail
@@ -146,33 +156,14 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
             </Panneau>
           )}
 
-          {/* Emplacement du formulaire d'ajout : la fiche « Nouveau collaborateur » prendra sa place. */}
-          {dirigeant && (
-            <Panneau titre="Ajouter quelqu’un" className="apparition scroll-mt-6" style={{ '--i': 3 } as CSSProperties}>
-              <form id="ajouter" action={inviter} className="space-y-3 p-5">
-                <div className="grid grid-cols-2 gap-2">
-                  <input name="prenom" className="champ" required placeholder="Prénom" aria-label="Prénom" />
-                  <input name="nom" className="champ" placeholder="Nom" aria-label="Nom" />
-                </div>
-                <input name="email" type="email" className="champ" required placeholder="E-mail" aria-label="E-mail" />
-                <input name="telephone" type="tel" className="champ" placeholder="Téléphone" aria-label="Téléphone" />
-                <select name="role" className="champ" defaultValue="technicien" aria-label="Rôle">
-                  {ROLES_INVITABLES.map((r) => <option key={r} value={r}>{LIBELLE_ROLE[r]}</option>)}
-                </select>
-                {erreur && <p className="text-sm font-semibold text-rouge">{erreur}</p>}
-                {invite && (
-                  <p className="rounded-xl bg-vert-doux p-3 text-sm text-vert">
-                    {sansmail
-                      ? `C’est noté, mais l’e-mail n’a pas pu partir (${sansmail}). Dites à ${invite} d’installer l’appli Chantio et de toucher « Première connexion ou mot de passe oublié » avec cette adresse.`
-                      : `C’est noté. Un e-mail avec un code vient de partir. Dites à ${invite} d’installer l’appli Chantio et de toucher « Première connexion ou mot de passe oublié » (pensez aux spams).`}
-                  </p>
-                )}
-                <BoutonEnvoi className="w-full" enCours="Ajout…">Ajouter à l’équipe</BoutonEnvoi>
-              </form>
-            </Panneau>
-          )}
         </div>
       </div>
+
+      {dirigeant && nouveau && (
+        <Volet fermer="/equipe" titre="Nouveau collaborateur" sous="Un code part par e-mail pour sa première connexion">
+          <FormulaireCollaborateur erreur={typeof erreur === 'string' ? erreur : undefined} />
+        </Volet>
+      )}
     </>
   );
 }

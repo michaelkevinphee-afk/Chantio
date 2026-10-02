@@ -9,7 +9,7 @@ export const metadata = { title: 'Nouvelle intervention · Chantio' };
 
 export default async function NouvelleIntervention({ searchParams }: PageProps<'/interventions/nouvelle'>) {
   const { supabase } = await contexteBureau();
-  const [clients, equipe, { erreur }] = await Promise.all([listerClients(supabase), listerEquipe(supabase), searchParams]);
+  const [clients, equipe, { erreur, client }] = await Promise.all([listerClients(supabase), listerEquipe(supabase), searchParams]);
   const intervenants = equipe.filter((m) => m.role !== 'assistant');
 
   return (
@@ -21,6 +21,7 @@ export default async function NouvelleIntervention({ searchParams }: PageProps<'
             <legend className="px-1 text-xl font-extrabold">Client</legend>
             <ChoixClient
               clients={clients}
+              initial={typeof client === 'string' && clients.some((c) => c.id === client) ? client : undefined}
               types={Object.entries(LIBELLE_TYPE_CLIENT).map(([valeur, libelle]) => ({ valeur, libelle }))}
             />
           </fieldset>

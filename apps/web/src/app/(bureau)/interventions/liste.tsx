@@ -1,9 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { LIBELLE_STATUT, LIBELLE_TYPE, dateCourte, heure, numero, type StatutIntervention } from '@chantio/shared';
 import { Puce, PuceStatut, Vide } from '@/components/ui';
+import { LigneCliquable } from '@/components/volet';
+import { adresse } from './adresse';
 import { FILTRES } from './filtres';
 
 export type LigneIntervention = {
@@ -41,11 +42,7 @@ export function ListeInterventions({
 
   // Garde le filtre dans l'adresse (retour arrière, lien partagé) sans recharger.
   function majAdresse(f: string, q: string) {
-    const p = new URLSearchParams();
-    if (f !== 'toutes') p.set('statut', f);
-    if (q.trim()) p.set('q', q.trim());
-    const qs = p.toString();
-    window.history.replaceState(null, '', qs ? `/interventions?${qs}` : '/interventions');
+    window.history.replaceState(null, '', adresse(f, q));
   }
 
   const cherchees = useMemo(() => {
@@ -126,17 +123,13 @@ export function ListeInterventions({
             </thead>
             <tbody className="divide-y divide-trait">
               {visibles.map((i) => (
-                <tr key={i.id} className="hover:bg-fond">
-                  <td className="px-4 py-3 font-mono text-xs text-gris">
-                    <Link href={`/interventions/${i.id}`}>{numero(i.numero)}</Link>
-                  </td>
+                <LigneCliquable key={i.id} href={adresse(filtre, recherche, i.id)}>
+                  <td className="px-4 py-3 font-mono text-xs text-gris">{numero(i.numero)}</td>
                   <td className="px-4 py-3 whitespace-nowrap" suppressHydrationWarning>
                     {dateCourte(i.date_prevue)} {heure(i.heure_prevue)}
                   </td>
                   <td className="px-4 py-3 font-semibold">
-                    <Link href={`/interventions/${i.id}`} className="hover:underline">
-                      {i.client}
-                    </Link>
+                    {i.client}
                     {i.ville && <span className="block text-xs font-normal text-gris">{i.ville}</span>}
                   </td>
                   <td className="px-4 py-3">
@@ -147,7 +140,7 @@ export function ListeInterventions({
                   <td className="px-4 py-3">
                     <PuceStatut statut={i.statut} />
                   </td>
-                </tr>
+                </LigneCliquable>
               ))}
             </tbody>
           </table>
