@@ -5,6 +5,7 @@ import { LIBELLE_STATUT, LIBELLE_TYPE, dateCourte, heure, numero, type StatutInt
 import { Puce, PuceStatut, Vide } from '@/components/ui';
 import { LigneCliquable } from '@/components/volet';
 import { adresse } from './adresse';
+import { FILTRES } from './filtres';
 
 export type LigneIntervention = {
   id: string;
@@ -19,17 +20,6 @@ export type LigneIntervention = {
   urgence: string;
   techniciens: string;
 };
-
-export const FILTRES: (StatutIntervention | 'toutes')[] = [
-  'toutes',
-  'a_planifier',
-  'planifiee',
-  'en_cours',
-  'terminee',
-  'a_reprendre',
-  'validee',
-  'facturee',
-];
 
 const sansAccent = (t: string) => t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
