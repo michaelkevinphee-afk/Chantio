@@ -180,6 +180,12 @@ export function SuiviDocument({ document: d, historique }: { document: DocumentL
         </>
       )}
 
+      {!facture && d.statut !== 'refuse' && d.statut !== 'annule' && (
+        <Link className={`btn petit ${d.statut === 'signe' ? '' : 'plein'}`} href={`/interventions/nouvelle?devis=${d.id}`}>
+          <Picto nom="camion" />
+          Créer l’intervention
+        </Link>
+      )}
       <button className="btn petit" type="button" onClick={() => lancer(() => dupliquer(d.id), 'Copie créée', (id) => `/devis/${id}`)}>
         Dupliquer
       </button>

@@ -118,7 +118,7 @@ export default async function DetailIntervention({ params, searchParams }: PageP
             {i.client_complet?.email && <p>{i.client_complet.email}</p>}
             <p>{adresseComplete(i.site)}</p>
             {i.site_complet?.acces && <p className="text-gris">Accès : {i.site_complet.acces}</p>}
-            {i.description && <p className="rounded-xl bg-doux p-3">{i.description}</p>}
+            {i.description && <p className="whitespace-pre-line rounded-xl bg-doux p-3">{i.description}</p>}
           </section>
 
           {modifiable ? (

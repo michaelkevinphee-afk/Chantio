@@ -14,12 +14,14 @@ const texte = (d: FormData, cle: string) => {
 };
 
 function retour(chemin: string, erreur: string): never {
-  redirect(`${chemin}?erreur=${encodeURIComponent(erreur)}`);
+  redirect(`${chemin}${chemin.includes('?') ? '&' : '?'}erreur=${encodeURIComponent(erreur)}`);
 }
 
 export async function creerIntervention(d: FormData) {
   const { supabase, entreprise, membre } = await contexteBureau();
-  const page = '/interventions/nouvelle';
+  // Une erreur ramène sur la fiche, pré-remplie à nouveau si elle venait d'un devis.
+  const devis = texte(d, 'devis');
+  const page = devis ? `/interventions/nouvelle?devis=${encodeURIComponent(devis)}` : '/interventions/nouvelle';
 
   // 1. Le client : existant, ou nouveau.
   let clientId = texte(d, 'client_id');
