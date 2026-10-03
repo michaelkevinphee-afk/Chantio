@@ -348,6 +348,8 @@ h1 em,.head2 h2 em{background:var(--grad);-webkit-background-clip:text;backgroun
 .pilot{background:var(--grad);color:#fff;border:0}
 .pilot b{color:#fff}
 .pilot .tag{background:rgba(255,255,255,.18);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.pilote{display:flex;align-items:center;gap:14px}
+.pilote img{width:52px;height:52px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 0 0 3px rgba(255,255,255,.55)}
 .ticker{overflow:hidden;background:#E3E9FF;border-bottom:1px solid var(--line);padding-block:14px}
 .ticker .track{display:flex;gap:40px;width:max-content;font:800 15px var(--display);letter-spacing:-.01em;color:#2F54EB}
 .ticker span{display:inline-flex;align-items:center;gap:40px;white-space:nowrap}
@@ -451,27 +453,27 @@ section.tint{background:var(--grad-soft);overflow-x:clip}
       </div>
       <div class="devices" aria-label="Chantio sur ordinateur et sur téléphone">
         <div class="mac">
-          <div class="lid"><div class="scr"><img class="on" src="img/web-dash.webp" width="2016" height="1260" alt="Le tableau de bord du bureau : interventions par statut, fiches à valider et équipe en direct"></div></div>
+          <div class="lid"><div class="scr"><img class="on" src="img/web-dash.webp?v=8" width="2016" height="1260" alt="Le tableau de bord du bureau : interventions par statut, fiches à valider et équipe en direct"></div></div>
           <div class="base"></div>
         </div>
         <div class="iphone hero-phone" id="heroPhone">
           <div class="scr"><div class="sb" aria-hidden="true"><span class="t">9:41</span><span class="di"><span class="la"><i></i>Fiche signée · Mme Laurent</span></span><span class="ic"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.2c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.6 10.6 0 0 0 8 .4C5.1.4 2.4 1.5.5 3.4l1.3 1.3A8.8 8.8 0 0 1 8 2.2Zm0 3.6c1.4 0 2.7.5 3.6 1.4l1.3-1.3A7 7 0 0 0 8 4c-1.9 0-3.6.7-4.9 1.9l1.3 1.3c.9-.9 2.2-1.4 3.6-1.4Zm0 3.6c-.5 0-1 .2-1.3.5L8 11.2l1.3-1.3c-.3-.3-.8-.5-1.3-.5Z"/></svg><b class="bat"><i></i></b></span></div>
-            <img class="on" src="img/app-journee.webp" width="860" height="1864" alt="Écran Ma journée : la prochaine intervention à 8 h 30 chez Mme Laurent">
-            <img src="img/app-constat.webp" width="860" height="1864" alt="Écran Constat : le technicien choisit ce qu'il a trouvé">
-            <img src="img/app-mesures.webp" width="860" height="1864" alt="Écran Mesures : CO, CO₂ et température des fumées">
-            <img src="img/app-signature.webp" width="860" height="1864" alt="Écran Signature : le client signe sur le téléphone">
-            <img src="img/app-rapport.webp" width="860" height="1864" alt="Le rapport d'intervention terminé">
+            <img class="on" src="img/app-journee.webp?v=8" width="860" height="1864" alt="Écran Ma journée : la prochaine intervention à 8 h 30 chez Mme Laurent">
+            <img src="img/app-constat.webp?v=8" width="860" height="1864" alt="Écran Constat : le technicien choisit ce qu'il a trouvé (fuite, joint usé, entartrage…)">
+            <img src="img/app-mesures.webp?v=8" width="860" height="1864" alt="Écran Mesures : CO, CO₂ et température des fumées">
+            <img src="img/app-signature.webp?v=8" width="860" height="1864" alt="Écran Signature : le client signe sur le téléphone">
+            <img src="img/app-envoyee.webp?v=8" width="860" height="1864" alt="Écran Fiche envoyée : le bureau reçoit la fiche aussitôt">
           </div>
         </div>
         <div class="float f1"><div class="dot" style="background:#D1FADF;color:#027A48"><svg width="18" height="18"><use href="#ok"/></svg></div><div>Fiche signée à 10h42<small>Rapport envoyé au bureau</small></div></div>
-        <div class="float f2"><div class="dot" style="background:#E6ECFE;color:#2F54EB"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></div><div>CO mesuré : 12 ppm<small>Conforme</small></div></div>
+        <div class="float f2"><div class="dot" style="background:#E6ECFE;color:#2F54EB"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></div><div>CO mesuré : 4 ppm<small>Conforme</small></div></div>
       </div>
     </div>
   </section>
 
   <div class="pilot">
     <div class="wrap">
-      <div>Conçu et testé avec <b>Verger</b>, entreprise de plomberie et de chauffage à Paris 16e depuis 1984.</div>
+      <div class="pilote"><img src="img/christophe.webp" width="160" height="160" alt="Christophe Rambla, dirigeant de Verger"><div>Conçu et testé avec <b>Christophe Rambla</b>, dirigeant de <b>Verger</b>, entreprise de plomberie et de chauffage à Paris 16e depuis 1984.</div></div>
       <div class="tags"><span class="tag">Artisans</span><span class="tag">TPE</span><span class="tag">PME jusqu'à 50 techniciens</span></div>
     </div>
   </div>
@@ -499,21 +501,21 @@ section.tint{background:var(--grad-soft);overflow-x:clip}
       <div class="story">
         <ol class="chapters" id="chapters">
           <li data-i="0" class="on"><button type="button"><span class="k">Le matin</span><b>La journée du technicien</b><span class="d">Ses interventions dans l'ordre, l'adresse, le code d'accès et le mot du bureau. Un appui pour lancer l'itinéraire.</span></button></li>
-          <li data-i="1"><button type="button"><span class="k">Étape 1</span><b>Le constat</b><span class="d">Entretien, fuite, panne, odeur de gaz : le technicien sélectionne au lieu de rédiger.</span></button></li>
+          <li data-i="1"><button type="button"><span class="k">Étape 1</span><b>Le constat</b><span class="d">Fuite, joint usé, entartrage, pression basse : le technicien sélectionne au lieu de rédiger.</span></button></li>
           <li data-i="2"><button type="button"><span class="k">Étape 2</span><b>Les mesures</b><span class="d">CO, CO₂ et température des fumées. Chaque valeur est contrôlée et signalée hors norme.</span></button></li>
           <li data-i="3"><button type="button"><span class="k">Étape 3</span><b>Les pièces posées</b><span class="d">Les fournitures courantes en un appui, avec les quantités. Elles alimentent directement la facture.</span></button></li>
           <li data-i="4"><button type="button"><span class="k">Étape 4</span><b>La signature</b><span class="d">Le client relit et signe sur l'écran. En son absence, la fiche le mentionne et part quand même.</span></button></li>
-          <li data-i="5"><button type="button"><span class="k">Au bureau</span><b>Le rapport</b><span class="d">Un rapport clair à l'en-tête de l'entreprise, archivé avec l'historique de l'équipement.</span></button></li>
+          <li data-i="5"><button type="button"><span class="k">Envoi</span><b>La fiche part au bureau</b><span class="d">Dès l'envoi, le bureau la reçoit, la relit et la valide. Le technicien enchaîne sur son intervention suivante.</span></button></li>
         </ol>
         <div class="stick">
           <div class="iphone big" id="storyPhone">
             <div class="scr"><div class="sb" aria-hidden="true"><span class="t">9:41</span><span class="di"><span class="la"><i></i>Fiche signée · Mme Laurent</span></span><span class="ic"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.2c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.6 10.6 0 0 0 8 .4C5.1.4 2.4 1.5.5 3.4l1.3 1.3A8.8 8.8 0 0 1 8 2.2Zm0 3.6c1.4 0 2.7.5 3.6 1.4l1.3-1.3A7 7 0 0 0 8 4c-1.9 0-3.6.7-4.9 1.9l1.3 1.3c.9-.9 2.2-1.4 3.6-1.4Zm0 3.6c-.5 0-1 .2-1.3.5L8 11.2l1.3-1.3c-.3-.3-.8-.5-1.3-.5Z"/></svg><b class="bat"><i></i></b></span></div>
-              <img class="on" src="img/app-journee.webp" width="860" height="1864" alt="Écran Ma journée du technicien" loading="lazy">
-              <img src="img/app-constat.webp" width="860" height="1864" alt="Écran Constat avec tuiles Entretien, Fuite, Panne" loading="lazy">
-              <img src="img/app-mesures.webp" width="860" height="1864" alt="Écran Mesures de combustion" loading="lazy">
-              <img src="img/app-pieces.webp" width="860" height="1864" alt="Écran Pièces posées" loading="lazy">
-              <img src="img/app-signature.webp" width="860" height="1864" alt="Écran Signature du client" loading="lazy">
-              <img src="img/app-rapport.webp" width="860" height="1864" alt="Rapport d'intervention" loading="lazy">
+              <img class="on" src="img/app-journee.webp?v=8" width="860" height="1864" alt="Écran Ma journée du technicien" loading="lazy">
+              <img src="img/app-constat.webp?v=8" width="860" height="1864" alt="Écran Constat avec les tuiles Fuite, Joint usé, Entartrage" loading="lazy">
+              <img src="img/app-mesures.webp?v=8" width="860" height="1864" alt="Écran Mesures de combustion" loading="lazy">
+              <img src="img/app-pieces.webp?v=8" width="860" height="1864" alt="Écran Pièces posées" loading="lazy">
+              <img src="img/app-signature.webp?v=8" width="860" height="1864" alt="Écran Signature du client" loading="lazy">
+              <img src="img/app-envoyee.webp?v=8" width="860" height="1864" alt="Écran Fiche envoyée" loading="lazy">
             </div>
           </div>
           <div class="bar" aria-hidden="true"><i id="storyBar"></i></div>
@@ -526,22 +528,24 @@ section.tint{background:var(--grad-soft);overflow-x:clip}
     <div class="wrap">
       <div class="head2 rv"><div class="eyebrow">L'espace bureau</div><h2>Toute l'activité de l'entreprise sur un seul écran.</h2></div>
       <div class="tabs rv" role="tablist" aria-label="Écrans du bureau">
-        <button type="button" role="tab" id="t-dash" aria-selected="true" data-i="0" data-t="Tableau de bord" data-d="Les interventions du jour par statut, les fiches à relire et la position de chaque technicien.">Tableau de bord</button>
+        <button type="button" role="tab" id="t-dash" aria-selected="true" data-i="0" data-t="Tableau de bord" data-d="Les interventions du jour sur la carte, les fiches à valider et l'équipe en direct.">Tableau de bord</button>
         <button type="button" role="tab" id="t-plan" aria-selected="false" data-i="1" data-t="Planning" data-d="La semaine de toute l'équipe. Une intervention glissée sur un technicien apparaît aussitôt sur son mobile.">Planning</button>
         <button type="button" role="tab" id="t-list" aria-selected="false" data-i="2" data-t="Interventions" data-d="Toutes les interventions, filtrées par statut : à planifier, en cours, à valider, validées.">Interventions</button>
         <button type="button" role="tab" id="t-fiche" aria-selected="false" data-i="3" data-t="Fiche détaillée" data-d="Constat, mesures, temps passé et signature. Un clic pour valider et transmettre à la facturation.">Fiche détaillée</button>
+        <button type="button" role="tab" id="t-devis" aria-selected="false" data-i="4" data-t="Devis et factures" data-d="Devis, factures et relances au même endroit, avec le chiffre d'affaires du mois et l'objectif à atteindre.">Devis et factures</button>
       </div>
       <div class="deskshow rv" role="tabpanel" aria-labelledby="t-dash" id="webpanel">
         <div class="mac wide">
           <div class="lid"><div class="scr" id="deskScr">
-            <img class="on" src="img/web-dash.webp" width="2016" height="1260" alt="Tableau de bord" loading="lazy">
-            <img src="img/web-planning.webp" width="2016" height="1260" alt="Planning de la semaine" loading="lazy">
-            <img src="img/web-interventions.webp" width="2016" height="1260" alt="Liste des interventions" loading="lazy">
-            <img src="img/web-dfiche.webp" width="2016" height="1260" alt="Fiche d'intervention détaillée" loading="lazy">
+            <img class="on" src="img/web-dash.webp?v=8" width="2016" height="1260" alt="Tableau de bord" loading="lazy">
+            <img src="img/web-planning.webp?v=8" width="2016" height="1260" alt="Planning de la semaine" loading="lazy">
+            <img src="img/web-interventions.webp?v=8" width="2016" height="1260" alt="Liste des interventions" loading="lazy">
+            <img src="img/web-dfiche.webp?v=8" width="2016" height="1260" alt="Fiche d'intervention détaillée" loading="lazy">
+            <img src="img/web-devis.webp?v=8" width="2016" height="1260" alt="Devis et factures : chiffre d'affaires et devis en attente" loading="lazy">
           </div></div>
           <div class="base"></div>
         </div>
-        <div class="txt"><h3 id="webt">Tableau de bord</h3><p class="mut" id="webd">Les interventions du jour par statut, les fiches à relire et la position de chaque technicien.</p><div class="bar" aria-hidden="true"><i id="deskBar"></i></div></div>
+        <div class="txt"><h3 id="webt">Tableau de bord</h3><p class="mut" id="webd">Les interventions du jour sur la carte, les fiches à valider et l'équipe en direct.</p><div class="bar" aria-hidden="true"><i id="deskBar"></i></div></div>
       </div>
       <p class="brandnote">Exemple : l'espace de l'entreprise Verger. Chaque entreprise retrouve son logo et ses couleurs.</p>
     </div>
