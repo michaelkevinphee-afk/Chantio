@@ -255,10 +255,10 @@ body {
   border-bottom: 0;
 }
 .tete-carte.retard {
-  border-color: #F79009;
+  border-color: var(--color-rouge);
 }
 .tete-carte.retard::after {
-  border-top-color: #F79009;
+  border-top-color: var(--color-rouge);
 }
 .tete-carte:hover {
   transform: scale(1.08);

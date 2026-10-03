@@ -198,7 +198,7 @@ export function EquipeEnDirect({
           <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-gris max-sm:hidden">
             <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-cobalt" />Sur site</span>
             <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-pervenche" />En route</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#F79009]" />En retard</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-rouge" />En retard</span>
             <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-lavande" />Position masquée</span>
           </span>
         }
@@ -324,7 +324,7 @@ export function EquipeEnDirect({
                   key={i.id}
                   type="button"
                   onClick={() => voir(i.membres[0])}
-                  className="rounded-xl bg-[#FEF0C7] px-3 py-2 text-left text-[13px] font-bold text-[#B54708] transition hover:brightness-95"
+                  className="rounded-xl bg-rouge-doux px-3 py-2 text-left text-[13px] font-bold text-rouge transition hover:brightness-95"
                 >
                   {i.membres.map((id) => membres.find((x) => x.id === id)?.prenom).join(' et ')} : {minutes - enMinutes(i.heure!)} min de retard chez {i.client} ({hhmm(i.heure)})
                 </button>
@@ -352,10 +352,10 @@ export function EquipeEnDirect({
   );
 }
 
-const POINT = { site: 'bg-cobalt', retard: 'bg-[#F79009]', route: 'bg-pervenche', prevu: 'bg-pervenche', fini: 'bg-menthe', libre: 'bg-trait' };
+const POINT = { site: 'bg-cobalt', retard: 'bg-rouge', route: 'bg-pervenche', prevu: 'bg-pervenche', fini: 'bg-menthe', libre: 'bg-trait' };
 const PUCE = {
   site: 'bg-doux text-cobalt',
-  retard: 'bg-[#FEF0C7] text-[#B54708]',
+  retard: 'bg-rouge-doux text-rouge',
   route: 'bg-gris-doux text-encre',
   prevu: 'bg-gris-doux text-encre',
   fini: 'bg-vert-doux text-vert',

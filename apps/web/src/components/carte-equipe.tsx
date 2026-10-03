@@ -29,7 +29,7 @@ export interface PersonneCarte {
 const COULEUR: Record<ArretEquipe['etat'], string> = {
   fait: '#12B76A',
   cours: '#2F54EB',
-  retard: '#F79009',
+  retard: '#D92D20',
   attribuer: '#D92D20',
   prevu: '#2F54EB',
 };
