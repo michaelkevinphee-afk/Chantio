@@ -1,18 +1,25 @@
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
-import { aujourdhui, dateCourte, dateLongue, initiales, type Membre, type StatutIntervention } from '@chantio/shared';
-import { CarteDuJour } from '@/components/carte-du-jour';
+import {
+  aujourdhui,
+  dateCourte,
+  dateLongue,
+  initiales,
+  LIBELLE_ROLE,
+  type Membre,
+  type Pointage,
+  type PositionMembre,
+  type StatutIntervention,
+} from '@chantio/shared';
 import { Compteur } from '@/components/compteur';
+import { EquipeEnDirect } from '@/components/equipe-en-direct';
 import { Icone } from '@/components/icones';
-import { Avatar, LienBouton, Panneau, PuceStatut } from '@/components/ui';
+import { LienBouton, Panneau } from '@/components/ui';
 import { contexteBureau } from '@/lib/session';
 import { liensProfils } from '@/lib/profils';
-import { listerEquipe, SELECT_LISTE, techniciens, type InterventionListe } from '@/lib/requetes';
+import { listerEquipe, SELECT_LISTE, type InterventionListe } from '@/lib/requetes';
 
 export const metadata = { title: 'Pilotage · Chantio' };
-
-// « 08:30:00 » → « 8:30 », comme sur les maquettes.
-const hhmm = (h: string | null) => (h ? `${Number(h.slice(0, 2))}:${h.slice(3, 5)}` : '');
 
 // Décale l'apparition de chaque bloc.
 const cascade = (i: number) => ({ '--i': i }) as CSSProperties;
@@ -22,7 +29,7 @@ export default async function Pilotage() {
   const jour = aujourdhui();
   const debutMois = `${jour.slice(0, 8)}01`;
 
-  const [{ data: duJour }, { data: enAttente }, { count: factureesMois }, equipe] = await Promise.all([
+  const [{ data: duJour }, { data: enAttente }, { count: factureesMois }, equipe, { data: positions }] = await Promise.all([
     supabase.from('interventions').select(SELECT_LISTE).eq('date_prevue', jour).order('heure_prevue'),
     supabase
       .from('interventions')
@@ -35,9 +42,17 @@ export default async function Pilotage() {
       .eq('statut', 'facturee')
       .gte('facturee_le', debutMois),
     listerEquipe(supabase),
+    // Dernières positions partagées : seuls le dirigeant et les chefs de chantier les reçoivent.
+    supabase.from('positions').select('membre_id, latitude, longitude, precision_m, enregistree_le'),
   ]);
 
   const jourListe = (duJour ?? []) as InterventionListe[];
+  const { data: pointages } = jourListe.length
+    ? await supabase
+        .from('pointages')
+        .select('intervention_id, membre_id, genre, latitude, longitude, le')
+        .in('intervention_id', jourListe.map((i) => i.id))
+    : { data: [] };
   const attente = (enAttente ?? []) as InterventionListe[];
   const aValider = attente.filter((i) => i.statut === 'terminee');
   const aReprendre = attente.filter((i) => i.statut === 'a_reprendre');
@@ -120,174 +135,59 @@ export default async function Pilotage() {
         ))}
       </section>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Panneau
-          style={cascade(2)}
-          className="apparition"
-          titre="Aujourd’hui"
-          nombre={jourListe.length}
-          action={
-            <Link href="/interventions" className="inline-flex items-center gap-1 hover:underline">
-              Toutes les interventions <Icone nom="chevron" taille={16} />
-            </Link>
-          }
-        >
-          {jourListe.length === 0 ? (
-            <div className="px-6 py-14 text-center">
-              <p className="font-bold">Rien de prévu aujourd’hui</p>
-              <Link href="/interventions/nouvelle" className="mt-2 inline-block text-sm font-bold text-cobalt underline">
-                Planifier une intervention
-              </Link>
-            </div>
-          ) : (
-            <>
-              <div className="border-b border-trait">
-                <CarteDuJour
-                  arrets={jourListe.map((i) => ({
-                    id: i.id,
-                    heure: hhmm(i.heure_prevue) || 'Sans heure',
-                    titre: i.client?.nom ?? i.motif,
-                    detail: [i.motif, techniciens(i)].filter((t) => t && t !== '—').join(' · '),
-                    enCours: i.statut === 'en_cours',
-                    site: i.site,
-                  }))}
-                />
-              </div>
-              <ol className="divide-y divide-trait">
-                {jourListe.map((i, n) => {
-                  const tech = i.affectations[0]?.membre;
-                  return (
-                    <li key={i.id}>
-                      <Link
-                        href={`/interventions/${i.id}`}
-                        className="grid grid-cols-[28px_56px_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3.5 transition hover:bg-fond sm:grid-cols-[28px_56px_minmax(0,1fr)_150px_104px]"
-                      >
-                        <span
-                          className={`grid h-7 w-7 place-items-center rounded-full text-[13px] font-extrabold ${
-                            i.statut === 'en_cours' ? 'bg-menthe text-white' : 'bg-doux text-cobalt'
-                          }`}
-                        >
-                          {n + 1}
-                        </span>
-                        <span className={`text-lg font-extrabold tabular-nums ${i.statut === 'en_cours' ? 'text-cobalt' : ''}`}>
-                          {hhmm(i.heure_prevue) || '—'}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block truncate font-extrabold">{i.client?.nom}</span>
-                          <span className="block truncate text-sm text-gris">
-                            {i.motif}
-                            {i.site?.ville ? ` · ${i.site.ville}` : ''}
-                          </span>
-                        </span>
-                        <span className="hidden min-w-0 items-center gap-2 sm:flex">
-                          {tech ? (
-                            <>
-                              <Avatar url={photo(tech)} initiales={initiales(tech.prenom, tech.nom)} taille={28} />
-                              <span className="truncate text-sm font-bold text-gris">{techniciens(i)}</span>
-                            </>
-                          ) : (
-                            <span className="text-sm font-bold text-gris">Sans technicien</span>
-                          )}
-                        </span>
-                        <span className="justify-self-end">
-                          <PuceStatut statut={i.statut} />
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ol>
-            </>
-          )}
-        </Panneau>
-
-        <div className="grid gap-6">
-          <Panneau style={cascade(3)} className="apparition" titre="À traiter">
-            <ul className="divide-y divide-trait">
-              {aTraiter.map((t) => (
-                <li key={t.href}>
-                  <Link href={t.href} className={`flex items-center gap-3 px-5 py-3.5 transition hover:bg-fond ${t.n ? '' : 'opacity-60'}`}>
-                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${t.n ? t.ton : 'bg-gris-doux text-gris'}`}>
-                      <Icone nom={t.icone} taille={20} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-extrabold">{t.titre}</span>
-                      <span className="block truncate text-sm text-gris">{t.detail}</span>
-                    </span>
-                    <Icone nom="chevron" taille={18} className="text-gris" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <div className="border-t border-trait px-5 py-4">
-              <div className="mb-2 flex justify-between text-[13px] font-bold text-gris">
-                <span>Facturation du mois</span>
-                <span className="tabular-nums">{Math.round(partFacturee * 100)} %</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-doux">
-                <div className="remplissage degrade h-full rounded-full shadow-none" style={{ width: `${Math.round(partFacturee * 100)}%` }} />
-              </div>
-            </div>
-          </Panneau>
-
-          <Panneau
-            style={cascade(4)}
-            className="apparition"
-            titre={
-              <>
-                <span className="en-direct inline-block h-2 w-2 rounded-full bg-menthe" />
-                Équipe en direct
-              </>
-            }
-            action={
-              <Link href="/equipe" className="hover:underline">
-                Gérer
-              </Link>
-            }
-          >
-            <ul className="divide-y divide-trait">
-              {terrain.map((m) => {
-                const situation = situationDuJour(m.id, jourListe);
-                return (
-                  <li key={m.id} className="flex items-center gap-3 px-5 py-3">
-                    <Avatar url={photo(m)} initiales={initiales(m.prenom, m.nom)} taille={40} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-extrabold">
-                        {m.prenom} {m.nom ? `${m.nom.slice(0, 1)}.` : ''}
+      <EquipeEnDirect
+        membres={terrain.map((m) => ({
+          id: m.id,
+          prenom: m.prenom,
+          nom: m.nom,
+          initiales: initiales(m.prenom, m.nom),
+          role: LIBELLE_ROLE[m.role],
+          telephone: m.telephone,
+          photo: photo(m) ?? null,
+          partage: !!m.partage_position,
+        }))}
+        interventions={jourListe.map((i) => ({
+          id: i.id,
+          heure: i.heure_prevue,
+          client: i.client?.nom ?? i.motif,
+          motif: i.motif,
+          ville: i.site?.ville ?? null,
+          statut: i.statut,
+          membres: i.affectations.flatMap((a) => (a.membre ? [a.membre.id] : [])),
+          site: i.site,
+        }))}
+        positions={(positions ?? []) as PositionMembre[]}
+        pointages={(pointages ?? []) as Pointage[]}
+        aTraiter={
+            <Panneau style={cascade(4)} className="apparition" titre="À traiter">
+              <ul className="divide-y divide-trait">
+                {aTraiter.map((t) => (
+                  <li key={t.href}>
+                    <Link href={t.href} className={`flex items-center gap-3 px-5 py-3.5 transition hover:bg-fond ${t.n ? '' : 'opacity-60'}`}>
+                      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${t.n ? t.ton : 'bg-gris-doux text-gris'}`}>
+                        <Icone nom={t.icone} taille={20} />
                       </span>
-                      <span className="flex items-center gap-1.5 text-sm text-gris">
-                        <span className={`h-2 w-2 shrink-0 rounded-full ${situation.point}`} />
-                        <span className="truncate">{situation.texte}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-extrabold">{t.titre}</span>
+                        <span className="block truncate text-sm text-gris">{t.detail}</span>
                       </span>
-                    </span>
-                    {m.telephone && (
-                      <a
-                        href={`tel:${m.telephone.replace(/\s/g, '')}`}
-                        aria-label={`Appeler ${m.prenom}`}
-                        className="grid h-9 w-9 place-items-center rounded-xl border border-trait text-cobalt transition hover:border-cobalt hover:bg-doux"
-                      >
-                        <Icone nom="telephone" taille={16} />
-                      </a>
-                    )}
+                      <Icone nom="chevron" taille={18} className="text-gris" />
+                    </Link>
                   </li>
-                );
-              })}
-            </ul>
-          </Panneau>
-        </div>
-      </div>
+                ))}
+              </ul>
+              <div className="border-t border-trait px-5 py-4">
+                <div className="mb-2 flex justify-between text-[13px] font-bold text-gris">
+                  <span>Facturation du mois</span>
+                  <span className="tabular-nums">{Math.round(partFacturee * 100)} %</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-doux">
+                  <div className="remplissage degrade h-full rounded-full shadow-none" style={{ width: `${Math.round(partFacturee * 100)}%` }} />
+                </div>
+              </div>
+            </Panneau>
+        }
+      />
     </>
   );
-}
-
-/** Ce que fait un membre aujourd'hui, d'après ses interventions du jour. */
-function situationDuJour(membreId: string, jour: InterventionListe[]) {
-  const siennes = jour.filter((i) => i.affectations.some((a) => a.membre?.id === membreId));
-  const enCours = siennes.find((i) => i.statut === 'en_cours');
-  if (enCours) return { texte: `Sur site · ${enCours.client?.nom ?? ''}`, point: 'bg-cobalt en-direct' };
-  const suivante = siennes.find((i) => i.statut === 'planifiee' || i.statut === 'a_planifier');
-  if (suivante)
-    return { texte: `Prochaine ${hhmm(suivante.heure_prevue) || 'aujourd’hui'} · ${suivante.client?.nom ?? ''}`, point: 'bg-pervenche' };
-  if (siennes.length) return { texte: 'Journée terminée', point: 'bg-menthe' };
-  return { texte: 'Rien de prévu aujourd’hui', point: 'bg-trait' };
 }

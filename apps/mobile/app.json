@@ -49,7 +49,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Chantio utilise ta position pour te proposer l'ordre des chantiers qui fait rouler le moins."
+          "locationWhenInUsePermission": "Chantio utilise ta position pour te proposer l'ordre des chantiers qui fait rouler le moins et, si tu l'actives dans Moi, pour que le bureau voie où tu es pendant tes heures de travail."
         }
       ]
     ],

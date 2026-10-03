@@ -7,3 +7,4 @@ export * from './theme.ts';
 export * from './tournee.ts';
 export * from './agenda.ts';
 export * from './devis.ts';
+export * from './position.ts';

@@ -5,11 +5,21 @@ import type { FicheAEnvoyer } from '@chantio/shared';
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
 
-import type { SourceDonnees } from './donnees';
+import type { PositionTelephone, SourceDonnees } from './donnees';
 import { ecrire, lire } from './stockage';
 
 export type Operation =
   | { type: 'demarrer'; id: string; interventionId: string; erreur?: string }
+  | {
+      type: 'pointage';
+      id: string;
+      interventionId: string;
+      genre: 'arrivee' | 'depart';
+      position: PositionTelephone | null;
+      /** Heure sur le téléphone au moment de Démarrer / Terminer. */
+      le: string;
+      erreur?: string;
+    }
   | {
       type: 'fiche';
       id: string;
@@ -71,6 +81,15 @@ function supprimerPhotosLocales(op: Extract<Operation, { type: 'fiche' }>) {
 async function executer(source: SourceDonnees, op: Operation) {
   if (op.type === 'demarrer') {
     await source.demarrer(op.interventionId);
+    return;
+  }
+  if (op.type === 'pointage') {
+    try {
+      await source.pointer(op.interventionId, op.genre, op.position, op.le);
+    } catch (e) {
+      // Sans réseau, on réessaiera. Refusé par le serveur : on n'insiste pas, ce n'est qu'un pointage.
+      if (/network|fetch|timeout|réseau/i.test(e instanceof Error ? e.message : String(e))) throw e;
+    }
     return;
   }
   for (const p of op.photos) {

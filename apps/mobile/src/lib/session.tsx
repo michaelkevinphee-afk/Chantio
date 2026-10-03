@@ -9,6 +9,7 @@ import { effacerBrouillon, versFiche, type Brouillon } from './brouillons';
 import { configurationOk } from './config';
 import { enErreur, type InterventionVue, type Profil, type SourceDonnees } from './donnees';
 import { abonner, ajouter, estEnAttente, reinitialiserBoite, traiterBoite, type Operation } from './envoi';
+import { autoriserPosition, positionActuelle, usePartagePosition } from './position';
 import { sourceDemo } from './source-demo';
 import { sourceSupabase } from './source-supabase';
 import { ecrire, lire, stockageEnMemoire } from './stockage';
@@ -50,6 +51,8 @@ interface Session {
   rechargerProfil(): void;
   rafraichir(): Promise<void>;
   demarrer(intervention: InterventionVue): void;
+  /** Active ou coupe le partage de position (demande l'autorisation du téléphone en l'activant). */
+  reglerPartage(actif: boolean): Promise<void>;
   envoyerFiche(brouillon: Brouillon): Promise<'envoyee' | 'en_attente'>;
 }
 
@@ -196,9 +199,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, [cheminPhoto]);
 
-  const majMembre = async (photo_chemin: string | null) => {
+  usePartagePosition(profil ?? null, source);
+
+  const majMembre = async (modif: Partial<Profil['membre']>) => {
     if (!profil) return;
-    const p = { ...profil, membre: { ...profil.membre, photo_chemin } };
+    const p = { ...profil, membre: { ...profil.membre, ...modif } };
     setProfil(p);
     if (uid) await ecrire(cleProfil(uid), p);
   };
@@ -259,6 +264,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setDemo(oui);
   };
 
+  /** Note l'heure (et le lieu, si la localisation est autorisée) de Démarrer / Terminer, sans faire attendre l'écran. */
+  const pointer = (interventionId: string, genre: 'arrivee' | 'depart') => {
+    const le = new Date().toISOString();
+    positionActuelle()
+      .then((position) => ajouter({ type: 'pointage', id: `${genre}:${interventionId}:${le}`, interventionId, genre, position, le }))
+      .then(vider)
+      .catch(() => {});
+  };
+
   const valeur: Session = {
     etat,
     source,
@@ -277,14 +291,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const chemin = await source.changerPhotoProfil(profil.membre, uriLocale);
       // Affichage immédiat avec le fichier local, sans attendre le lien signé.
       setPhoto({ chemin, url: uriLocale });
-      await majMembre(chemin);
+      await majMembre({ photo_chemin: chemin });
     },
     async retirerPhoto() {
       if (!source) return;
       if (horsLigne) throw new Error('Pas de réseau. Réessaie quand tu auras du réseau.');
       await source.retirerPhotoProfil();
       setPhoto(null);
-      await majMembre(null);
+      await majMembre({ photo_chemin: null });
     },
     activerDemo: () => changerMode(true),
     quitterDemo: () => changerMode(false),
@@ -336,6 +350,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     demarrer(intervention) {
       if (intervention.statut === 'en_cours') return;
       ajouter({ type: 'demarrer', id: `demarrer:${intervention.id}`, interventionId: intervention.id }).then(vider);
+      pointer(intervention.id, 'arrivee');
+    },
+    async reglerPartage(actif) {
+      if (!source || !profil) throw new Error('Session expirée');
+      if (actif && !(await autoriserPosition())) {
+        throw new Error("Autorise la localisation pour Chantio dans les réglages du téléphone, puis réessaie.");
+      }
+      if (horsLigne) throw new Error('Pas de réseau. Réessaie quand tu auras du réseau.');
+      await source.reglerPartagePosition(actif);
+      await majMembre({ partage_position: actif, partage_position_le: actif ? new Date().toISOString() : null });
     },
     async envoyerFiche(b) {
       if (!profil || !source) throw new Error('Session expirée');
@@ -348,6 +372,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         deposees: [],
       });
       await effacerBrouillon(b.interventionId);
+      pointer(b.interventionId, 'depart');
       if (horsLigne) return 'en_attente';
       await traiterBoite(source);
       const partie = !(await estEnAttente(b.ficheId));
