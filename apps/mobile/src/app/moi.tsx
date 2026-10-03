@@ -1,7 +1,7 @@
-import { LIBELLE_ROLE } from '@chantio/shared';
+import { decrireHoraires, LIBELLE_ROLE } from '@chantio/shared';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { Apparition, Appui, Pop } from '@/components/Anime';
 import { Avatar } from '@/components/Avatar';
@@ -21,6 +21,7 @@ export default function Moi() {
   const [choix, setChoix] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [reglage, setReglage] = useState(false);
   const profil = s.profil;
   if (!profil) return null;
   const { membre, entreprise } = profil;
@@ -55,7 +56,19 @@ export default function Moi() {
     }
   };
 
-  const bloque = s.enAttente.length > 0;
+  const partage = async (actif: boolean) => {
+    setMessage(null);
+    setReglage(true);
+    try {
+      await s.reglerPartage(actif);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Le réglage n'a pas pu être enregistré.");
+    } finally {
+      setReglage(false);
+    }
+  };
+
+  const bloque = s.enAttente.some((o) => o.type !== 'pointage');
 
   return (
     <Ecran>
@@ -130,7 +143,38 @@ export default function Moi() {
         </Carte>
       </Apparition>
 
-      <Apparition rang={3} style={{ gap: 12, marginTop: 18 }}>
+      <Apparition rang={3}>
+        <Carte style={{ gap: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            <View style={styles.ti}>
+              <Icone nom="repere" taille={24} couleur={c.cobalt} />
+            </View>
+            <Texte variante="fort" style={{ flex: 1, fontSize: 18 }}>Partager ma position</Texte>
+            {reglage ? (
+              <ActivityIndicator color={c.cobalt} />
+            ) : (
+              <Switch
+                accessibilityLabel="Partager ma position avec le bureau"
+                value={!!membre.partage_position}
+                onValueChange={partage}
+                trackColor={{ false: c.trait, true: c.menthe }}
+                thumbColor={c.blanc}
+                ios_backgroundColor={c.trait}
+              />
+            )}
+          </View>
+          <Texte variante="doux" style={{ fontSize: 15, lineHeight: 21 }}>
+            {membre.partage_position
+              ? `Le dirigeant et les chefs de chantier voient où tu es ${decrireHoraires(entreprise.geolocalisation)}. Seule ta dernière position est gardée, et seulement quand l'appli est ouverte.`
+              : `Si tu l'actives, le dirigeant et les chefs de chantier voient où tu es ${decrireHoraires(entreprise.geolocalisation)}, jamais en dehors. Tu peux le couper à tout moment.`}
+          </Texte>
+          <Texte variante="doux" style={{ fontSize: 15, lineHeight: 21 }}>
+            Quand tu appuies sur Démarrer et quand tu envoies la fiche, l'heure et le lieu sont notés sur l'intervention (effacés au bout de 2 mois).
+          </Texte>
+        </Carte>
+      </Apparition>
+
+      <Apparition rang={4} style={{ gap: 12, marginTop: 18 }}>
         {demo && <Bandeau bleu texte="Mode démo : rien n'est enregistré." />}
         <Bouton
           titre={demo ? 'Quitter le mode démo' : 'Se déconnecter'}

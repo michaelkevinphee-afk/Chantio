@@ -10,7 +10,7 @@ export interface InterventionVue extends Intervention {
 
 export interface Profil {
   membre: Membre;
-  entreprise: Pick<Entreprise, 'id' | 'nom'>;
+  entreprise: Pick<Entreprise, 'id' | 'nom'> & Partial<Pick<Entreprise, 'geolocalisation'>>;
 }
 
 export interface SourceDonnees {
@@ -29,6 +29,18 @@ export interface SourceDonnees {
   retirerPhotoProfil(): Promise<void>;
   /** Adresse affichable d'une photo de profil (lien signé, ou fichier local en démo). */
   urlPhotoProfil(chemin: string): Promise<string | null>;
+  /** Active ou coupe le partage de position du membre connecté (couper efface sa dernière position). */
+  reglerPartagePosition(actif: boolean): Promise<void>;
+  /** Envoie la position du téléphone. false si le serveur l'a refusée (partage coupé, hors heures). */
+  partagerPosition(p: PositionTelephone): Promise<boolean>;
+  /** Note l'arrivée (Démarrer) ou le départ (Terminer), avec le lieu si on l'a. */
+  pointer(interventionId: string, genre: 'arrivee' | 'depart', p: PositionTelephone | null, le: string): Promise<void>;
+}
+
+export interface PositionTelephone {
+  lat: number;
+  lon: number;
+  precision: number | null;
 }
 
 /** Transforme une erreur Supabase (objet simple) en vraie Error lisible. */

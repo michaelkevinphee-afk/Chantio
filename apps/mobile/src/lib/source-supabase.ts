@@ -44,7 +44,7 @@ export const sourceSupabase: SourceDonnees = {
 
     const { data: entreprise, error } = await sb
       .from('entreprises')
-      .select('id, nom')
+      .select('id, nom, geolocalisation')
       .eq('id', membre.entreprise_id)
       .single();
     if (error) throw enErreur(error);
@@ -113,5 +113,32 @@ export const sourceSupabase: SourceDonnees = {
     const { data, error } = await supabase().storage.from('profils').createSignedUrl(chemin, 60 * 60 * 24);
     if (error) return null;
     return data.signedUrl;
+  },
+
+  async reglerPartagePosition(actif) {
+    const { error } = await supabase().rpc('regler_partage_position', { p_actif: actif });
+    if (error) throw enErreur(error);
+  },
+
+  async partagerPosition(p) {
+    const { data, error } = await supabase().rpc('partager_position', {
+      p_latitude: p.lat,
+      p_longitude: p.lon,
+      p_precision: p.precision,
+    });
+    if (error) throw enErreur(error);
+    return data === true;
+  },
+
+  async pointer(interventionId, genre, p, le) {
+    const { error } = await supabase().rpc('pointer', {
+      p_intervention: interventionId,
+      p_genre: genre,
+      p_latitude: p?.lat ?? null,
+      p_longitude: p?.lon ?? null,
+      p_precision: p?.precision ?? null,
+      p_le: le,
+    });
+    if (error) throw enErreur(error);
   },
 };

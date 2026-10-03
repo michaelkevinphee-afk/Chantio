@@ -15,7 +15,7 @@ export interface ArretCarte {
 
 // Fond « Positron » d'OpenFreeMap : carte claire et épurée, gratuite, sans compte ni clé,
 // utilisable pour un service commercial (données © OpenStreetMap).
-const STYLE = 'https://tiles.openfreemap.org/styles/positron';
+export const STYLE_CARTE = 'https://tiles.openfreemap.org/styles/positron';
 
 // Teintes de la charte posées sur le fond : eau lavande, parcs à peine verts, sol bleuté.
 const TEINTES: [RegExp, string, string][] = [
@@ -25,10 +25,23 @@ const TEINTES: [RegExp, string, string][] = [
   [/^(park|landuse_park|landcover_wood|landcover_grass)/, 'fill-color', '#EAF4EE'],
 ];
 
-const echapper = (t: string) => t.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+export const echapper = (t: string) => t.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+
+/** Pose les teintes de la charte sur le fond de carte (à appeler au chargement du style). */
+export function teinter(c: import('maplibre-gl').Map) {
+  for (const couche of c.getStyle().layers ?? []) {
+    for (const [motif, propriete, couleur] of TEINTES) {
+      if (motif.test(couche.id) && couche.type === propriete.split('-')[0]) {
+        try {
+          c.setPaintProperty(couche.id, propriete as 'fill-color', couleur);
+        } catch {}
+      }
+    }
+  }
+}
 
 /** Position d'un site : celle enregistrée, sinon l'adresse géocodée (gardée dans le navigateur). */
-async function position(site: ArretCarte['site']): Promise<Point | null> {
+export async function positionSite(site: ArretCarte['site']): Promise<Point | null> {
   if (!site) return null;
   if (site.latitude != null && site.longitude != null) return { lat: site.latitude, lon: site.longitude };
   const adresse = adresseComplete(site);
@@ -54,12 +67,12 @@ export function CarteDuJour({ arrets, hauteur = 340 }: { arrets: ArretCarte[]; h
     let carte: import('maplibre-gl').Map | null = null;
     (async () => {
       const ml = await import('maplibre-gl');
-      const points = await Promise.all(arrets.map((a) => position(a.site)));
+      const points = await Promise.all(arrets.map((a) => positionSite(a.site)));
       if (!actif || !zone.current) return;
       const places = points.flatMap((p) => (p ? [[p.lon, p.lat] as [number, number]] : []));
       carte = new ml.Map({
         container: zone.current,
-        style: STYLE,
+        style: STYLE_CARTE,
         center: places[0] ?? [2.3522, 48.8566],
         zoom: 11,
         scrollZoom: false,
@@ -71,15 +84,7 @@ export function CarteDuJour({ arrets, hauteur = 340 }: { arrets: ArretCarte[]; h
       const c = carte;
 
       c.on('load', () => {
-        for (const couche of c.getStyle().layers ?? []) {
-          for (const [motif, propriete, couleur] of TEINTES) {
-            if (motif.test(couche.id) && couche.type === propriete.split('-')[0]) {
-              try {
-                c.setPaintProperty(couche.id, propriete as 'fill-color', couleur);
-              } catch {}
-            }
-          }
-        }
+        teinter(c);
         // Trajet de la journée, en pointillés cobalt, dans l'ordre des heures.
         if (places.length > 1) {
           c.addSource('trajet', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: places } } });

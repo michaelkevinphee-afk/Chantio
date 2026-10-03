@@ -121,6 +121,7 @@ function exemples(): InterventionVue[] {
 let donnees: InterventionVue[] = exemples();
 // Photo de profil choisie en démo : gardée sur le téléphone, rien n'est envoyé.
 let photoDemo: string | null = null;
+let partageDemo = false;
 
 function changerStatut(id: string, statut: Intervention['statut']) {
   donnees = donnees.map((i) => (i.id === id ? { ...i, statut } : i));
@@ -130,7 +131,7 @@ export const sourceDemo: SourceDonnees = {
   mode: 'demo',
   async chargerProfil(): Promise<Profil> {
     donnees = exemples();
-    return { membre: { ...membreDemo, photo_chemin: photoDemo }, entreprise: ENTREPRISE };
+    return { membre: { ...membreDemo, photo_chemin: photoDemo, partage_position: partageDemo }, entreprise: ENTREPRISE };
   },
   async creerEntreprise() {},
   async listerInterventions() {
@@ -159,4 +160,12 @@ export const sourceDemo: SourceDonnees = {
     // En démo, le « chemin » est directement le fichier local.
     return chemin;
   },
+  // En démo, la position ne quitte jamais le téléphone.
+  async reglerPartagePosition(actif) {
+    partageDemo = actif;
+  },
+  async partagerPosition() {
+    return partageDemo;
+  },
+  async pointer() {},
 };

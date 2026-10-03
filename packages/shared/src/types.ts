@@ -1,4 +1,5 @@
 import type { ReglagesFacturation } from './devis.ts';
+import type { HorairesPosition } from './position.ts';
 // Types des données stockées dans Supabase (voir supabase/migrations).
 
 export type RoleMembre =
@@ -44,6 +45,8 @@ export interface Entreprise {
   logo_chemin: string | null;
   /** Mentions de facturation (assurance, médiateur, objectif…), voir devis.ts. */
   facturation?: ReglagesFacturation | null;
+  /** Heures pendant lesquelles la position des techniciens peut être partagée, voir position.ts. */
+  geolocalisation?: HorairesPosition | null;
   cree_le: string;
 }
 
@@ -59,6 +62,9 @@ export interface Membre {
   actif: boolean;
   /** Photo de profil dans le stockage « profils ». */
   photo_chemin: string | null;
+  /** Le membre a activé le partage de sa position (écran Moi de l'appli). */
+  partage_position?: boolean;
+  partage_position_le?: string | null;
   cree_le: string;
 }
 
