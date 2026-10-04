@@ -1,6 +1,6 @@
 // Accès aux données : une même interface pour Supabase et pour le mode démo,
 // pour que les écrans n'aient pas à savoir d'où viennent les données.
-import type { Entreprise, FicheAEnvoyer, Intervention, Membre, Site } from '@chantio/shared';
+import type { Entreprise, FicheAEnvoyer, Intervention, Membre, RoleMembre, Site } from '@chantio/shared';
 
 export interface InterventionVue extends Intervention {
   client: { nom: string; telephone: string | null; contact: string | null } | null;
@@ -13,11 +13,22 @@ export interface Profil {
   entreprise: Pick<Entreprise, 'id' | 'nom'> & Partial<Pick<Entreprise, 'geolocalisation'>>;
 }
 
+export interface EntrepriseDuCompte {
+  id: string;
+  nom: string;
+  role: RoleMembre;
+  active: boolean;
+}
+
 export interface SourceDonnees {
   mode: 'supabase' | 'demo';
   /** Profil du compte connecté ; null s'il n'appartient à aucune entreprise. */
   chargerProfil(): Promise<Profil | null>;
   creerEntreprise(nom: string, prenom: string): Promise<void>;
+  /** Les entreprises du compte (un technicien peut travailler pour plusieurs). */
+  listerEntreprises(): Promise<EntrepriseDuCompte[]>;
+  /** Passe sur une autre entreprise du compte. */
+  choisirEntreprise(id: string): Promise<void>;
   /** Interventions visibles (de aujourd'hui aux 30 prochains jours, plus celles en cours). */
   listerInterventions(): Promise<InterventionVue[]>;
   demarrer(interventionId: string): Promise<void>;

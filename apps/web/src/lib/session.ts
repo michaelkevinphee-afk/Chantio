@@ -1,7 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
-import { estBureau, type Entreprise, type Membre } from '@chantio/shared';
+import { estBureau, type Entreprise, type Membre, type MonEntreprise } from '@chantio/shared';
 import { supabaseServeur } from './supabase/server';
 
 /** Utilisateur connecté, sa fiche membre et son entreprise. */
@@ -13,18 +13,15 @@ export const contexte = cache(async () => {
   if (!data?.claims?.sub) redirect('/connexion');
   const user = { id: data.claims.sub, email: data.claims.email as string | undefined };
 
-  // Fiche membre et entreprise en une seule requête.
+  // Fiche membre dans l'entreprise active (un compte peut en avoir plusieurs) et
+  // entreprise, en une seule requête.
   type MembreEtEntreprise = Membre & { entreprise: Entreprise | null };
   const lireMembre = () =>
-    supabase
-      .from('membres')
-      .select('*, entreprise:entreprises(*)')
-      .eq('user_id', user.id)
-      .maybeSingle<MembreEtEntreprise>();
+    supabase.rpc('membre_actif').select('*, entreprise:entreprises(*)').maybeSingle<MembreEtEntreprise>();
 
   let { data: ligne } = await lireMembre();
   if (!ligne) {
-    // Invitation faite après la création du compte : on relie maintenant.
+    // Invitations faites après la création du compte : on les relie maintenant.
     const { data: rejoint } = await supabase.rpc('rejoindre_entreprise');
     if (rejoint) ({ data: ligne } = await lireMembre());
   }
@@ -40,3 +37,10 @@ export async function contexteBureau() {
   if (!estBureau(ctx.membre.role)) redirect('/terrain');
   return ctx;
 }
+
+/** Toutes les entreprises du compte connecté, l'active marquée. */
+export const mesEntreprises = cache(async () => {
+  const supabase = await supabaseServeur();
+  const { data } = await supabase.rpc('mes_entreprises');
+  return (data ?? []) as MonEntreprise[];
+});

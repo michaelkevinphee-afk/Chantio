@@ -1,6 +1,6 @@
 import { decrireHoraires, LIBELLE_ROLE } from '@chantio/shared';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { Apparition, Appui, Pop } from '@/components/Anime';
@@ -12,6 +12,7 @@ import { Ecran } from '@/components/Ecran';
 import { Icone, type NomIcone } from '@/components/Icone';
 import { PropulsePar } from '@/components/Logo';
 import { Texte, Titre } from '@/components/Texte';
+import type { EntrepriseDuCompte } from '@/lib/donnees';
 import { choisirPhotoProfil } from '@/lib/photos';
 import { useSession } from '@/lib/session';
 import { c, ombres, polices, serre } from '@/lib/theme';
@@ -22,7 +23,20 @@ export default function Moi() {
   const [envoi, setEnvoi] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [reglage, setReglage] = useState(false);
+  const [entreprises, setEntreprises] = useState<EntrepriseDuCompte[]>([]);
+  const [bascule, setBascule] = useState<string | null>(null);
   const profil = s.profil;
+  const entrepriseActive = profil?.entreprise.id;
+
+  useEffect(() => {
+    let annule = false;
+    s.listerEntreprises().then((l) => !annule && setEntreprises(l));
+    return () => {
+      annule = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entrepriseActive]);
+
   if (!profil) return null;
   const { membre, entreprise } = profil;
   const demo = s.source?.mode === 'demo';
@@ -69,6 +83,19 @@ export default function Moi() {
   };
 
   const bloque = s.enAttente.some((o) => o.type !== 'pointage');
+
+  const changerEntreprise = async (id: string) => {
+    setMessage(null);
+    setBascule(id);
+    try {
+      await s.changerEntreprise(id);
+      router.back();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Impossible de changer d'entreprise.");
+    } finally {
+      setBascule(null);
+    }
+  };
 
   return (
     <Ecran>
@@ -174,7 +201,39 @@ export default function Moi() {
         </Carte>
       </Apparition>
 
-      <Apparition rang={4} style={{ gap: 12, marginTop: 18 }}>
+      {entreprises.length > 1 ? (
+        <Apparition rang={4}>
+          <Carte style={{ gap: 10 }}>
+            <Texte variante="fort" style={{ fontSize: 18 }}>Mes entreprises</Texte>
+            {entreprises.map((e) => (
+              <Appui
+                key={e.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: e.active }}
+                onPress={() => changerEntreprise(e.id)}
+                disabled={e.active || bloque || bascule !== null}
+                echelle={0.98}
+                style={[styles.entreprise, e.active && styles.entrepriseActive]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Texte variante="fort" style={{ fontSize: 17 }}>{e.nom}</Texte>
+                  <Texte variante="doux" style={{ fontSize: 14 }}>{LIBELLE_ROLE[e.role]}</Texte>
+                </View>
+                {bascule === e.id ? (
+                  <ActivityIndicator color={c.cobalt} />
+                ) : e.active ? (
+                  <Icone nom="check" taille={22} couleur={c.cobalt} />
+                ) : null}
+              </Appui>
+            ))}
+            {bloque ? (
+              <Texte variante="doux" style={{ fontSize: 15 }}>Attends que les fiches en attente soient parties pour changer d'entreprise.</Texte>
+            ) : null}
+          </Carte>
+        </Apparition>
+      ) : null}
+
+      <Apparition rang={5} style={{ gap: 12, marginTop: 18 }}>
         {demo && <Bandeau bleu texte="Mode démo : rien n'est enregistré." />}
         <Bouton
           titre={demo ? 'Quitter le mode démo' : 'Se déconnecter'}
@@ -228,6 +287,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  entreprise: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: c.trait, backgroundColor: c.blanc },
+  entrepriseActive: { borderColor: c.cobalt, backgroundColor: c.doux },
   ti: { width: 48, height: 48, borderRadius: 16, backgroundColor: c.doux, alignItems: 'center', justifyContent: 'center' },
   choix: {
     minHeight: 118,

@@ -29,7 +29,8 @@ export const sourceSupabase: SourceDonnees = {
     if (!uid) return null;
 
     const chercher = async () => {
-      const { data, error } = await sb.from('membres').select('*').eq('user_id', uid).maybeSingle();
+      // Fiche dans l'entreprise active (un compte peut appartenir à plusieurs entreprises).
+      const { data, error } = await sb.rpc('membre_actif').maybeSingle();
       if (error) throw enErreur(error);
       return data as Membre | null;
     };
@@ -53,6 +54,22 @@ export const sourceSupabase: SourceDonnees = {
 
   async creerEntreprise(nom, prenom) {
     const { error } = await supabase().rpc('creer_entreprise', { p_nom: nom, p_prenom: prenom });
+    if (error) throw enErreur(error);
+  },
+
+  async listerEntreprises() {
+    const { data, error } = await supabase().rpc('mes_entreprises');
+    if (error) throw enErreur(error);
+    return ((data ?? []) as { id: string; nom: string; role: Membre['role']; active: boolean }[]).map(({ id, nom, role, active }) => ({
+      id,
+      nom,
+      role,
+      active,
+    }));
+  },
+
+  async choisirEntreprise(id) {
+    const { error } = await supabase().rpc('choisir_entreprise', { p_entreprise: id });
     if (error) throw enErreur(error);
   },
 
