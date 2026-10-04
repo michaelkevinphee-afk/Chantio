@@ -7,7 +7,7 @@ import { AppState } from 'react-native';
 
 import { effacerBrouillon, versFiche, type Brouillon } from './brouillons';
 import { configurationOk } from './config';
-import { enErreur, type InterventionVue, type Profil, type SourceDonnees } from './donnees';
+import { enErreur, type EntrepriseDuCompte, type InterventionVue, type Profil, type SourceDonnees } from './donnees';
 import { abonner, ajouter, estEnAttente, reinitialiserBoite, traiterBoite, type Operation } from './envoi';
 import { autoriserPosition, positionActuelle, usePartagePosition } from './position';
 import { sourceDemo } from './source-demo';
@@ -47,6 +47,10 @@ interface Session {
   /** Abandonne la création du mot de passe après un code validé (déconnecte). */
   annulerMotDePasse(): Promise<void>;
   creerEntreprise(nom: string, prenom: string): Promise<void>;
+  /** Les entreprises du compte (vide hors ligne). */
+  listerEntreprises(): Promise<EntrepriseDuCompte[]>;
+  /** Passe sur une autre entreprise du compte, puis recharge le profil et la journée. */
+  changerEntreprise(id: string): Promise<void>;
   deconnecter(): Promise<void>;
   rechargerProfil(): void;
   rafraichir(): Promise<void>;
@@ -338,6 +342,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (!source) return;
       await source.creerEntreprise(nom, prenom);
       setEssaiProfil((n) => n + 1);
+    },
+    async listerEntreprises() {
+      if (!source) return [];
+      return source.listerEntreprises().catch(() => []);
+    },
+    async changerEntreprise(id) {
+      if (!source) return;
+      await source.choisirEntreprise(id);
+      setEssaiProfil((n) => n + 1);
+      await rafraichir();
     },
     async deconnecter() {
       if (demo) return changerMode(false);

@@ -47,7 +47,40 @@ export interface Entreprise {
   facturation?: ReglagesFacturation | null;
   /** Heures pendant lesquelles la position des techniciens peut être partagée, voir position.ts. */
   geolocalisation?: HorairesPosition | null;
+  siren?: string | null;
+  forme_juridique?: string | null;
+  code_postal?: string | null;
+  ville?: string | null;
+  tva_intracom?: string | null;
+  activite?: string | null;
+  formule?: Formule;
+  identite_statut?: StatutIdentite;
   cree_le: string;
+}
+
+/** Formule d'abonnement, propre à chaque entreprise. */
+export type Formule = 'solo' | 'equipe' | 'entreprise';
+
+/** Vérification d'identité du dirigeant : à faire, en contrôle chez Chantio, faite, refusée. */
+export type StatutIdentite = 'a_verifier' | 'en_attente' | 'verifiee' | 'refusee';
+
+/** Une entreprise du compte connecté (sélecteur d'entreprise, page « Vos entreprises »). */
+export interface MonEntreprise {
+  id: string;
+  nom: string;
+  siren: string | null;
+  siret: string | null;
+  forme_juridique: string | null;
+  adresse: string | null;
+  code_postal: string | null;
+  ville: string | null;
+  logo_chemin: string | null;
+  formule: Formule;
+  identite_statut: StatutIdentite;
+  identite_mode: 'registre' | 'documents' | null;
+  identite_motif: string | null;
+  role: RoleMembre;
+  active: boolean;
 }
 
 export interface Membre {

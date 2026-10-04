@@ -1,6 +1,8 @@
 import type {
+  Formule,
   ResultatFiche,
   RoleMembre,
+  StatutIdentite,
   StatutIntervention,
   TypeClient,
   TypeIntervention,
@@ -63,6 +65,32 @@ export const LIBELLE_ROLE: Record<RoleMembre, string> = {
   technicien: 'Technicien',
   apprenti: 'Apprenti',
   sous_traitant: 'Sous-traitant',
+};
+
+export const LIBELLE_FORMULE: Record<Formule, string> = {
+  solo: 'Solo',
+  equipe: 'Équipe',
+  entreprise: 'Entreprise',
+};
+
+export const PRIX_FORMULE: Record<Formule, string> = {
+  solo: '19 € / mois',
+  equipe: '49 € / mois',
+  entreprise: '149 € / mois',
+};
+
+export const LIBELLE_IDENTITE: Record<StatutIdentite, string> = {
+  a_verifier: 'Identité à vérifier',
+  en_attente: 'Vérification en cours',
+  verifiee: 'Identité vérifiée',
+  refusee: 'Vérification refusée',
+};
+
+export const TON_IDENTITE: Record<StatutIdentite, Ton> = {
+  a_verifier: 'gris',
+  en_attente: 'violet',
+  verifiee: 'vert',
+  refusee: 'rouge',
 };
 
 export const LIBELLE_TYPE_CLIENT: Record<TypeClient, string> = {

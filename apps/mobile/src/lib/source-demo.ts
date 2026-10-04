@@ -134,6 +134,10 @@ export const sourceDemo: SourceDonnees = {
     return { membre: { ...membreDemo, photo_chemin: photoDemo, partage_position: partageDemo }, entreprise: ENTREPRISE };
   },
   async creerEntreprise() {},
+  async listerEntreprises() {
+    return [{ id: ENTREPRISE.id, nom: ENTREPRISE.nom, role: membreDemo.role, active: true }];
+  },
+  async choisirEntreprise() {},
   async listerInterventions() {
     await attendre(300);
     return donnees;

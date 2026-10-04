@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import Link from 'next/link';
 import { initiales, LIBELLE_ROLE, type Membre } from '@chantio/shared';
 import { EnvoiPhoto } from '@/components/envoi-photo';
 import { Icone } from '@/components/icones';
@@ -15,7 +16,14 @@ export const metadata = { title: 'Équipe · Chantio' };
 export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
   const { supabase, membre: moi, entreprise } = await contexteBureau();
   const { erreur, invite, renvoi, sansmail, nouveau } = await searchParams;
-  const { data } = await supabase.from('membres').select('*').order('actif', { ascending: false }).order('prenom');
+  const [{ data }, { count: demandes }] = await Promise.all([
+    supabase.from('membres').select('*').order('actif', { ascending: false }).order('prenom'),
+    supabase
+      .from('demandes_acces')
+      .select('id', { count: 'exact', head: true })
+      .eq('entreprise_id', entreprise.id)
+      .eq('statut', 'en_attente'),
+  ]);
   const membres = (data ?? []) as Membre[];
   const dirigeant = moi.role === 'dirigeant';
   const liens = await liensProfils(supabase, [entreprise.logo_chemin, ...membres.map((m) => m.photo_chemin)]);
@@ -39,6 +47,12 @@ export default async function Equipe({ searchParams }: PageProps<'/equipe'>) {
         Équipe
       </Titre>
 
+      {dirigeant && !!demandes && (
+        <Link href="/entreprises" className="apparition mb-6 flex items-center gap-3 rounded-[14px] bg-violet-doux px-4 py-3 text-sm font-semibold text-violet">
+          {demandes} {demandes > 1 ? 'personnes demandent' : 'personne demande'} à rejoindre {entreprise.nom}.
+          <span className="ml-auto font-extrabold underline">Répondre</span>
+        </Link>
+      )}
       {erreur && !nouveau && (
         <p className="apparition mb-6 rounded-[14px] bg-rouge-doux px-4 py-3 text-sm font-semibold text-rouge">{erreur}</p>
       )}

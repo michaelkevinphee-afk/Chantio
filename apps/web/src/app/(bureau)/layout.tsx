@@ -4,12 +4,14 @@ import { BoutonDeconnexion } from '@/components/deconnexion';
 import { Icone } from '@/components/icones';
 import { Navigation } from '@/components/navigation';
 import { ZoneAnnonces } from '@/components/retour';
+import { SelecteurEntreprise } from '@/components/selecteur-entreprise';
 import { Avatar, LienBouton, Logo } from '@/components/ui';
 import { liensProfils } from '@/lib/profils';
-import { contexteBureau } from '@/lib/session';
+import { contexteBureau, mesEntreprises } from '@/lib/session';
 
 export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
   const { supabase, membre, entreprise } = await contexteBureau();
+  const entreprises = await mesEntreprises();
   const liens = await liensProfils(supabase, [membre.photo_chemin, entreprise.logo_chemin]);
   const logo = entreprise.logo_chemin ? liens.get(entreprise.logo_chemin) : null;
   const photo = membre.photo_chemin ? liens.get(membre.photo_chemin) : null;
@@ -17,14 +19,7 @@ export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[272px_1fr] lg:bg-[linear-gradient(to_right,rgb(255_255_255/0.8)_271px,var(--color-trait)_271px_272px,transparent_272px)]">
       <aside className="flex flex-col gap-6 border-b border-trait bg-white/80 p-4 backdrop-blur-md lg:sticky lg:top-0 lg:h-screen lg:border-r lg:border-b-0 lg:p-5">
-        <div className="flex items-center gap-3">
-          {logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={entreprise.nom} className="h-12 max-w-[200px] object-contain" />
-          ) : (
-            <p className="text-2xl font-extrabold leading-none tracking-[-0.03em]">{entreprise.nom}</p>
-          )}
-        </div>
+        <SelecteurEntreprise nom={entreprise.nom} logo={logo ?? null} entreprises={entreprises} />
         <LienBouton href="/interventions/nouvelle" className="w-full whitespace-nowrap !px-4">
           <Icone nom="plus" taille={18} /> Nouvelle intervention
         </LienBouton>
