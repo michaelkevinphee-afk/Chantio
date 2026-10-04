@@ -164,3 +164,39 @@ export async function changerFacturation(clientId: string, d: FormData) {
     .eq('id', clientId);
   revalidatePath('/clients');
 }
+
+// Équipements suivis à une adresse : chaudière, VMC, adoucisseur… avec le dernier
+// et le prochain passage, et l'obligation réglementaire s'il y en a une.
+
+const jour = (d: FormData, cle: string) => {
+  const v = texte(d, cle);
+  return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+};
+const champsEquipement = (d: FormData) => ({
+  categorie: texte(d, 'categorie'),
+  marque: texte(d, 'marque'),
+  modele: texte(d, 'modele'),
+  dernier_passage: jour(d, 'dernier_passage'),
+  prochain_passage: jour(d, 'prochain_passage'),
+  obligation: texte(d, 'obligation'),
+});
+
+export async function ajouterEquipement(siteId: string, d: FormData) {
+  const { supabase, entreprise } = await contexteBureau();
+  const champs = champsEquipement(d);
+  if (champs.categorie) await supabase.from('equipements').insert({ ...champs, entreprise_id: entreprise.id, site_id: siteId });
+  revalidatePath('/clients', 'layout');
+}
+
+export async function modifierEquipement(equipementId: string, d: FormData) {
+  const { supabase } = await contexteBureau();
+  const champs = champsEquipement(d);
+  if (champs.categorie) await supabase.from('equipements').update(champs).eq('id', equipementId);
+  revalidatePath('/clients', 'layout');
+}
+
+export async function supprimerEquipement(equipementId: string) {
+  const { supabase } = await contexteBureau();
+  await supabase.from('equipements').delete().eq('id', equipementId);
+  revalidatePath('/clients', 'layout');
+}

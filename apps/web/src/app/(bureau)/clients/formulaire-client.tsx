@@ -300,7 +300,7 @@ function RechercheEntreprise({ onChoix }: { onChoix: (e: EntrepriseTrouvee) => v
   );
 }
 
-function Groupe({ titre, children }: { titre: string; children: React.ReactNode }) {
+export function Groupe({ titre, children }: { titre: string; children: React.ReactNode }) {
   return (
     <div className="carte space-y-3 p-4">
       <p className="text-xs font-bold uppercase tracking-[0.08em] text-gris">{titre}</p>
@@ -309,7 +309,7 @@ function Groupe({ titre, children }: { titre: string; children: React.ReactNode 
   );
 }
 
-function Champ({ libelle, children }: { libelle: string; children: React.ReactNode }) {
+export function Champ({ libelle, children }: { libelle: string; children: React.ReactNode }) {
   return (
     <label className="block min-w-0">
       <span className="mb-1 block text-xs font-bold text-gris">{libelle}</span>

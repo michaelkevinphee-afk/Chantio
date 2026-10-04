@@ -14,3 +14,4 @@ export * from './suivi-client.ts';
 export * from './rentabilite.ts';
 export * from './dpgf.ts';
 export * from './planning.ts';
+export * from './contrats.ts';

@@ -35,6 +35,8 @@ export type CarteRdv = {
   date_fin: string | null;
   fin_midi: boolean;
   duree: number | null;
+  /** Date souhaitée d'une visite d'entretien pas encore placée. */
+  souhaitee: string | null;
   client: string;
   motif: string;
   ville: string | null;
@@ -559,7 +561,13 @@ function Rdv({
 }) {
   const deplacable = DEPLACABLE.includes(c.statut);
   const plusieurs = surPlusieursJours(creneau(c));
-  const quand = plusieurs ? `Jusqu’au ${jourCourt(c.date_fin!).nom} ${jourCourt(c.date_fin!).num}` : c.heure ? c.heure.replace(':', ' h ') : 'Sans heure';
+  const quand = plusieurs
+    ? `Jusqu’au ${jourCourt(c.date_fin!).nom} ${jourCourt(c.date_fin!).num}`
+    : c.heure
+      ? c.heure.replace(':', ' h ')
+      : !c.date && c.souhaitee
+        ? `Vers le ${jourCourt(c.souhaitee).mois}`
+        : 'Sans heure';
   return (
     <Link
       href={`/interventions/${c.id}`}

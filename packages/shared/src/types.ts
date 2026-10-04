@@ -198,6 +198,10 @@ export interface Intervention {
   fin_midi?: boolean;
   /** Durée prévue en heures, pour la charge des techniciens. */
   duree_prevue?: number | null;
+  /** Contrat d'entretien d'où vient la visite. */
+  contrat_id?: string | null;
+  /** Date souhaitée d'une visite d'entretien pas encore au planning. */
+  souhaitee_le?: string | null;
   statut: StatutIntervention;
   cree_par: string | null;
   cree_le: string;

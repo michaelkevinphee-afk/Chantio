@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import {
   achatEchu,
+  ajouterJours,
   aujourdhui,
   dateCourte,
   dateLongue,
@@ -20,6 +21,7 @@ import { Compteur } from '@/components/compteur';
 import { EquipeEnDirect } from '@/components/equipe-en-direct';
 import { Icone, type NomIcone } from '@/components/icones';
 import { LienBouton, Panneau } from '@/components/ui';
+import { chargerContrats, suivreContrat } from '@/lib/contrats';
 import { contexteBureau } from '@/lib/session';
 import { liensProfils } from '@/lib/profils';
 import { listerEquipe, SELECT_LISTE, type InterventionListe } from '@/lib/requetes';
@@ -50,6 +52,7 @@ export default async function Pilotage() {
     { data: sansDate },
     { data: reponsesAO },
     { data: achatsOuverts },
+    contrats,
   ] = await Promise.all([
     // Les interventions du jour, et les chantiers sur plusieurs jours en cours aujourd'hui.
     supabase.from('interventions').select(SELECT_LISTE).lte('date_prevue', jour).or(`date_prevue.eq.${jour},date_fin.gte.${jour}`).order('heure_prevue'),
@@ -70,6 +73,7 @@ export default async function Pilotage() {
     // Réponses aux appels d'offres en préparation : devis en brouillon marqués « appel d'offres ».
     supabase.from('documents').select('id, objet, conditions').eq('genre', 'devis').eq('statut', 'brouillon').eq('conditions->>ao', 'true'),
     supabase.from('achats').select('statut, echeance, montant_ttc, paiements:paiements_achats(montant)').in('statut', ['recu', 'a_payer', 'planifie']),
+    chargerContrats(supabase),
   ]);
 
   const jourListe = ((duJour ?? []) as InterventionListe[]).filter((i) => occupe(i, jour));
@@ -101,6 +105,15 @@ export default async function Pilotage() {
   }));
   const recues = achats.filter((a) => a.statut === 'recu').length;
   const echues = achats.filter((a) => achatEchu(a, a.paye, jour)).length;
+
+  // Contrats d'entretien : renouvellement à proposer, ou visite proche pas encore créée.
+  const dans30 = ajouterJours(jour, 30);
+  const contratsATraiter = contrats
+    .map((c) => ({ c, ...suivreContrat(c, jour) }))
+    .map((x) => ({ ...x, visite: x.aPlanifier.find((v) => v.date <= dans30) }))
+    .filter((x) => x.etat.aRenouveler || x.visite)
+    .sort((a, b) => Number(b.etat.aRenouveler) - Number(a.etat.aRenouveler) || a.limite.localeCompare(b.limite));
+  const contratUrgent = contratsATraiter[0];
 
   const terrain = equipe.filter((m) => ['technicien', 'chef_chantier', 'apprenti', 'sous_traitant', 'dirigeant'].includes(m.role));
   const liens = await liensProfils(supabase, [membre.photo_chemin, ...equipe.map((m) => m.photo_chemin)]);
@@ -179,6 +192,24 @@ export default async function Pilotage() {
                 ? `Et ${echues} en retard de paiement`
                 : `Reçue${s(recues)} : à vérifier puis approuver`
               : 'Échéance dépassée : paiement à déclarer',
+          },
+        ]
+      : []),
+    ...(contratUrgent
+      ? [
+          {
+            n: contratsATraiter.length,
+            href: '/clients/contrats',
+            icone: 'bouclier' as const,
+            ton: contratUrgent.etat.ton === 'rouge' ? 'bg-rouge-doux text-rouge' : 'bg-violet-doux text-violet',
+            titre: `${contratsATraiter.length} contrat${s(contratsATraiter.length)} d’entretien à traiter`,
+            detail: `${contratUrgent.c.client?.nom ?? contratUrgent.c.reference} · ${
+              contratUrgent.etat.aRenouveler
+                ? contratUrgent.etat.ton === 'rouge'
+                  ? 'préavis dépassé'
+                  : `renouvellement à proposer avant le ${jjmm(contratUrgent.limite)}`
+                : `visite vers le ${jjmm(contratUrgent.visite!.date)} à créer`
+            }`,
           },
         ]
       : []),
