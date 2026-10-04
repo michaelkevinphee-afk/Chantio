@@ -438,7 +438,7 @@ export function Papier({ d, entreprise, flash }: { d: DonneesPapier; entreprise:
             {c.decennale && `Assurance décennale : ${c.assureur}, ${c.contrat}, ${c.zone}. `}
             Conditions particulières en page 2.
             {T.autoliq && ' Autoliquidation, art. 283-2 nonies du CGI.'}
-            {facture && f.iban && ` IBAN ${f.iban}${f.bic ? ` · BIC ${f.bic}` : ''}.`}
+            {facture && f.iban && f.iban_factures !== 'non' && ` IBAN ${f.iban}${f.bic ? ` · BIC ${f.bic}` : ''}.`}
           </div>
           {facture ? (
             <div className="signature" style={{ borderStyle: 'solid', borderColor: 'var(--trait)' }}>

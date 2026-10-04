@@ -11,7 +11,9 @@ const LIENS: { href: string; libelle: string; icone: NomIcone }[] = [
   { href: '/clients', libelle: 'Clients', icone: 'clients' },
   { href: '/devis', libelle: 'Devis et factures', icone: 'devis' },
   { href: '/achats', libelle: 'Achats', icone: 'achats' },
+  { href: '/chiffres', libelle: 'Chiffres', icone: 'chiffres' },
   { href: '/equipe', libelle: 'Équipe', icone: 'equipe' },
+  { href: '/parametres', libelle: 'Paramètres', icone: 'reglages' },
 ];
 
 /** Pastille d'une entrée du menu : ce qui attend le bureau (interventions à planifier, factures reçues…). */

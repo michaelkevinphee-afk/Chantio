@@ -1,9 +1,6 @@
-import { contexteBureau } from '@/lib/session';
-import { Reglages } from './reglages';
+import { redirect } from 'next/navigation';
 
-export const metadata = { title: 'Mentions de facturation · Chantio' };
-
-export default async function PageReglages() {
-  const { entreprise, membre } = await contexteBureau();
-  return <Reglages valeurs={{ siret: entreprise.siret ?? '', ...(entreprise.facturation ?? {}) }} modifiable={membre.role === 'dirigeant'} />;
+// Les mentions de facturation et les prix sont maintenant dans les Paramètres.
+export default function PageReglages() {
+  redirect('/parametres?rubrique=prix');
 }

@@ -267,7 +267,7 @@ export function TableauDevis({ donnees, ongletInitial, filtreInitial }: { donnee
               <h2>Ce mois-ci</h2>
               <p>{donnees.objectifDefini ? 'Objectif de facturation du mois' : 'Comparé à votre moyenne mensuelle'}</p>
             </div>
-            <Link className="btn petit fantome" href="/devis/reglages">
+            <Link className="btn petit fantome" href="/parametres?rubrique=prix">
               {donnees.objectifDefini ? 'Modifier' : 'Fixer un objectif'}
             </Link>
           </div>

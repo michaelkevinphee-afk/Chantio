@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  MODELES_MAIL,
   calculer,
+  remplirModele,
   clauses,
   cleTva,
   clientVide,
@@ -156,4 +158,17 @@ test('nombres saisis à la française', () => {
   assert.equal(nombre('1 234,5'), 1234.5);
   assert.equal(nombre(''), 0);
   assert.equal(euro(1234.5), '1 234,50 €');
+});
+
+test('textes d’envoi : mots remplacés, numéro absent sans double espace', () => {
+  const v = { titre: 'Devis', numero: '', objet: 'Salle de bain', client: 'Mme Martin', montant: '1 200,00 €' };
+  assert.equal(remplirModele(MODELES_MAIL.mail_devis_objet, v), 'Devis · Salle de bain');
+  assert.match(remplirModele(MODELES_MAIL.mail_devis_texte, v), /^Bonjour Mme Martin,\n\nVeuillez trouver ci-joint le devis pour : Salle de bain\.\nMontant : 1 200,00 €/);
+  assert.equal(remplirModele('{inconnu} {client}', v), '{inconnu} Mme Martin');
+});
+
+test('conditions par défaut reprises des paramètres', () => {
+  const c = conditionsParDefaut({ validite: '3 mois', acompte: '40', delai: '30 jours date de facture' });
+  assert.deepEqual([c.validite, c.acompte, c.delai], ['3 mois', '40', '30 jours date de facture']);
+  assert.equal(conditionsParDefaut().validite, '1 mois');
 });

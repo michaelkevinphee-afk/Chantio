@@ -11,5 +11,6 @@ export default async function PageDevis({ searchParams }: PageProps<'/devis'>) {
   const reglages: ReglagesFacturation = entreprise.facturation ?? {};
   const donnees = await lireTableauDeBord(supabase, entreprise.nom, reglages);
   const ongletInitial = onglet === 'factures' || onglet === 'importes' ? onglet : 'devis';
-  return <TableauDevis donnees={donnees} ongletInitial={ongletInitial} filtreInitial={filtre === 'ao' ? 'Appels d’offres' : undefined} />;
+  const filtres: Record<string, string> = { ao: 'Appels d’offres', envoye: 'Envoyé', a_encaisser: 'À encaisser', retard: 'En retard' };
+  return <TableauDevis donnees={donnees} ongletInitial={ongletInitial} filtreInitial={typeof filtre === 'string' ? filtres[filtre] : undefined} />;
 }

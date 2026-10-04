@@ -154,7 +154,37 @@ export interface ReglagesFacturation {
   coefficient?: number;
   marge_min?: number;
   chute?: number;
+  /** Compte bancaire imprimé sur les factures (« non » : IBAN non imprimé). */
+  titulaire?: string;
+  banque?: string;
+  iban_factures?: string;
+  /** Conditions proposées sur chaque nouveau devis. */
+  validite?: string;
+  acompte?: string;
+  delai?: string;
+  /** Textes proposés à l'envoi par e-mail (voir MODELES_MAIL). */
+  mail_devis_objet?: string;
+  mail_devis_texte?: string;
+  mail_facture_objet?: string;
+  mail_facture_texte?: string;
 }
+
+/** Textes d'envoi par défaut ; {titre}, {numero}, {client}, {objet}, {montant} et {entreprise} sont remplacés. */
+export const MODELES_MAIL = {
+  mail_devis_objet: '{titre} {numero} · {objet}',
+  mail_devis_texte: 'Bonjour {client},\n\nVeuillez trouver ci-joint le devis {numero} pour : {objet}.\nMontant : {montant}.\n\nBien cordialement',
+  mail_facture_objet: '{titre} {numero} · {objet}',
+  mail_facture_texte: 'Bonjour {client},\n\nVeuillez trouver ci-joint la facture {numero} pour : {objet}.\nMontant : {montant}.\n\nBien cordialement',
+} as const;
+
+/** Remplace les mots entre accolades par leur valeur (les inconnus restent tels quels). */
+export function remplirModele(modele: string, valeurs: Record<string, string>): string {
+  return modele.replace(/\{(\w+)\}/g, (mot, cle: string) => (cle in valeurs ? valeurs[cle] : mot)).replace(/ {2,}/g, ' ');
+}
+
+export const VALIDITES = ['1 mois', '2 mois', '3 mois'] as const;
+export const ACOMPTES = ['20', '30', '40', '50'] as const;
+export const DELAIS = ['À réception de facture', '30 jours date de facture', '45 jours fin de mois', '60 jours date de facture'] as const;
 
 export interface TotauxDocument {
   /** Somme des lignes avant remise. */
@@ -373,12 +403,12 @@ export function clientVide(): ClientDocument {
 
 export function conditionsParDefaut(r: ReglagesFacturation = {}): ConditionsDocument {
   return {
-    validite: '1 mois',
+    validite: r.validite || '1 mois',
     debut: 'à convenir',
     duree: 'à préciser',
     echeancier: 'acompte',
-    acompte: '30',
-    delai: 'À réception de facture',
+    acompte: r.acompte || '30',
+    delai: r.delai || 'À réception de facture',
     virement: true,
     cheque: true,
     carte: false,
