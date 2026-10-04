@@ -28,7 +28,7 @@ const initiales = (n: string) =>
     .join('')
     .toUpperCase() || '?';
 
-function Etincelle({ serie }: { serie: number[] }) {
+export function Etincelle({ serie }: { serie: number[] }) {
   const w = 100;
   const h = 40;
   const max = Math.max(...serie, 1);
