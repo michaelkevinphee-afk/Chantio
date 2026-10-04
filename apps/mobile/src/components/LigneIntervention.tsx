@@ -1,4 +1,4 @@
-import { LIBELLE_STATUT_TERRAIN, TON_STATUT, dateCourte } from '@chantio/shared';
+import { LIBELLE_STATUT_TERRAIN, TON_STATUT, dateCourte, surPlusieursJours } from '@chantio/shared';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { InterventionVue } from '@/lib/donnees';
@@ -27,6 +27,7 @@ export function LigneIntervention({ intervention: i, onPress, avecJour, avecTech
       <View style={styles.temps}>
         <Text style={styles.heure}>{heureCourte(i.heure_prevue)}</Text>
         {avecJour ? <Text style={styles.jour}>{dateCourte(i.date_prevue)}</Text> : null}
+        {surPlusieursJours(i) ? <Text style={styles.jour}>→ {dateCourte(i.date_fin ?? null)}</Text> : null}
       </View>
       <View style={styles.texte}>
         {avecPuces && (

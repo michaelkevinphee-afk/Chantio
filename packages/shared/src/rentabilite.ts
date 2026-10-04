@@ -161,6 +161,85 @@ export function coefficientMinimum(doc: { lignes: LigneDocument[]; remise: numbe
 }
 
 // ---------------------------------------------------------------------------
+// Prévu au devis contre réalisé
+// ---------------------------------------------------------------------------
+
+const cle = (t: string) =>
+  t
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+export interface PieceUtilisee {
+  designation: string;
+  reference?: string | null;
+  quantite: number;
+}
+
+export interface PrevuRealise {
+  heuresPrevues: number;
+  heuresPassees: number;
+  fournituresPrevues: number;
+  fournituresUtilisees: number;
+  /** Pièces notées sur la fiche dont on ne connaît pas le prix d'achat. */
+  piecesSansPrix: number;
+  prixVente: number;
+  margeNettePrevue: number;
+  margeNetteReelle: number;
+  tauxPrevu: number;
+  tauxReel: number;
+}
+
+/**
+ * Compare le devis (heures de pose et fournitures au prix d'achat) à ce que
+ * les fiches disent : temps passé sur place et pièces posées. Le prix d'achat
+ * d'une pièce vient de la ligne du devis de même désignation, sinon de
+ * l'article du catalogue (par référence, puis par désignation).
+ */
+export function prevuRealise(
+  devis: { lignes: LigneDocument[]; remise: number },
+  fiches: { minutes: number; pieces: PieceUtilisee[] },
+  catalogue: { designation: string; reference?: string | null; prix_achat: number | null }[],
+  rp: ReglagesPrix,
+): PrevuRealise {
+  const prevu = rentabilite(devis, rp);
+  const parDesignation = new Map<string, number>();
+  const parReference = new Map<string, number>();
+  for (const a of catalogue) {
+    const prix = Number(a.prix_achat);
+    if (!(prix > 0)) continue;
+    if (a.reference?.trim()) parReference.set(cle(a.reference), prix);
+    if (!parDesignation.has(cle(a.designation))) parDesignation.set(cle(a.designation), prix);
+  }
+  for (const l of devis.lignes) if (!l.titre && Number(l.achat) > 0) parDesignation.set(cle(l.designation), Number(l.achat));
+
+  let fournitures = 0;
+  let sansPrix = 0;
+  for (const p of fiches.pieces) {
+    const prix = (p.reference?.trim() && parReference.get(cle(p.reference))) || parDesignation.get(cle(p.designation));
+    if (prix) fournitures += prix * (Number(p.quantite) || 0);
+    else sansPrix++;
+  }
+  const heures = Math.round((fiches.minutes / 60) * 100) / 100;
+  const debourse = fournitures + heures * rp.cout_horaire;
+  const margeNetteReelle = prevu.prixVente - debourse * (1 + rp.frais_generaux / 100);
+  return {
+    heuresPrevues: prevu.heures,
+    heuresPassees: heures,
+    fournituresPrevues: prevu.fournitures,
+    fournituresUtilisees: arrondi(fournitures),
+    piecesSansPrix: sansPrix,
+    prixVente: prevu.prixVente,
+    margeNettePrevue: prevu.margeNette,
+    margeNetteReelle: arrondi(margeNetteReelle),
+    tauxPrevu: prevu.tauxMargeNette,
+    tauxReel: prevu.prixVente ? (margeNetteReelle / prevu.prixVente) * 100 : 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Métrés
 // ---------------------------------------------------------------------------
 

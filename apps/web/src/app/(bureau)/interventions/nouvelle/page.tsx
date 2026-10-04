@@ -10,8 +10,15 @@ export const metadata = { title: 'Nouvelle intervention · Chantio' };
 
 export default async function NouvelleIntervention({ searchParams }: PageProps<'/interventions/nouvelle'>) {
   const { supabase } = await contexteBureau();
-  const [clients, equipe, { erreur, client, devis }] = await Promise.all([listerClientsAdresses(supabase), listerEquipe(supabase), searchParams]);
+  const [clients, equipe, { erreur, client, devis, date, heure, technicien }] = await Promise.all([
+    listerClientsAdresses(supabase),
+    listerEquipe(supabase),
+    searchParams,
+  ]);
   const intervenants = equipe.filter((m) => m.role !== 'assistant');
+  // Depuis une case libre du planning : jour, demi-journée et technicien déjà choisis.
+  const dateInitiale = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : aujourdhui();
+  const heureInitiale = typeof heure === 'string' && /^\d{2}:\d{2}$/.test(heure) ? heure : undefined;
 
   // Depuis un devis : client, adresse du chantier, objet et ouvrages déjà remplis.
   const lu = typeof devis === 'string' ? await lireDocument(supabase, devis) : null;
@@ -75,19 +82,28 @@ export default async function NouvelleIntervention({ searchParams }: PageProps<'
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="etiquette" htmlFor="date_prevue">Date</label>
-                <input id="date_prevue" name="date_prevue" type="date" className="champ" defaultValue={aujourdhui()} />
+                <input id="date_prevue" name="date_prevue" type="date" className="champ" defaultValue={dateInitiale} />
               </div>
               <div>
                 <label className="etiquette" htmlFor="heure_prevue">Heure</label>
-                <input id="heure_prevue" name="heure_prevue" type="time" className="champ" />
+                <input id="heure_prevue" name="heure_prevue" type="time" className="champ" defaultValue={heureInitiale} />
+              </div>
+              <div>
+                <label className="etiquette" htmlFor="date_fin">Dernier jour</label>
+                <input id="date_fin" name="date_fin" type="date" className="champ" />
+              </div>
+              <div>
+                <label className="etiquette" htmlFor="duree_prevue">Durée prévue (h)</label>
+                <input id="duree_prevue" name="duree_prevue" inputMode="decimal" className="champ" placeholder="1" />
               </div>
             </div>
+            <p className="-mt-2 text-xs text-gris">Un chantier sur plusieurs jours : indiquez son dernier jour, il s’étend au planning.</p>
             <div>
               <p className="etiquette">Technicien(s)</p>
               <div className="space-y-2">
                 {intervenants.map((m) => (
                   <label key={m.id} className="flex items-center gap-3 rounded-xl border border-trait px-3 py-2">
-                    <input type="checkbox" name="techniciens" value={m.id} className="h-4 w-4 accent-cobalt" />
+                    <input type="checkbox" name="techniciens" value={m.id} defaultChecked={m.id === technicien} className="h-4 w-4 accent-cobalt" />
                     <span className="font-semibold">{m.prenom} {m.nom}</span>
                     <span className="ml-auto text-xs text-gris">{LIBELLE_ROLE[m.role]}</span>
                   </label>

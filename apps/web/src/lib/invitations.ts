@@ -14,7 +14,7 @@ type Personne = { id: string; prenom: string; nom: string | null; email: string 
 export async function rendezVousIntervention(supabase: SupabaseClient, interventionId: string) {
   const { data } = await supabase
     .from('interventions')
-    .select('id, numero, motif, description, date_prevue, heure_prevue, client:clients(nom, telephone), site:sites(adresse, code_postal, ville, acces), entreprise:entreprises(nom)')
+    .select('id, numero, motif, description, date_prevue, heure_prevue, date_fin, duree_prevue, client:clients(nom, telephone), site:sites(adresse, code_postal, ville, acces), entreprise:entreprises(nom)')
     .eq('id', interventionId)
     .maybeSingle();
   if (!data?.date_prevue) return null;
@@ -25,6 +25,8 @@ export async function rendezVousIntervention(supabase: SupabaseClient, intervent
     description: string | null;
     date_prevue: string;
     heure_prevue: string | null;
+    date_fin: string | null;
+    duree_prevue: number | null;
     client: { nom: string; telephone: string | null } | null;
     site: { adresse: string; code_postal: string | null; ville: string | null; acces: string | null } | null;
     entreprise: { nom: string } | null;
@@ -35,6 +37,8 @@ export async function rendezVousIntervention(supabase: SupabaseClient, intervent
     lieu: adresseComplete(i.site) || undefined,
     date: i.date_prevue,
     heure: i.heure_prevue,
+    dateFin: i.date_fin,
+    dureeMinutes: i.duree_prevue ? Math.round(Number(i.duree_prevue) * 60) : undefined,
     description: [
       i.description,
       i.client?.telephone && `Client : ${i.client.telephone}`,

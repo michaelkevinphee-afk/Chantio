@@ -6,6 +6,7 @@ import {
   aujourdhui,
   dateCourte,
   numeroIntervention,
+  periode,
 } from '@chantio/shared';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -89,7 +90,7 @@ export default function DetailIntervention() {
       <Apparition rang={rang++}>
         <Carte style={{ borderRadius: 24, padding: 18, gap: 6 }}>
           <Text style={styles.surtitre}>
-            {[LIBELLE_TYPE[i.type], heureCourte(i.heure_prevue), i.date_prevue === aujourdhui() ? null : dateCourte(i.date_prevue)]
+            {[LIBELLE_TYPE[i.type], ...(periode(i) ? [periode(i)] : [heureCourte(i.heure_prevue), i.date_prevue === aujourdhui() ? null : dateCourte(i.date_prevue)])]
               .filter((x) => x && x !== '--:--')
               .join(' · ')}
           </Text>

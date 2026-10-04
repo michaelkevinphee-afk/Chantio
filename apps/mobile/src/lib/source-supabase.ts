@@ -80,7 +80,7 @@ export const sourceSupabase: SourceDonnees = {
     const { data, error } = await supabase()
       .from('interventions')
       .select(CHAMPS_INTERVENTION)
-      .or(`and(date_prevue.gte.${debut},date_prevue.lte.${fin}),statut.eq.en_cours`)
+      .or(`and(date_prevue.gte.${debut},date_prevue.lte.${fin}),and(date_prevue.lt.${debut},date_fin.gte.${debut}),statut.eq.en_cours`)
       .order('date_prevue', { ascending: true })
       .order('heure_prevue', { ascending: true, nullsFirst: false })
       .limit(300);

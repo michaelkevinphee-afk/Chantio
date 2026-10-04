@@ -98,6 +98,10 @@ export interface Membre {
   /** Le membre a activé le partage de sa position (écran Moi de l'appli). */
   partage_position?: boolean;
   partage_position_le?: string | null;
+  /** Heures de travail par semaine (charge au planning). */
+  heures_semaine?: number;
+  /** Demi-journées gardées pour les urgences : 0 = lundi matin … 13 = dimanche après-midi. */
+  reserve_urgences?: number[];
   cree_le: string;
 }
 
@@ -188,6 +192,12 @@ export interface Intervention {
   description: string | null;
   date_prevue: string | null; // AAAA-MM-JJ
   heure_prevue: string | null; // HH:MM:SS
+  /** Dernier jour d'un chantier sur plusieurs jours (voir planning.ts). */
+  date_fin?: string | null;
+  /** Le dernier jour du chantier se termine à midi. */
+  fin_midi?: boolean;
+  /** Durée prévue en heures, pour la charge des techniciens. */
+  duree_prevue?: number | null;
   statut: StatutIntervention;
   cree_par: string | null;
   cree_le: string;

@@ -13,6 +13,8 @@ const texte = (d: FormData, cle: string) => {
   return v === '' ? null : v;
 };
 
+const JOUR = /^\d{4}-\d{2}-\d{2}$/;
+
 function retour(chemin: string, erreur: string): never {
   redirect(`${chemin}${chemin.includes('?') ? '&' : '?'}erreur=${encodeURIComponent(erreur)}`);
 }
@@ -96,6 +98,11 @@ export async function creerIntervention(d: FormData) {
   // 3. L'intervention, puis le ou les techniciens.
   const motif = texte(d, 'motif');
   if (!motif) retour(page, 'Indiquez le motif de l’intervention.');
+  const datePrevue = texte(d, 'date_prevue');
+  const fin = texte(d, 'date_fin');
+  const dateFin = datePrevue && fin && JOUR.test(fin) && fin > datePrevue ? fin : null;
+  const duree = Number(String(d.get('duree_prevue') ?? '').replace(',', '.'));
+  const dureePrevue = duree > 0 && duree <= 24 ? Math.round(duree * 100) / 100 : null;
   const { data: intervention, error } = await supabase
     .from('interventions')
     .insert({
@@ -106,8 +113,10 @@ export async function creerIntervention(d: FormData) {
       urgence: (texte(d, 'urgence') ?? 'normale') as Urgence,
       motif,
       description: texte(d, 'description'),
-      date_prevue: texte(d, 'date_prevue'),
+      date_prevue: datePrevue,
       heure_prevue: texte(d, 'heure_prevue'),
+      date_fin: dateFin,
+      duree_prevue: dureePrevue,
       occupant_id: occupantId,
       ordre_service: texte(d, 'ordre_service'),
       devis_id: devis,
@@ -134,7 +143,16 @@ async function affecter(supabase: Bureau['supabase'], interventionId: string, me
 
 type Personne = { id: string; prenom: string; nom: string | null; email: string | null };
 
-export type Planning = { date_prevue: string | null; heure_prevue: string | null; techniciens: string[] };
+export type Planning = {
+  date_prevue: string | null;
+  heure_prevue: string | null;
+  techniciens: string[];
+  /** Dernier jour d'un chantier sur plusieurs jours ; absent = inchangé. */
+  date_fin?: string | null;
+  fin_midi?: boolean;
+  /** Durée prévue en heures ; absent = inchangée. */
+  duree_prevue?: number | null;
+};
 
 // Appelée depuis la page (sans rechargement) : renvoie l'erreur éventuelle au lieu de rediriger,
 // pour que l'écran confirme tout de suite « Enregistré » ou explique le problème.
@@ -146,13 +164,23 @@ export async function planifier(
   // L'état d'avant, pour ne prévenir que les personnes concernées par le changement.
   const { data: avant } = await supabase
     .from('interventions')
-    .select('date_prevue, heure_prevue, affectations(membre:membres(id, prenom, nom, email))')
+    .select('date_prevue, heure_prevue, date_fin, affectations(membre:membres(id, prenom, nom, email))')
     .eq('id', interventionId)
-    .maybeSingle<{ date_prevue: string | null; heure_prevue: string | null; affectations: { membre: Personne | null }[] }>();
+    .maybeSingle<{ date_prevue: string | null; heure_prevue: string | null; date_fin: string | null; affectations: { membre: Personne | null }[] }>();
 
   const date_prevue = p.date_prevue || null;
   const heure_prevue = p.heure_prevue || null;
-  const { error } = await supabase.from('interventions').update({ date_prevue, heure_prevue }).eq('id', interventionId);
+  const champs: Record<string, unknown> = { date_prevue, heure_prevue };
+  // Sans date, plus de dernier jour ; un dernier jour avant le premier est ignoré.
+  if (p.date_fin !== undefined || !date_prevue) {
+    champs.date_fin = date_prevue && p.date_fin && JOUR.test(p.date_fin) && p.date_fin > date_prevue ? p.date_fin : null;
+    champs.fin_midi = !!champs.date_fin && !!p.fin_midi;
+  }
+  if (p.duree_prevue !== undefined) {
+    const d = Number(p.duree_prevue);
+    champs.duree_prevue = p.duree_prevue !== null && d > 0 && d <= 24 ? Math.round(d * 100) / 100 : null;
+  }
+  const { error } = await supabase.from('interventions').update(champs).eq('id', interventionId);
   const eAffect = error ? null : await affecter(supabase, interventionId, p.techniciens, entreprise.id);
   revalidatePath('/', 'layout');
   if (error) return { erreur: 'La date n’a pas pu être modifiée.' };
@@ -164,7 +192,10 @@ export async function planifier(
   const { data: nouveaux } = p.techniciens.length
     ? await supabase.from('membres').select('id, prenom, nom, email').in('id', p.techniciens)
     : { data: [] as Personne[] };
-  const horaireChange = avant?.date_prevue !== date_prevue || (avant?.heure_prevue?.slice(0, 5) ?? null) !== (heure_prevue?.slice(0, 5) ?? null);
+  const horaireChange =
+    avant?.date_prevue !== date_prevue ||
+    (avant?.heure_prevue?.slice(0, 5) ?? null) !== (heure_prevue?.slice(0, 5) ?? null) ||
+    ('date_fin' in champs && (avant?.date_fin ?? null) !== champs.date_fin);
   const dejaPrevenus = new Set(anciens.map((m) => m.id));
   const aPrevenir = (nouveaux ?? []).filter((m) => horaireChange || !dejaPrevenus.has(m.id));
   const gardes = new Set(p.techniciens);
