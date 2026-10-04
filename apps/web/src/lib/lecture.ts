@@ -1,5 +1,6 @@
 import 'server-only';
 import Anthropic from '@anthropic-ai/sdk';
+import { CATEGORIES_FOURNISSEUR } from '@chantio/shared';
 import type { ChampsLus } from './devis';
 
 // Lecture automatique (OCR) des anciens devis et factures importés.
@@ -121,6 +122,113 @@ export async function lireFichierImporte(fichier: Buffer, typeMime: string, nom:
     return JSON.parse(texte.text) as ChampsLus;
   } catch (e) {
     console.error('Lecture automatique', e);
+    return { message: raisonEchec(e) };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Factures fournisseurs (Achats)
+// ---------------------------------------------------------------------------
+
+/** Ce que la lecture rend d'une facture fournisseur (chaîne vide ou 0 quand rien n'est lu). */
+export type FactureLue = {
+  facture: boolean;
+  fournisseur: { nom: string; siret: string; tva_intracom: string; adresse: string; iban: string; categorie: string };
+  numero: string;
+  date: string;
+  echeance: string;
+  montant_ht: number;
+  montant_tva: number;
+  montant_ttc: number;
+  taux_tva: number;
+  avoir: boolean;
+  lignes: { designation: string; quantite: number; prix_unitaire_ht: number; total_ht: number }[];
+};
+
+const SCHEMA_ACHAT = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    facture: { type: 'boolean', description: 'false si le document n’est ni une facture, ni un avoir, ni un ticket de caisse' },
+    fournisseur: {
+      type: 'object',
+      additionalProperties: false,
+      description: 'L’entreprise qui ÉMET la facture (pas le client destinataire)',
+      properties: {
+        nom: { type: 'string' },
+        siret: { type: 'string', description: 'SIRET ou SIREN, chiffres seuls' },
+        tva_intracom: { type: 'string' },
+        adresse: { type: 'string', description: 'Sur une seule ligne' },
+        iban: { type: 'string' },
+        categorie: { type: 'string', enum: CATEGORIES_FOURNISSEUR, description: 'Le type de fournisseur, d’après ce qu’il facture' },
+      },
+      required: ['nom', 'siret', 'tva_intracom', 'adresse', 'iban', 'categorie'],
+    },
+    numero: { type: 'string' },
+    date: { type: 'string', description: 'Date de facturation au format AAAA-MM-JJ' },
+    echeance: { type: 'string', description: 'Date d’échéance au format AAAA-MM-JJ, vide si absente' },
+    montant_ht: { type: 'number' },
+    montant_tva: { type: 'number' },
+    montant_ttc: { type: 'number' },
+    taux_tva: { type: 'number', description: 'Taux de TVA principal en %, 0 si autoliquidation' },
+    avoir: { type: 'boolean', description: 'true seulement si le document est un avoir' },
+    lignes: {
+      type: 'array',
+      description: 'Au plus 12 lignes',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          designation: { type: 'string' },
+          quantite: { type: 'number' },
+          prix_unitaire_ht: { type: 'number' },
+          total_ht: { type: 'number' },
+        },
+        required: ['designation', 'quantite', 'prix_unitaire_ht', 'total_ht'],
+      },
+    },
+  },
+  required: ['facture', 'fournisseur', 'numero', 'date', 'echeance', 'montant_ht', 'montant_tva', 'montant_ttc', 'taux_tva', 'avoir', 'lignes'],
+} as const;
+
+const CONSIGNE_ACHAT = `Tu lis une facture reçue d'un fournisseur par une entreprise française du bâtiment (plomberie, chauffage) : négoce, loueur, sous-traitant, carburant…
+Le fournisseur est l'entreprise qui émet la facture, pas le client destinataire.
+Recopie les champs tels qu'ils sont imprimés, sans rien inventer : un champ absent reste une chaîne vide (ou 0 pour un nombre).
+Montants en euros, positifs, au format numérique (1122.55), même pour un avoir.`;
+
+/** Lit une facture fournisseur (PDF ou photo). */
+export async function lireFactureFournisseur(fichier: Buffer, typeMime: string, nom: string): Promise<FactureLue | { message: string }> {
+  if (!lectureActivee()) return { message: 'Lecture automatique pas encore activée : complétez les champs à la main.' };
+  if (fichier.byteLength > TAILLE_MAX) return { message: 'Fichier trop lourd pour la lecture automatique (20 Mo au plus).' };
+  const pdf = typeMime === 'application/pdf' || /\.pdf$/i.test(nom);
+  const image = /^image\/(jpeg|png|gif|webp)$/.test(typeMime);
+  if (!pdf && !image) return { message: 'Format non lu automatiquement : complétez les champs à la main.' };
+
+  const donnees = fichier.toString('base64');
+  const piece: Anthropic.ContentBlockParam = pdf
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: donnees } }
+    : {
+        type: 'image',
+        source: { type: 'base64', media_type: typeMime as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp', data: donnees },
+      };
+  try {
+    const espace = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
+    const client = new Anthropic(espace ? { defaultHeaders: { 'anthropic-workspace-id': espace } } : {});
+    const reponse = await client.messages.create({
+      model: MODELE,
+      max_tokens: 8000,
+      system: CONSIGNE_ACHAT,
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA_ACHAT as unknown as Record<string, unknown> } },
+      messages: [{ role: 'user', content: [piece, { type: 'text', text: `Fichier : ${nom}. Lis cette facture.` }] }],
+    });
+    if (reponse.stop_reason === 'refusal' || reponse.stop_reason === 'max_tokens') {
+      return { message: 'La facture n’a pas pu être lue entièrement : complétez les champs à la main.' };
+    }
+    const texte = reponse.content.find((b) => b.type === 'text');
+    if (!texte || texte.type !== 'text') return { message: 'Aucun champ reconnu.' };
+    return JSON.parse(texte.text) as FactureLue;
+  } catch (e) {
+    console.error('Lecture automatique (achat)', e);
     return { message: raisonEchec(e) };
   }
 }

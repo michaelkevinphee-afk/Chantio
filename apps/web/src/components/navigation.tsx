@@ -10,6 +10,7 @@ const LIENS: { href: string; libelle: string; icone: NomIcone }[] = [
   { href: '/interventions', libelle: 'Interventions', icone: 'interventions' },
   { href: '/clients', libelle: 'Clients', icone: 'clients' },
   { href: '/devis', libelle: 'Devis et factures', icone: 'devis' },
+  { href: '/achats', libelle: 'Achats', icone: 'achats' },
   { href: '/equipe', libelle: 'Équipe', icone: 'equipe' },
 ];
 

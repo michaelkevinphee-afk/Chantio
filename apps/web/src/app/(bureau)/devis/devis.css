@@ -607,7 +607,8 @@
 }
 
 /* ---------- Ajouts pour l'application ---------- */
-.df.ecran { animation: df-arrivee .35s cubic-bezier(.2,.7,.2,1) both; }
+/* « backwards » : une fois arrivé, l'écran ne garde aucune transformation (sinon les volets fixes restent pris dans l'écran). */
+.df.ecran { animation: df-arrivee .35s cubic-bezier(.2,.7,.2,1) backwards; }
 /* Le volet n'existe dans la page que lorsqu'il est ouvert (pas de défilement horizontal). */
 .df .volet.ouvert { animation: df-volet .35s cubic-bezier(.2,.7,.2,1) both; }
 .df .voile.ouvert { animation: df-voile .25s ease both; }
