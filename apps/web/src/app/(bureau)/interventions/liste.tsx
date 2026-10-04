@@ -16,6 +16,7 @@ export type LigneIntervention = {
   statut: StatutIntervention;
   date_prevue: string | null;
   heure_prevue: string | null;
+  date_fin: string | null;
   client: string;
   ville: string | null;
   motif: string;
@@ -63,7 +64,7 @@ export function ListeInterventions({
     return lignes.filter(
       (l) =>
         (type === 'tous' || l.type === type) &&
-        dansPeriode(l.date_prevue, periode, jour) &&
+        dansPeriode(l.date_prevue, periode, jour, l.date_fin) &&
         (!q || sansAccent(`${l.motif} ${l.client} ${l.ville ?? ''} ${l.techniciens} ${l.numero} ${l.reference ?? ''}`).includes(q)),
     );
   }, [lignes, rechercheDiff, type, periode, jour]);
@@ -176,7 +177,9 @@ export function ListeInterventions({
                 <LigneCliquable key={i.id} href={adresse(criteres, i.id)}>
                   <td className="px-4 py-3 font-mono text-xs text-gris">{numeroIntervention(i)}</td>
                   <td className="px-4 py-3 whitespace-nowrap" suppressHydrationWarning>
-                    {dateCourte(i.date_prevue)} {heure(i.heure_prevue)}
+                    {i.date_fin && i.date_prevue && i.date_fin > i.date_prevue
+                      ? `${dateCourte(i.date_prevue)} → ${dateCourte(i.date_fin)}`
+                      : `${dateCourte(i.date_prevue)} ${heure(i.heure_prevue)}`}
                   </td>
                   <td className="px-4 py-3 font-semibold">
                     {i.client}

@@ -47,3 +47,10 @@ test('lundi de la semaine', () => {
   assert.equal(lundiDe('2026-10-04'), '2026-09-28');
   assert.equal(lundiDe('2026-10-05'), '2026-10-05');
 });
+
+test('chantier sur plusieurs jours : journées entières jusqu’au dernier jour', () => {
+  const ics = fichierAgenda({ uid: 'c1', titre: 'Salle de bain', date: '2026-10-08', heure: '08:00', dateFin: '2026-10-13' }, new Date('2026-10-01T10:00:00Z'));
+  assert.match(ics, /DTSTART;VALUE=DATE:20261008/);
+  assert.match(ics, /DTEND;VALUE=DATE:20261014/);
+  assert.doesNotMatch(ics, /VTIMEZONE/);
+});

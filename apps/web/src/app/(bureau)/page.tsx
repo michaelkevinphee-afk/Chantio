@@ -8,6 +8,7 @@ import {
   initiales,
   joursAvantLimite,
   LIBELLE_ROLE,
+  occupe,
   type ConditionsDocument,
   type Membre,
   type Pointage,
@@ -50,7 +51,8 @@ export default async function Pilotage() {
     { data: reponsesAO },
     { data: achatsOuverts },
   ] = await Promise.all([
-    supabase.from('interventions').select(SELECT_LISTE).eq('date_prevue', jour).order('heure_prevue'),
+    // Les interventions du jour, et les chantiers sur plusieurs jours en cours aujourd'hui.
+    supabase.from('interventions').select(SELECT_LISTE).lte('date_prevue', jour).or(`date_prevue.eq.${jour},date_fin.gte.${jour}`).order('heure_prevue'),
     supabase
       .from('interventions')
       .select(SELECT_LISTE)
@@ -70,7 +72,7 @@ export default async function Pilotage() {
     supabase.from('achats').select('statut, echeance, montant_ttc, paiements:paiements_achats(montant)').in('statut', ['recu', 'a_payer', 'planifie']),
   ]);
 
-  const jourListe = (duJour ?? []) as InterventionListe[];
+  const jourListe = ((duJour ?? []) as InterventionListe[]).filter((i) => occupe(i, jour));
   const { data: pointages } = jourListe.length
     ? await supabase
         .from('pointages')

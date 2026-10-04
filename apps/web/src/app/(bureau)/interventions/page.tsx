@@ -44,6 +44,7 @@ export default async function Interventions({ searchParams }: PageProps<'/interv
           statut: i.statut,
           date_prevue: i.date_prevue,
           heure_prevue: i.heure_prevue,
+          date_fin: i.date_fin ?? null,
           client: i.client?.nom ?? '',
           ville: i.site?.ville ?? null,
           motif: i.motif,

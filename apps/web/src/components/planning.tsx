@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { initiales } from '@chantio/shared';
+import { ajouterJours, initiales } from '@chantio/shared';
 import { planifier, type Planning as ValeursPlanning } from '@/app/(bureau)/interventions/actions';
 import { annoncer, Coche, Roue } from './retour';
 import { Icone } from './icones';
@@ -9,8 +9,11 @@ import { Avatar } from './ui';
 
 type Personne = { id: string; prenom: string; nom: string | null };
 
+/** Nombre de jours entre deux dates AAAA-MM-JJ. */
+const ecart = (de: string, a: string) => Math.round((Date.parse(`${a}T12:00:00Z`) - Date.parse(`${de}T12:00:00Z`)) / 86_400_000);
+
 /**
- * Bloc « Planning » d'une intervention : chaque changement (date, heure, technicien)
+ * Bloc « Planning » d'une intervention : chaque changement (date, heure, dernier jour, technicien)
  * s'affiche tout de suite et s'enregistre tout seul, avec une confirmation animée.
  */
 export function Planning({
@@ -23,6 +26,8 @@ export function Planning({
   initial: ValeursPlanning;
 }) {
   const [valeurs, setValeurs] = useState(initial);
+  const [duree, setDuree] = useState(initial.duree_prevue ? String(initial.duree_prevue).replace('.', ',') : '');
+  const plusieursJours = !!valeurs.date_prevue && !!valeurs.date_fin && valeurs.date_fin > valeurs.date_prevue;
   const [etat, setEtat] = useState<'' | 'envoi' | 'ok' | 'erreur'>('');
   const [dernier, setDernier] = useState<string | null>(null);
   const envois = useRef(0);
@@ -85,7 +90,13 @@ export function Planning({
           className="champ"
           value={valeurs.date_prevue ?? ''}
           aria-label="Date"
-          onChange={(e) => changer({ ...valeurs, date_prevue: e.target.value || null }, 'Date enregistrée', 700)}
+          onChange={(e) => {
+            const date_prevue = e.target.value || null;
+            // Le chantier garde son nombre de jours quand on change son premier jour.
+            const date_fin =
+              date_prevue && valeurs.date_prevue && valeurs.date_fin ? ajouterJours(date_prevue, ecart(valeurs.date_prevue, valeurs.date_fin)) : null;
+            changer({ ...valeurs, date_prevue, date_fin, fin_midi: !!date_fin && !!valeurs.fin_midi }, 'Date enregistrée', 700);
+          }}
         />
         <input
           type="time"
@@ -95,6 +106,60 @@ export function Planning({
           onChange={(e) => changer({ ...valeurs, heure_prevue: e.target.value || null }, 'Heure enregistrée', 900)}
         />
       </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <div>
+          <label className="etiquette" htmlFor={`fin-${interventionId}`}>
+            Dernier jour
+          </label>
+          <input
+            id={`fin-${interventionId}`}
+            type="date"
+            className="champ"
+            min={valeurs.date_prevue ? ajouterJours(valeurs.date_prevue, 1) : undefined}
+            disabled={!valeurs.date_prevue}
+            value={valeurs.date_fin ?? ''}
+            onChange={(e) => {
+              const date_fin = e.target.value && valeurs.date_prevue && e.target.value > valeurs.date_prevue ? e.target.value : null;
+              changer({ ...valeurs, date_fin, fin_midi: !!date_fin && !!valeurs.fin_midi }, date_fin ? 'Dernier jour enregistré' : 'Sur une seule journée', 700);
+            }}
+          />
+        </div>
+        {plusieursJours ? (
+          <label className="flex items-end gap-2 pb-3 font-bold">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-cobalt"
+              checked={!!valeurs.fin_midi}
+              onChange={(e) => changer({ ...valeurs, fin_midi: e.target.checked }, e.target.checked ? 'Finit à midi le dernier jour' : 'Finit le soir du dernier jour')}
+            />
+            Finit à midi
+          </label>
+        ) : (
+          <div>
+            <label className="etiquette" htmlFor={`duree-${interventionId}`}>
+              Durée prévue (h)
+            </label>
+            <input
+              id={`duree-${interventionId}`}
+              className="champ"
+              inputMode="decimal"
+              placeholder="1"
+              value={duree}
+              onChange={(e) => {
+                setDuree(e.target.value);
+                const h = Number(e.target.value.replace(',', '.'));
+                changer({ ...valeurs, duree_prevue: e.target.value.trim() && h > 0 && h <= 24 ? h : null }, 'Durée enregistrée', 900);
+              }}
+            />
+          </div>
+        )}
+      </div>
+      <p className="mt-1.5 text-xs text-gris">
+        {plusieursJours
+          ? 'Le chantier occupe toutes ses demi-journées au planning, week-ends sautés.'
+          : 'Un chantier sur plusieurs jours : indiquez son dernier jour.'}
+      </p>
 
       {valeurs.date_prevue && (
         <a

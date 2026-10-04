@@ -1,4 +1,4 @@
-import { adresseComplete, ajouterJours, aujourdhui, dateLongue, estBureau } from '@chantio/shared';
+import { adresseComplete, ajouterJours, aujourdhui, dateLongue, estBureau, occupe } from '@chantio/shared';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -41,8 +41,8 @@ export default function MaJournee() {
   const visibles = interventions
     .filter((i) => (bureau && equipe) || i.intervenants.some((m) => m.id === moi))
     .sort(parHeure);
-  // Une intervention démarrée un jour précédent reste dans la journée.
-  const duJour = visibles.filter((i) => i.date_prevue === t || (i.statut === 'en_cours' && (i.date_prevue ?? '') < t));
+  // Une intervention démarrée un jour précédent reste dans la journée, comme un chantier sur plusieurs jours.
+  const duJour = visibles.filter((i) => occupe(i, t) || (i.statut === 'en_cours' && (i.date_prevue ?? '') < t));
   const ouvertes = duJour.filter((i) => !estTerminee(i));
   const faites = duJour.filter(estTerminee);
   const suivante = ouvertes.find((i) => i.statut === 'en_cours') ?? ouvertes[0];

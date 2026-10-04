@@ -12,7 +12,12 @@ import {
   etatMesure,
   heure,
   numeroIntervention,
+  periode,
   peutValider,
+  prevuRealise,
+  pourcent,
+  reglagesPrix,
+  euro,
   type Fiche,
   type Fourniture,
   type Media,
@@ -21,6 +26,7 @@ import {
 } from '@chantio/shared';
 import { Puce, PuceStatut, Titre } from '@/components/ui';
 import { contexteBureau } from '@/lib/session';
+import { lireDocument } from '@/lib/devis';
 import { listerEquipe, SELECT_LISTE, type InterventionListe } from '@/lib/requetes';
 import { Planning } from '@/components/planning';
 import { BoutonEnvoi } from '@/components/retour';
@@ -31,7 +37,7 @@ type FicheComplete = Fiche & { fournitures: Fourniture[]; medias: Media[] };
 export default async function DetailIntervention({ params, searchParams }: PageProps<'/interventions/[id]'>) {
   const { id } = await params;
   const { erreur } = await searchParams;
-  const { supabase, membre } = await contexteBureau();
+  const { supabase, membre, entreprise } = await contexteBureau();
 
   const { data } = await supabase
     .from('interventions')
@@ -54,6 +60,25 @@ export default async function DetailIntervention({ params, searchParams }: PageP
     listerEquipe(supabase),
   ]);
   const fiches = (fichesBrutes ?? []) as FicheComplete[];
+
+  // Prévu au devis contre réalisé : dès qu'une fiche est envoyée sur une intervention venue d'un devis.
+  const envoyees = fiches.filter((f) => f.envoyee_le);
+  const [devisPrevu, { data: catalogue }] =
+    i.devis_id && envoyees.length
+      ? await Promise.all([lireDocument(supabase, i.devis_id), supabase.from('articles').select('designation, reference, prix_achat')])
+      : [null, { data: null }];
+  const rp = reglagesPrix(entreprise.facturation);
+  const pr = devisPrevu
+    ? prevuRealise(
+        { lignes: devisPrevu.lignes, remise: devisPrevu.document.remise },
+        {
+          minutes: envoyees.reduce((t, f) => t + (f.duree_minutes ?? 0), 0),
+          pieces: envoyees.flatMap((f) => f.fournitures.map((p) => ({ designation: p.designation, reference: p.reference, quantite: Number(p.quantite) }))),
+        },
+        (catalogue ?? []) as { designation: string; reference: string | null; prix_achat: number }[],
+        rp,
+      )
+    : null;
 
   // Liens temporaires (1 h) vers les photos, rangées dans un stockage privé.
   const chemins = fiches.flatMap((f) => f.medias.map((m) => m.chemin));
@@ -115,6 +140,9 @@ export default async function DetailIntervention({ params, searchParams }: PageP
             </div>
           ) : (
             fiches.map((f, n) => <BlocFiche key={f.id} fiche={f} rang={fiches.length > 1 ? n + 1 : null} urls={urls} />)
+          )}
+          {pr && devisPrevu && (pr.heuresPrevues > 0 || pr.fournituresPrevues > 0) && (
+            <PrevuContreRealise pr={pr} devis={devisPrevu.document.numero} fiches={envoyees.length} coutHoraire={rp.cout_horaire} frais={rp.frais_generaux} />
           )}
         </div>
 
@@ -180,6 +208,9 @@ export default async function DetailIntervention({ params, searchParams }: PageP
               initial={{
                 date_prevue: i.date_prevue,
                 heure_prevue: i.heure_prevue?.slice(0, 5) ?? null,
+                date_fin: i.date_fin ?? null,
+                fin_midi: !!i.fin_midi,
+                duree_prevue: i.duree_prevue == null ? null : Number(i.duree_prevue),
                 techniciens: i.affectations.flatMap((a) => (a.membre ? [a.membre.id] : [])),
               }}
             />
@@ -187,8 +218,14 @@ export default async function DetailIntervention({ params, searchParams }: PageP
             <section className="carte p-5 text-sm">
               <h2 className="mb-3 text-xl font-extrabold">Planning</h2>
               <p>
-                {i.date_prevue ? <span className="inline-block first-letter:uppercase">{dateLongue(i.date_prevue)}</span> : 'Sans date'}{' '}
-                {heure(i.heure_prevue)}
+                {periode(i) ? (
+                  <span className="inline-block first-letter:uppercase">{periode(i)}</span>
+                ) : (
+                  <>
+                    {i.date_prevue ? <span className="inline-block first-letter:uppercase">{dateLongue(i.date_prevue)}</span> : 'Sans date'}{' '}
+                    {heure(i.heure_prevue)}
+                  </>
+                )}
                 <br />
                 {i.affectations.map((a) => a.membre?.prenom).join(', ') || 'Aucun technicien'}
               </p>
@@ -302,6 +339,62 @@ function BlocFiche({ fiche: f, rang, urls }: { fiche: FicheComplete; rang: numbe
         )}
       </Section>
     </article>
+  );
+}
+
+const heures = (h: number) => `${String(Math.round(h * 10) / 10).replace('.', ',')} h`;
+
+/** Heures et fournitures prévues au devis, comparées aux fiches ; marge nette prévue et réelle. Jamais montré au client. */
+function PrevuContreRealise({
+  pr,
+  devis,
+  fiches,
+  coutHoraire,
+  frais,
+}: {
+  pr: ReturnType<typeof prevuRealise>;
+  devis: string | null;
+  fiches: number;
+  coutHoraire: number;
+  frais: number;
+}) {
+  const tuiles = [
+    { titre: 'Heures', prevu: `${heures(pr.heuresPrevues)} prévues`, reel: `${heures(pr.heuresPassees)} passées`, depasse: pr.heuresPassees > pr.heuresPrevues },
+    {
+      titre: 'Fournitures',
+      prevu: `${euro(pr.fournituresPrevues)} prévues`,
+      reel: `${euro(pr.fournituresUtilisees)} utilisées`,
+      depasse: pr.fournituresUtilisees > pr.fournituresPrevues,
+    },
+    {
+      titre: 'Marge nette',
+      prevu: `${euro(pr.margeNettePrevue)} · ${pourcent(pr.tauxPrevu)} prévue`,
+      reel: `${euro(pr.margeNetteReelle)} · ${pourcent(pr.tauxReel)} réelle`,
+      depasse: pr.margeNetteReelle < pr.margeNettePrevue,
+    },
+  ];
+  return (
+    <section className="carte p-5">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <h2 className="text-xl font-extrabold">Prévu au devis contre réalisé</h2>
+        <Puce>Jamais montré au client</Puce>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {tuiles.map((t) => (
+          <div key={t.titre} className="rounded-xl bg-doux p-3">
+            <p className="text-xs font-bold tracking-wide text-gris uppercase">{t.titre}</p>
+            <p className="mt-1 text-sm font-semibold">{t.prevu}</p>
+            <p className={`text-[15px] font-extrabold ${t.depasse ? 'text-rouge' : 'text-vert'}`}>{t.reel}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-xs text-gris">
+        D’après le devis {devis ?? '(brouillon)'} et {fiches > 1 ? `les ${fiches} fiches` : 'la fiche'} du technicien : temps sur place et pièces notées, au coût
+        horaire de {euro(coutHoraire)} et {pourcent(frais)} de frais généraux.
+        {pr.piecesSansPrix > 0 &&
+          ` ${pr.piecesSansPrix} pièce${pr.piecesSansPrix > 1 ? 's n’ont' : ' n’a'} pas de prix d’achat connu : ajoutez-${pr.piecesSansPrix > 1 ? 'les' : 'la'} au catalogue pour une marge réelle exacte.`}
+      </p>
+    </section>
   );
 }
 

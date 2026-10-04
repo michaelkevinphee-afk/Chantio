@@ -4,6 +4,7 @@ import {
   LIBELLE_URGENCE,
   adresseComplete,
   dateLongue,
+  periode,
   duree,
   heure,
   initiales,
@@ -142,7 +143,9 @@ export async function VoletIntervention({ id, fermer }: { id: string; fermer: st
       <Bloc titre="Planning">
         <p className="flex items-center gap-2 font-semibold">
           <Icone nom="calendrier" taille={18} className="text-cobalt" />
-          {i.date_prevue ? (
+          {periode(i) ? (
+            <span className="first-letter:uppercase">{periode(i)}</span>
+          ) : i.date_prevue ? (
             <span className="first-letter:uppercase">
               {dateLongue(i.date_prevue)} {heure(i.heure_prevue) && `à ${heure(i.heure_prevue)}`}
             </span>

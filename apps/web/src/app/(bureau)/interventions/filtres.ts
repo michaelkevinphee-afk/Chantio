@@ -22,13 +22,17 @@ export const PERIODES = [
 
 export type Periode = (typeof PERIODES)[number][0];
 
-/** La date prévue tombe-t-elle dans la période choisie (jour = date du jour, AAAA-MM-JJ) ? */
-export function dansPeriode(date: string | null, periode: Periode, jour: string): boolean {
+/**
+ * L'intervention tombe-t-elle dans la période choisie (jour = date du jour, AAAA-MM-JJ) ?
+ * Un chantier sur plusieurs jours compte tant qu'il n'est pas fini.
+ */
+export function dansPeriode(date: string | null, periode: Periode, jour: string, fin?: string | null): boolean {
   if (periode === 'toutes') return true;
   if (!date) return false;
-  if (periode === 'aujourdhui') return date === jour;
-  if (periode === 'avenir') return date >= jour;
-  if (periode === 'passees') return date < jour;
+  const dernier = fin && fin > date ? fin : date;
+  if (periode === 'aujourdhui') return date <= jour && jour <= dernier;
+  if (periode === 'avenir') return dernier >= jour;
+  if (periode === 'passees') return dernier < jour;
   const lundi = lundiDe(jour);
-  return date >= lundi && date <= ajouterJours(lundi, 6);
+  return date <= ajouterJours(lundi, 6) && dernier >= lundi;
 }

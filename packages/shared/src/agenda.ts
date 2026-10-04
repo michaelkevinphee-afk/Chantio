@@ -8,6 +8,8 @@ export interface RendezVous {
   lieu?: string;
   date: string; // AAAA-MM-JJ
   heure?: string | null; // HH:MM ou HH:MM:SS ; sans heure = journée entière
+  /** Dernier jour d'un chantier sur plusieurs jours : rendez-vous sur des journées entières. */
+  dateFin?: string | null;
   dureeMinutes?: number;
   organisateur?: { nom: string; email: string };
   participants?: { nom: string; email: string }[];
@@ -86,21 +88,23 @@ export function fichierAgenda(r: RendezVous, maintenant: Date = new Date()): str
     'CALSCALE:GREGORIAN',
     `METHOD:${methode}`,
   ];
-  if (r.heure) lignes.push(...FUSEAU_PARIS);
+  const plusieursJours = !!r.dateFin && r.dateFin > r.date;
+  const avecHeure = !!r.heure && !plusieursJours;
+  if (avecHeure) lignes.push(...FUSEAU_PARIS);
   lignes.push(
     'BEGIN:VEVENT',
     `UID:${r.uid}@chantio`,
     `DTSTAMP:${horodatageUTC(maintenant)}`,
     `SEQUENCE:${r.sequence ?? Math.floor(maintenant.getTime() / 1000)}`,
   );
-  if (r.heure) {
+  if (avecHeure && r.heure) {
     const debut = r.heure.slice(0, 5);
     lignes.push(
       `DTSTART;TZID=Europe/Paris:${decaler(r.date, debut, 0)}`,
       `DTEND;TZID=Europe/Paris:${decaler(r.date, debut, r.dureeMinutes ?? 60)}`,
     );
   } else {
-    const [a, m, j] = r.date.split('-').map(Number);
+    const [a, m, j] = (plusieursJours ? r.dateFin! : r.date).split('-').map(Number);
     const lendemain = new Date(Date.UTC(a, m - 1, j + 1)).toISOString().slice(0, 10);
     lignes.push(`DTSTART;VALUE=DATE:${compact(r.date)}`, `DTEND;VALUE=DATE:${compact(lendemain)}`);
   }
