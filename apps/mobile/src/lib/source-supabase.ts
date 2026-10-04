@@ -7,7 +7,8 @@ import { supabase } from './supabase';
 
 const CHAMPS_INTERVENTION = `*,
   client:clients(nom, telephone, contact),
-  site:sites(adresse, code_postal, ville, acces, consignes, latitude, longitude),
+  site:sites(adresse, code_postal, ville, acces, consignes, gardien, latitude, longitude),
+  occupant:occupants(nom, lot, telephone),
   affectations(membre:membres(id, prenom))`;
 
 type LigneIntervention = Omit<InterventionVue, 'intervenants'> & {

@@ -1,21 +1,57 @@
-import { LIBELLE_TYPE_CLIENT, adresseComplete, type Client, type Site } from '@chantio/shared';
+import { adresseComplete, aujourdhui, chosesAFaire, resumeClient, type Client, type Site } from '@chantio/shared';
 import { Icone } from '@/components/icones';
-import { LienBouton, Titre, Vide } from '@/components/ui';
-import { LigneCliquable, Volet } from '@/components/volet';
+import { LienBouton, Titre } from '@/components/ui';
+import { Volet } from '@/components/volet';
 import { contexteBureau } from '@/lib/session';
+import { chargerSuivi } from '@/lib/suivi-clients';
 import { FormulaireClient } from './formulaire-client';
+import { ListeClients } from './liste';
 import { VoletClient } from './volet-client';
 
 export const metadata = { title: 'Clients · Chantio' };
 
+type ClientListe = Client & {
+  sites: (Pick<Site, 'adresse' | 'code_postal' | 'ville'> & { occupants: { nom: string; lot: string | null }[] })[];
+  interventions: { count: number }[];
+};
+
 export default async function Clients({ searchParams }: PageProps<'/clients'>) {
   const { supabase } = await contexteBureau();
   const { fiche, nouveau, cree } = await searchParams;
-  const { data } = await supabase
-    .from('clients')
-    .select('*, sites(adresse, code_postal, ville), interventions(count)')
-    .order('nom');
-  const clients = (data ?? []) as (Client & { sites: Site[]; interventions: { count: number }[] })[];
+  const [{ data }, suivi] = await Promise.all([
+    supabase.from('clients').select('*, sites(adresse, code_postal, ville, occupants(nom, lot)), interventions(count)').order('nom'),
+    chargerSuivi(supabase),
+  ]);
+  const clients = (data ?? []) as ClientListe[];
+  const ajd = aujourdhui();
+
+  const lignes = clients.map((c) => {
+    const interventions = suivi.interventions.get(c.id) ?? [];
+    const documents = suivi.documents.get(c.id) ?? [];
+    const liste = chosesAFaire({ id: c.id, type: c.type, facturation: c.facturation, immeubles: c.sites.length }, interventions, documents, ajd);
+    const total = c.interventions[0]?.count ?? 0;
+    return {
+      id: c.id,
+      nom: c.nom,
+      type: c.type,
+      telephone: c.mobile ?? c.telephone,
+      adresse: adresseComplete(c.sites[0] ?? null),
+      autres: Math.max(0, c.sites.length - 1),
+      interventions: total,
+      etat: resumeClient(liste, total > 0 || documents.length > 0),
+      recherche: [
+        c.nom,
+        c.contact,
+        c.telephone,
+        c.mobile,
+        c.email,
+        c.siren,
+        ...c.sites.flatMap((s) => [adresseComplete(s), ...s.occupants.map((o) => `${o.nom} ${o.lot ?? ''}`)]),
+      ]
+        .filter(Boolean)
+        .join(' '),
+    };
+  });
 
   return (
     <>
@@ -29,37 +65,7 @@ export default async function Clients({ searchParams }: PageProps<'/clients'>) {
       >
         Clients
       </Titre>
-      {clients.length === 0 ? (
-        <Vide titre="Aucun client">Ajoutez votre premier client avec le bouton « Nouveau client ».</Vide>
-      ) : (
-        <div className="carte overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b border-trait text-left text-xs uppercase text-gris">
-              <tr>
-                <th className="px-4 py-3">Nom</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Téléphone</th>
-                <th className="px-4 py-3">Adresse</th>
-                <th className="px-4 py-3 text-right">Interventions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-trait">
-              {clients.map((c) => (
-                <LigneCliquable key={c.id} href={`/clients?fiche=${c.id}`}>
-                  <td className="px-4 py-3 font-semibold">{c.nom}</td>
-                  <td className="px-4 py-3">{LIBELLE_TYPE_CLIENT[c.type]}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{c.mobile ?? c.telephone ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    {adresseComplete(c.sites[0] ?? null) || '—'}
-                    {c.sites.length > 1 && <span className="text-gris"> (+{c.sites.length - 1})</span>}
-                  </td>
-                  <td className="px-4 py-3 text-right">{c.interventions[0]?.count ?? 0}</td>
-                </LigneCliquable>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <ListeClients lignes={lignes} />
 
       {nouveau && (
         <Volet fermer="/clients" titre="Nouveau client" sous="Particulier ou professionnel">

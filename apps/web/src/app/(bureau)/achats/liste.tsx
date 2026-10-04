@@ -40,7 +40,8 @@ export type LigneAchatListe = {
   cree_le: string;
   fournisseur: { id: string; nom: string; categorie: string } | null;
   responsable: string | null;
-  chantier: number | null;
+  /** Numéro de l'intervention liée (« CH-2026-0012 »). */
+  chantier: string | null;
   paiements: { montant: number; date_paiement: string }[];
   paye: number;
 };
@@ -549,7 +550,7 @@ export function ListeAchats({
                     <div className="quoi">
                       {a.fournisseur?.categorie ?? a.fichier_nom ?? 'Facture'}
                       <span>
-                        {[a.responsable, a.chantier ? `Chantier N° ${String(a.chantier).padStart(4, '0')}` : null, LIBELLE_RECEPTION[a.reception]]
+                        {[a.responsable, a.chantier ? `Chantier ${a.chantier}` : null, LIBELLE_RECEPTION[a.reception]]
                           .filter(Boolean)
                           .join(' · ')}
                       </span>

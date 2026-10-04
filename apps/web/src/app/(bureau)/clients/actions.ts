@@ -41,6 +41,7 @@ export async function ajouterClient(_: EtatClient, d: FormData): Promise<EtatCli
       site_web: particulier ? null : texte(d, 'site_web'),
       adresse_facturation: texte(d, 'adresse_facturation'),
       notes: texte(d, 'notes'),
+      facturation: texte(d, 'facturation') === 'mensuel' ? 'mensuel' : 'intervention',
     })
     .select('id')
     .single();
@@ -101,5 +102,65 @@ export async function ajouterContact(clientId: string, d: FormData) {
 export async function supprimerContact(contactId: string) {
   const { supabase } = await contexteBureau();
   await supabase.from('contacts_client').delete().eq('id', contactId);
+  revalidatePath('/clients');
+}
+
+// Syndics et bailleurs : leurs immeubles (adresses) et les occupants de chacun.
+
+export async function ajouterImmeuble(clientId: string, d: FormData) {
+  const { supabase, entreprise } = await contexteBureau();
+  const adresse = texte(d, 'adresse');
+  if (adresse) {
+    await supabase.from('sites').insert({
+      entreprise_id: entreprise.id,
+      client_id: clientId,
+      adresse,
+      code_postal: texte(d, 'code_postal'),
+      ville: texte(d, 'ville'),
+      acces: texte(d, 'acces'),
+      gardien: texte(d, 'gardien'),
+      copropriete: texte(d, 'copropriete'),
+    });
+  }
+  revalidatePath('/clients');
+}
+
+export async function modifierImmeuble(siteId: string, d: FormData) {
+  const { supabase } = await contexteBureau();
+  await supabase
+    .from('sites')
+    .update({ acces: texte(d, 'acces'), gardien: texte(d, 'gardien'), copropriete: texte(d, 'copropriete'), consignes: texte(d, 'consignes') })
+    .eq('id', siteId);
+  revalidatePath('/clients');
+}
+
+export async function ajouterOccupant(siteId: string, d: FormData) {
+  const { supabase, entreprise } = await contexteBureau();
+  const nom = texte(d, 'nom');
+  if (nom) {
+    await supabase.from('occupants').insert({
+      entreprise_id: entreprise.id,
+      site_id: siteId,
+      nom,
+      lot: texte(d, 'lot'),
+      telephone: texte(d, 'telephone'),
+      email: texte(d, 'email'),
+    });
+  }
+  revalidatePath('/clients');
+}
+
+export async function supprimerOccupant(occupantId: string) {
+  const { supabase } = await contexteBureau();
+  await supabase.from('occupants').delete().eq('id', occupantId);
+  revalidatePath('/clients');
+}
+
+export async function changerFacturation(clientId: string, d: FormData) {
+  const { supabase } = await contexteBureau();
+  await supabase
+    .from('clients')
+    .update({ facturation: texte(d, 'facturation') === 'mensuel' ? 'mensuel' : 'intervention' })
+    .eq('id', clientId);
   revalidatePath('/clients');
 }

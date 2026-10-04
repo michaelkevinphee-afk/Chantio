@@ -119,8 +119,12 @@ export interface Client {
   activite: string | null;
   tva_intracom: string | null;
   site_web: string | null;
+  /** Syndics et bailleurs : une facture par intervention, ou un relevé par mois. */
+  facturation: FacturationClient;
   cree_le: string;
 }
+
+export type FacturationClient = 'intervention' | 'mensuel';
 
 /** Personne à joindre chez un client (gestionnaire, gardien, comptable…). */
 export interface ContactClient {
@@ -143,16 +147,40 @@ export interface Site {
   ville: string | null;
   acces: string | null;
   consignes: string | null;
+  /** Immeuble de syndic ou de bailleur : gardien (nom, téléphone) et copropriété. */
+  gardien: string | null;
+  copropriete: string | null;
   latitude: number | null;
   longitude: number | null;
+}
+
+/** Occupant d'un immeuble : appartement, local ou parties communes. */
+export interface Occupant {
+  id: string;
+  entreprise_id: string;
+  site_id: string;
+  nom: string;
+  /** Étage, porte, n° de lot. */
+  lot: string | null;
+  telephone: string | null;
+  email: string | null;
+  cree_le: string;
 }
 
 export interface Intervention {
   id: string;
   entreprise_id: string;
   numero: number;
+  /** Numéro par type et par année : DEP-2026-0001, CH-2026-0001, ENT-2026-0001. */
+  reference: string | null;
   client_id: string;
   site_id: string | null;
+  /** Chez qui on intervient dans l'immeuble (le syndic reste le client facturé). */
+  occupant_id: string | null;
+  /** N° d'ordre de service ou de bon de commande du syndic. */
+  ordre_service: string | null;
+  /** Devis signé d'où vient l'intervention. */
+  devis_id: string | null;
   equipement_id: string | null;
   type: TypeIntervention;
   urgence: Urgence;

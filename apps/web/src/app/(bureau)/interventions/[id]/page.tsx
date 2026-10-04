@@ -5,23 +5,26 @@ import {
   LIBELLE_TYPE,
   LIBELLE_URGENCE,
   MESURES,
+  aDesImmeubles,
   adresseComplete,
   dateLongue,
   duree,
   etatMesure,
   heure,
-  numero,
+  numeroIntervention,
   peutValider,
   type Fiche,
   type Fourniture,
   type Media,
+  type Occupant,
+  type TypeClient,
 } from '@chantio/shared';
 import { Puce, PuceStatut, Titre } from '@/components/ui';
 import { contexteBureau } from '@/lib/session';
 import { listerEquipe, SELECT_LISTE, type InterventionListe } from '@/lib/requetes';
 import { Planning } from '@/components/planning';
 import { BoutonEnvoi } from '@/components/retour';
-import { annulerFacturation, facturer, renvoyer, supprimer, valider } from '../actions';
+import { annulerFacturation, facturer, modifierOccupant, renvoyer, supprimer, valider } from '../actions';
 
 type FicheComplete = Fiche & { fournitures: Fourniture[]; medias: Media[] };
 
@@ -32,14 +35,19 @@ export default async function DetailIntervention({ params, searchParams }: PageP
 
   const { data } = await supabase
     .from('interventions')
-    .select(`${SELECT_LISTE}, site_complet:sites(acces, consignes), client_complet:clients(email, contact)`)
+    .select(
+      `${SELECT_LISTE}, site_complet:sites(acces, consignes, gardien, occupants(id, nom, lot)), client_complet:clients(email, contact, type), occupant:occupants(nom, lot, telephone), devis:documents(id, numero)`,
+    )
     .eq('id', id)
     .maybeSingle();
   if (!data) notFound();
   const i = data as InterventionListe & {
-    site_complet: { acces: string | null; consignes: string | null } | null;
-    client_complet: { email: string | null; contact: string | null } | null;
+    site_complet: { acces: string | null; consignes: string | null; gardien: string | null; occupants: Pick<Occupant, 'id' | 'nom' | 'lot'>[] } | null;
+    client_complet: { email: string | null; contact: string | null; type: TypeClient } | null;
+    occupant: Pick<Occupant, 'nom' | 'lot' | 'telephone'> | null;
+    devis: { id: string; numero: string | null } | null;
   };
+  const immeuble = !!i.client_complet && aDesImmeubles(i.client_complet.type);
 
   const [{ data: fichesBrutes }, equipe] = await Promise.all([
     supabase.from('fiches').select('*, fournitures(*), medias(*)').eq('intervention_id', id).order('cree_le'),
@@ -66,7 +74,7 @@ export default async function DetailIntervention({ params, searchParams }: PageP
       <Titre
         sous={
           <span className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-xs">{numero(i.numero)}</span>
+            <span className="font-mono text-xs">{numeroIntervention(i)}</span>
             <PuceStatut statut={i.statut} />
             <Puce>{LIBELLE_TYPE[i.type]}</Puce>
             {i.urgence !== 'normale' && <Puce ton="rouge">{LIBELLE_URGENCE[i.urgence]}</Puce>}
@@ -118,6 +126,50 @@ export default async function DetailIntervention({ params, searchParams }: PageP
             {i.client_complet?.email && <p>{i.client_complet.email}</p>}
             <p>{adresseComplete(i.site)}</p>
             {i.site_complet?.acces && <p className="text-gris">Accès : {i.site_complet.acces}</p>}
+            {i.site_complet?.gardien && <p className="text-gris">Gardien : {i.site_complet.gardien}</p>}
+            {i.occupant && (
+              <p>
+                Occupant à appeler : <b>{i.occupant.nom}</b>
+                {i.occupant.lot && ` · ${i.occupant.lot}`}
+                {i.occupant.telephone && (
+                  <>
+                    {' · '}
+                    <a className="underline" href={`tel:${i.occupant.telephone}`}>{i.occupant.telephone}</a>
+                  </>
+                )}
+              </p>
+            )}
+            {i.ordre_service && <p>Ordre de service : <span className="font-mono">{i.ordre_service}</span></p>}
+            {i.devis && (
+              <p>
+                Devis : <Link className="underline" href={`/devis/${i.devis.id}`}>{i.devis.numero ?? 'brouillon'}</Link>
+              </p>
+            )}
+            {immeuble && (
+              <details>
+                <summary className="cursor-pointer font-bold text-cobalt">
+                  {i.occupant || i.ordre_service ? 'Changer l’occupant ou l’ordre de service' : 'Indiquer l’occupant ou l’ordre de service'}
+                </summary>
+                <form action={modifierOccupant.bind(null, i.id)} className="mt-3 space-y-2">
+                  <select name="occupant_id" defaultValue={i.occupant_id ?? ''} className="champ" aria-label="Occupant à appeler">
+                    <option value="">Personne en particulier (parties communes)</option>
+                    {[...(i.site_complet?.occupants ?? [])]
+                      .sort((a, b) => a.nom.localeCompare(b.nom))
+                      .map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.nom}
+                          {o.lot ? ` · ${o.lot}` : ''}
+                        </option>
+                      ))}
+                  </select>
+                  <input name="ordre_service" defaultValue={i.ordre_service ?? ''} className="champ" placeholder="N° d’ordre de service" aria-label="N° d’ordre de service" />
+                  <BoutonEnvoi className="w-full" enCours="Enregistrement…">Enregistrer</BoutonEnvoi>
+                </form>
+                <p className="mt-2 text-xs text-gris">
+                  Un nouvel occupant s’ajoute depuis la fiche du client, rubrique Immeubles.
+                </p>
+              </details>
+            )}
             {i.description && <p className="whitespace-pre-line rounded-xl bg-doux p-3">{i.description}</p>}
           </section>
 

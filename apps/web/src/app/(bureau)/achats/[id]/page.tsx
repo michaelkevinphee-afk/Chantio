@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { aujourdhui, estBureau, type Achat, type Fournisseur, type PaiementAchat, type RoleMembre } from '@chantio/shared';
+import { aujourdhui, estBureau, numeroIntervention, type Achat, type Fournisseur, type PaiementAchat, type RoleMembre } from '@chantio/shared';
 import { lectureActivee } from '@/lib/lecture';
 import { contexteBureau } from '@/lib/session';
 import { FicheAchat } from './fiche';
@@ -9,8 +9,8 @@ export const maxDuration = 60;
 
 export const metadata = { title: 'Facture fournisseur · Chantio' };
 
-type Chantier = { id: string; numero: number; motif: string; client: { nom: string } | null };
-const SELECT_CHANTIER = 'id, numero, motif, client:clients(nom)';
+type Chantier = { id: string; numero: number; reference: string | null; motif: string; client: { nom: string } | null };
+const SELECT_CHANTIER = 'id, numero, reference, motif, client:clients(nom)';
 
 export default async function PageAchat({ params }: PageProps<'/achats/[id]'>) {
   const { id } = await params;
@@ -50,7 +50,7 @@ export default async function PageAchat({ params }: PageProps<'/achats/[id]'>) {
       membres={((membres.data ?? []) as { id: string; prenom: string; nom: string; role: RoleMembre }[]).filter((m) => estBureau(m.role) || m.id === achat.responsable_id)}
       chantiers={chantiers.map((c) => ({
         id: c.id,
-        libelle: `N° ${String(c.numero).padStart(4, '0')} · ${[c.client?.nom, c.motif].filter(Boolean).join(' · ')}`,
+        libelle: `${numeroIntervention(c)} · ${[c.client?.nom, c.motif].filter(Boolean).join(' · ')}`,
       }))}
       paiements={((paiements.data ?? []) as PaiementAchat[]).map((p) => ({ ...p, montant: Number(p.montant) }))}
       commentaires={((commentaires.data ?? []) as unknown as Commentaire[]).map((c) => ({

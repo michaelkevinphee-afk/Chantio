@@ -19,6 +19,7 @@ export function FormulaireClient() {
   const [pro, setPro] = useState<Partial<EntrepriseTrouvee>>({});
   const [contacts, setContacts] = useState<Contact[]>([CONTACT_VIDE]);
   const [factureAilleurs, setFactureAilleurs] = useState(false);
+  const [typePro, setTypePro] = useState('entreprise');
 
   const choisir = (e: EntrepriseTrouvee) => {
     setPro(e);
@@ -61,11 +62,19 @@ export function FormulaireClient() {
                 <input {...champPro('nom')} className="champ" required />
               </Champ>
               <Champ libelle="Type">
-                <select name="type" className="champ" defaultValue="entreprise">
+                <select name="type" className="champ" value={typePro} onChange={(e) => setTypePro(e.target.value)}>
                   {TYPES_PRO.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </Champ>
             </div>
+            {(typePro === 'syndic' || typePro === 'bailleur') && (
+              <Champ libelle="Facturation">
+                <select name="facturation" className="champ" defaultValue="intervention">
+                  <option value="intervention">Une facture par intervention</option>
+                  <option value="mensuel">Un relevé par mois pour chaque immeuble</option>
+                </select>
+              </Champ>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <Champ libelle="SIREN">
                 <input {...champPro('siren')} className="champ" inputMode="numeric" pattern="\s*(\d\s*){9}" title="9 chiffres" />

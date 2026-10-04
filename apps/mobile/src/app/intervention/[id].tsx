@@ -5,7 +5,7 @@ import {
   adresseComplete,
   aujourdhui,
   dateCourte,
-  numero,
+  numeroIntervention,
 } from '@chantio/shared';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -71,7 +71,10 @@ export default function DetailIntervention() {
     );
   }
 
-  const faits = (i.site?.acces ?? '').split(/\s*·\s*/).filter(Boolean);
+  const faits = [...(i.site?.acces ?? '').split(/\s*·\s*/), i.site?.gardien ? `Gardien : ${i.site.gardien}` : ''].filter(Boolean);
+  // Dans un immeuble, on appelle l'occupant chez qui on intervient, pas le syndic.
+  const telephone = i.occupant?.telephone ?? i.client?.telephone ?? null;
+  const contact = i.occupant ? [i.occupant.nom, i.occupant.lot].filter(Boolean).join(' · ') : i.client?.contact;
   const termine = ['terminee', 'validee', 'facturee'].includes(i.statut);
   let rang = 0;
 
@@ -79,7 +82,7 @@ export default function DetailIntervention() {
     <Ecran barre={action}>
       <View style={styles.haut}>
         <BoutonRond rond icone="gauche" label="Retour" onPress={() => router.back()} />
-        <Text style={styles.numero}>{numero(i.numero)}</Text>
+        <Text style={styles.numero}>{numeroIntervention(i)}</Text>
       </View>
       <BandeauEnvoi />
 
@@ -110,10 +113,10 @@ export default function DetailIntervention() {
               ))}
             </View>
           )}
-          {adresse || i.client?.telephone ? (
+          {adresse || telephone ? (
             <View style={styles.deux}>
               {adresse ? <Fantome icone="aller" texte="Y aller" onPress={() => ouvrirCarte(adresse)} /> : null}
-              {i.client?.telephone ? <Fantome icone="telephone" texte="Appeler" onPress={() => appeler(i.client!.telephone!)} /> : null}
+              {telephone ? <Fantome icone="telephone" texte="Appeler" onPress={() => appeler(telephone)} /> : null}
             </View>
           ) : null}
         </Carte>
@@ -143,15 +146,16 @@ export default function DetailIntervention() {
         </Apparition>
       ) : null}
 
-      {i.client?.contact ? (
+      {contact ? (
         <Apparition rang={rang++}>
           <Carte style={styles.carteLigne}>
             <View style={styles.ti}>
               <Icone nom="telephone" taille={24} couleur={c.cobalt} />
             </View>
             <View style={{ flex: 1 }}>
-              <Texte variante="doux" style={{ fontSize: 15 }}>Contact sur place</Texte>
-              <Texte variante="fort">{i.client.contact}</Texte>
+              <Texte variante="doux" style={{ fontSize: 15 }}>{i.occupant ? 'Occupant à appeler' : 'Contact sur place'}</Texte>
+              <Texte variante="fort">{contact}</Texte>
+              {i.occupant?.telephone ? <Texte variante="doux" style={{ fontSize: 15 }}>{i.occupant.telephone}</Texte> : null}
             </View>
           </Carte>
         </Apparition>
@@ -182,6 +186,7 @@ const ICONE_TYPE: Partial<Record<InterventionVue['type'], NomIcone>> = {
 };
 
 function iconeAcces(f: string): NomIcone {
+  if (/^gardien/i.test(f)) return 'personne';
   if (/code|badge|cl[ée]/i.test(f)) return 'cle';
   if (/[ée]tage|niveau/i.test(f)) return 'couches';
   return 'info';

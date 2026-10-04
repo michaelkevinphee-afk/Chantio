@@ -55,3 +55,13 @@ export function adresseComplete(site: { adresse: string; code_postal?: string | 
 export function numero(n: number): string {
   return `N° ${String(n).padStart(4, '0')}`;
 }
+
+/** N° d'intervention par type (« DEP-2026-0001 »), ou l'ancien « N° 0042 » s'il n'en a pas encore. */
+export function numeroIntervention(i: { reference?: string | null; numero: number }): string {
+  return i.reference || numero(i.numero);
+}
+
+/** Préfixe du numéro d'une intervention, comme dans la base (prive.prefixe_intervention). */
+export function prefixeIntervention(type: string): 'DEP' | 'CH' | 'ENT' {
+  return type === 'depannage' || type === 'sav' ? 'DEP' : type === 'entretien' ? 'ENT' : 'CH';
+}
