@@ -7,6 +7,7 @@ import {
   euro,
   nomClient,
   pourcent,
+  texteMetre,
   titreDocument,
   type ClientDocument,
   type ConditionsDocument,
@@ -54,6 +55,17 @@ const METIERS: Record<string, string> = {
   sanitaire: 'Sanitaire',
   electricite: 'Électricité',
 };
+
+/** Désignation imprimée : n° de poste du client (DPGF) et détail du métré, jamais les coûts. */
+function Designation({ l }: { l: LigneDocument }) {
+  return (
+    <>
+      {l.reference && <span className="ref-poste">{l.reference}</span>}
+      {l.designation}
+      {l.metre && <div className="metre-p">Métré : {texteMetre(l.metre, l.unite)}</div>}
+    </>
+  );
+}
 
 export function Papier({ d, entreprise, flash }: { d: DonneesPapier; entreprise: EntreprisePapier; flash?: number }) {
   const T = calculer(d);
@@ -284,7 +296,9 @@ export function Papier({ d, entreprise, flash }: { d: DonneesPapier; entreprise:
               const prec = l.avancement_precedent ?? 0;
               return situation ? (
                 <tr key={i} className={i === flash ? 'flash' : ''}>
-                  <td>{l.designation}</td>
+                  <td>
+                    <Designation l={l} />
+                  </td>
                   <td className="dr">{euro(mt)}</td>
                   <td className="dr">{av} %</td>
                   <td className="dr">{euro((mt * av) / 100)}</td>
@@ -294,7 +308,9 @@ export function Papier({ d, entreprise, flash }: { d: DonneesPapier; entreprise:
                 </tr>
               ) : (
                 <tr key={i} className={i === flash ? 'flash' : ''}>
-                  <td>{l.designation}</td>
+                  <td>
+                    <Designation l={l} />
+                  </td>
                   <td className="dr">
                     {String(+l.quantite.toFixed(3)).replace('.', ',')} {l.unite}
                   </td>

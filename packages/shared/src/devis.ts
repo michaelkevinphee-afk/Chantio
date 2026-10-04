@@ -10,7 +10,7 @@ export type Echeancier = 'acompte' | '303040' | 'situations' | 'fin';
 
 export const TAUX_TVA = [5.5, 10, 20] as const;
 export const UNITES = ['u', 'h', 'm', 'm²', 'm³', 'ml', 'kg', 'forfait', 'ens.'] as const;
-export const CATEGORIES_ARTICLE = ['Fournitures', 'Main-d’œuvre', 'Forfaits', 'Déplacements'] as const;
+export const CATEGORIES_ARTICLE = ['Ouvrages', 'Fournitures', 'Main-d’œuvre', 'Forfaits', 'Déplacements'] as const;
 
 /** Client tel qu'il figure sur le document (copie au moment de la rédaction). */
 export interface ClientDocument {
@@ -94,6 +94,27 @@ export interface LigneDocument {
   avancement?: number;
   avancement_precedent?: number;
   article_id?: string | null;
+  /** Coût d'une unité, jamais imprimé : fourniture achetée (€ HT) et temps de pose (h). */
+  achat?: number | null;
+  heures?: number | null;
+  /** Coefficient propre à la ligne ; sans lui, la ligne suit celui du document. */
+  coefficient?: number | null;
+  /** Prix unitaire = (fourniture + pose × coût horaire) × coefficient ; sinon prix fixe saisi. */
+  prix_calcule?: boolean;
+  /** Métré qui a donné la quantité. */
+  metre?: Metre | null;
+  /** N° de poste du cadre de réponse du client (DPGF, DQE). */
+  reference?: string | null;
+}
+
+/** Métré d'une ligne : longueur × largeur (× hauteur) × nombre, moins les ouvertures, plus la chute. */
+export interface Metre {
+  longueur: number;
+  largeur: number;
+  hauteur?: number;
+  nombre: number;
+  deduction: number;
+  chute: number;
 }
 
 export interface DocumentACalculer {
@@ -127,6 +148,12 @@ export interface ReglagesFacturation {
   rge?: string;
   objectif_mensuel?: number;
   slogan?: string;
+  /** Prix et coefficients : valeurs par défaut des devis (voir rentabilite.ts). */
+  cout_horaire?: number;
+  frais_generaux?: number;
+  coefficient?: number;
+  marge_min?: number;
+  chute?: number;
 }
 
 export interface TotauxDocument {

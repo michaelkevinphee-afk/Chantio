@@ -40,6 +40,8 @@ export interface DocumentLu {
   avancement: number;
   avancement_precedent: number;
   situation_numero: number | null;
+  /** Coefficient global du document (sinon celui des réglages). */
+  coefficient: number | null;
   total_ht: number;
   total_ttc: number;
   net_a_payer: number;
@@ -66,6 +68,8 @@ export interface ArticleLu {
   reference: string | null;
   prix_achat: number;
   prix_vente: number;
+  /** Temps de pose par unité (ouvrages). */
+  heures: number;
   tva: number;
   utilisations: number;
   actif: boolean;
@@ -110,6 +114,7 @@ const NOMBRES_DOC = ['remise', 'pourcentage', 'avancement', 'avancement_preceden
 export function normaliserDocument(d: Record<string, unknown>, reglages?: ReglagesFacturation): DocumentLu {
   const doc = { ...d } as unknown as DocumentLu;
   for (const k of NOMBRES_DOC) (doc as unknown as Record<string, number>)[k] = Number(d[k] ?? 0);
+  doc.coefficient = d.coefficient == null ? null : Number(d.coefficient);
   doc.client = completerClient(d.client as Partial<ClientDocument>);
   doc.conditions = completerConditions(d.conditions as Partial<ConditionsDocument>, reglages);
   return doc;
@@ -128,6 +133,12 @@ export function normaliserLigne(l: Record<string, unknown>): LigneLue {
     avancement: Number(l.avancement ?? 0),
     avancement_precedent: Number(l.avancement_precedent ?? 0),
     article_id: (l.article_id as string | null) ?? null,
+    achat: l.achat == null ? null : Number(l.achat),
+    heures: l.heures == null ? null : Number(l.heures),
+    coefficient: l.coefficient == null ? null : Number(l.coefficient),
+    prix_calcule: !!l.prix_calcule,
+    metre: (l.metre as LigneDocument['metre']) ?? null,
+    reference: (l.reference as string | null) ?? null,
   };
 }
 
@@ -140,6 +151,7 @@ export function normaliserArticle(a: Record<string, unknown>): ArticleLu {
     reference: (a.reference as string | null) ?? null,
     prix_achat: Number(a.prix_achat ?? 0),
     prix_vente: Number(a.prix_vente ?? 0),
+    heures: Number(a.heures ?? 0),
     tva: Number(a.tva ?? 10),
     utilisations: Number(a.utilisations ?? 0),
     actif: a.actif !== false,

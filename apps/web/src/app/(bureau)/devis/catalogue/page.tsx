@@ -5,7 +5,7 @@ import { Catalogue } from './catalogue';
 export const metadata = { title: 'Catalogue · Chantio' };
 
 export default async function PageCatalogue() {
-  const { supabase } = await contexteBureau();
+  const { supabase, entreprise } = await contexteBureau();
   const articles = await lireArticles(supabase);
-  return <Catalogue articles={articles} />;
+  return <Catalogue articles={articles} reglages={entreprise.facturation ?? {}} />;
 }

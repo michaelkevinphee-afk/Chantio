@@ -47,6 +47,7 @@ export default async function PageDocument({ params, searchParams }: PageProps<'
     import_id: null,
     origine: d.origine,
     lus: [],
+    coefficient: d.coefficient,
   };
 
   const suivi = <SuiviDocument document={d} historique={d.genre === 'devis' ? historique : null} />;
