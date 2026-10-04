@@ -1,10 +1,12 @@
 // Accès aux données : une même interface pour Supabase et pour le mode démo,
 // pour que les écrans n'aient pas à savoir d'où viennent les données.
-import type { Entreprise, FicheAEnvoyer, Intervention, Membre, RoleMembre, Site } from '@chantio/shared';
+import type { Entreprise, FicheAEnvoyer, Intervention, Membre, Occupant, RoleMembre, Site } from '@chantio/shared';
 
 export interface InterventionVue extends Intervention {
   client: { nom: string; telephone: string | null; contact: string | null } | null;
-  site: Pick<Site, 'adresse' | 'code_postal' | 'ville' | 'acces' | 'consignes'> & Partial<Pick<Site, 'latitude' | 'longitude'>> | null;
+  site: Pick<Site, 'adresse' | 'code_postal' | 'ville' | 'acces' | 'consignes'> & Partial<Pick<Site, 'latitude' | 'longitude' | 'gardien'>> | null;
+  /** Dans l'immeuble d'un syndic : l'occupant chez qui on intervient. */
+  occupant?: Pick<Occupant, 'nom' | 'lot' | 'telephone'> | null;
   intervenants: { id: string; prenom: string }[];
 }
 

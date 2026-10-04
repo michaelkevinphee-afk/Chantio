@@ -7,8 +7,9 @@ import {
   duree,
   heure,
   initiales,
-  numero,
+  numeroIntervention,
   type Fiche,
+  type Occupant,
 } from '@chantio/shared';
 import { Icone } from '@/components/icones';
 import { Avatar, LienBouton, Puce, PuceStatut } from '@/components/ui';
@@ -18,8 +19,9 @@ import { SELECT_LISTE, type InterventionListe } from '@/lib/requetes';
 import { contexteBureau } from '@/lib/session';
 
 type Detail = InterventionListe & {
-  site_complet: { acces: string | null; consignes: string | null } | null;
+  site_complet: { acces: string | null; consignes: string | null; gardien: string | null } | null;
   client_complet: { email: string | null; contact: string | null; type: string } | null;
+  occupant: Pick<Occupant, 'nom' | 'lot' | 'telephone'> | null;
 };
 
 /** Fiche résumée d'une intervention, ouverte au clic dans la liste. */
@@ -28,7 +30,9 @@ export async function VoletIntervention({ id, fermer }: { id: string; fermer: st
   const [{ data }, { data: fiches }] = await Promise.all([
     supabase
       .from('interventions')
-      .select(`${SELECT_LISTE}, site_complet:sites(acces, consignes), client_complet:clients(email, contact, type)`)
+      .select(
+        `${SELECT_LISTE}, site_complet:sites(acces, consignes, gardien), client_complet:clients(email, contact, type), occupant:occupants(nom, lot, telephone)`,
+      )
       .eq('id', id)
       .maybeSingle(),
     supabase
@@ -57,7 +61,7 @@ export async function VoletIntervention({ id, fermer }: { id: string; fermer: st
       fermer={fermer}
       sous={
         <span className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs">{numero(i.numero)}</span>
+          <span className="font-mono text-xs">{numeroIntervention(i)}</span>
           <PuceStatut statut={i.statut} />
           <Puce>{LIBELLE_TYPE[i.type]}</Puce>
           {i.urgence !== 'normale' && <Puce ton="rouge">{LIBELLE_URGENCE[i.urgence]}</Puce>}
@@ -107,9 +111,22 @@ export async function VoletIntervention({ id, fermer }: { id: string; fermer: st
             </p>
           )}
         </div>
-        {(i.site_complet?.acces || i.site_complet?.consignes) && (
+        {i.occupant && (
+          <p className="mt-3 flex flex-wrap items-center gap-x-2 text-sm">
+            <Icone nom="clients" taille={16} className="text-cobalt" />
+            <span>
+              Occupant à appeler : <b>{i.occupant.nom}</b>
+              {i.occupant.lot && ` · ${i.occupant.lot}`}
+            </span>
+            {i.occupant.telephone && (
+              <a href={`tel:${i.occupant.telephone}`} className="font-semibold hover:underline">{i.occupant.telephone}</a>
+            )}
+          </p>
+        )}
+        {(i.site_complet?.acces || i.site_complet?.consignes || i.site_complet?.gardien) && (
           <div className="mt-3 rounded-xl bg-doux p-3 text-sm">
             {i.site_complet?.acces && <p><b>Accès :</b> {i.site_complet.acces}</p>}
+            {i.site_complet?.gardien && <p><b>Gardien :</b> {i.site_complet.gardien}</p>}
             {i.site_complet?.consignes && <p><b>Consignes :</b> {i.site_complet.consignes}</p>}
           </div>
         )}

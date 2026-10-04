@@ -2,7 +2,7 @@ import { LIBELLE_ROLE, LIBELLE_TYPE, LIBELLE_TYPE_CLIENT, LIBELLE_URGENCE, MOTIF
 import { Bouton, LienBouton, Titre } from '@/components/ui';
 import { lireDocument } from '@/lib/devis';
 import { contexteBureau } from '@/lib/session';
-import { listerClients, listerEquipe } from '@/lib/requetes';
+import { listerClientsAdresses, listerEquipe } from '@/lib/requetes';
 import { creerIntervention } from '../actions';
 import { ChoixClient } from './choix-client';
 
@@ -10,7 +10,7 @@ export const metadata = { title: 'Nouvelle intervention · Chantio' };
 
 export default async function NouvelleIntervention({ searchParams }: PageProps<'/interventions/nouvelle'>) {
   const { supabase } = await contexteBureau();
-  const [clients, equipe, { erreur, client, devis }] = await Promise.all([listerClients(supabase), listerEquipe(supabase), searchParams]);
+  const [clients, equipe, { erreur, client, devis }] = await Promise.all([listerClientsAdresses(supabase), listerEquipe(supabase), searchParams]);
   const intervenants = equipe.filter((m) => m.role !== 'assistant');
 
   // Depuis un devis : client, adresse du chantier, objet et ouvrages déjà remplis.
@@ -33,35 +33,13 @@ export default async function NouvelleIntervention({ searchParams }: PageProps<'
       <form action={creerIntervention} className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
           {lu && <input type="hidden" name="devis" value={lu.document.id} />}
-          <fieldset className="carte space-y-4 p-6">
-            <legend className="px-1 text-xl font-extrabold">Client</legend>
-            <ChoixClient
-              clients={clients}
-              initial={clientInitial}
-              nouveau={clientDevis ? undefined : p?.client}
-              types={Object.entries(LIBELLE_TYPE_CLIENT).map(([valeur, libelle]) => ({ valeur, libelle }))}
-            />
-          </fieldset>
-
-          <fieldset className="carte grid gap-4 p-6 sm:grid-cols-6">
-            <legend className="px-1 text-xl font-extrabold">Adresse d’intervention</legend>
-            <div className="sm:col-span-6">
-              <label className="etiquette" htmlFor="adresse">Adresse</label>
-              <input id="adresse" name="adresse" className="champ" defaultValue={p?.adresse} required placeholder="12 rue des Tilleuls" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="etiquette" htmlFor="code_postal">Code postal</label>
-              <input id="code_postal" name="code_postal" className="champ" defaultValue={p?.code_postal} inputMode="numeric" />
-            </div>
-            <div className="sm:col-span-4">
-              <label className="etiquette" htmlFor="ville">Ville</label>
-              <input id="ville" name="ville" className="champ" defaultValue={p?.ville} />
-            </div>
-            <div className="sm:col-span-6">
-              <label className="etiquette" htmlFor="acces">Accès (code, étage, consignes)</label>
-              <input id="acces" name="acces" className="champ" placeholder="Code 4512B · 3e étage" />
-            </div>
-          </fieldset>
+          <ChoixClient
+            clients={clients}
+            initial={clientInitial}
+            nouveau={clientDevis ? undefined : p?.client}
+            types={Object.entries(LIBELLE_TYPE_CLIENT).map(([valeur, libelle]) => ({ valeur, libelle }))}
+            adresse={p ? { adresse: p.adresse, code_postal: p.code_postal, ville: p.ville } : undefined}
+          />
 
           <fieldset className="carte grid gap-4 p-6 sm:grid-cols-2">
             <legend className="px-1 text-xl font-extrabold">Demande</legend>

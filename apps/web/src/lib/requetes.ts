@@ -1,5 +1,5 @@
 import 'server-only';
-import type { Client, Intervention, Membre, Site } from '@chantio/shared';
+import type { Client, Intervention, Membre, Occupant, Site } from '@chantio/shared';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type InterventionListe = Intervention & {
@@ -24,4 +24,19 @@ export async function listerEquipe(supabase: SupabaseClient) {
 export async function listerClients(supabase: SupabaseClient) {
   const { data } = await supabase.from('clients').select('id, nom').order('nom');
   return (data ?? []) as Pick<Client, 'id' | 'nom'>[];
+}
+
+export type ClientAdresses = Pick<Client, 'id' | 'nom' | 'type'> & {
+  sites: (Pick<Site, 'id' | 'adresse' | 'code_postal' | 'ville' | 'acces' | 'gardien'> & {
+    occupants: Pick<Occupant, 'id' | 'nom' | 'lot' | 'telephone'>[];
+  })[];
+};
+
+/** Clients avec leurs adresses déjà connues (immeubles des syndics) et leurs occupants. */
+export async function listerClientsAdresses(supabase: SupabaseClient) {
+  const { data } = await supabase
+    .from('clients')
+    .select('id, nom, type, sites(id, adresse, code_postal, ville, acces, gardien, occupants(id, nom, lot, telephone))')
+    .order('nom');
+  return (data ?? []) as ClientAdresses[];
 }

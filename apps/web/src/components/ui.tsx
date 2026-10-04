@@ -31,7 +31,7 @@ const VARIANTES = {
 };
 
 type Variante = keyof typeof VARIANTES;
-const classeBouton = (v: Variante, extra = '') =>
+export const classeBouton = (v: Variante, extra = '') =>
   `inline-flex items-center justify-center gap-2 rounded-[14px] px-5 py-3 text-[15px] font-extrabold transition active:scale-[0.97] disabled:opacity-50 ${VARIANTES[v]} ${extra}`;
 
 export function Bouton({ variante = 'principal', className, ...props }: ComponentProps<'button'> & { variante?: Variante }) {

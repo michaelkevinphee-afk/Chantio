@@ -1,7 +1,7 @@
 'use client';
 
 import { useDeferredValue, useMemo, useState } from 'react';
-import { LIBELLE_STATUT, LIBELLE_TYPE, dateCourte, heure, numero, type StatutIntervention } from '@chantio/shared';
+import { LIBELLE_STATUT, LIBELLE_TYPE, dateCourte, heure, numeroIntervention, type StatutIntervention } from '@chantio/shared';
 import { Puce, PuceStatut, Vide } from '@/components/ui';
 import { LigneCliquable } from '@/components/volet';
 import { adresse } from './adresse';
@@ -12,6 +12,7 @@ type TypeLigne = keyof typeof LIBELLE_TYPE;
 export type LigneIntervention = {
   id: string;
   numero: number;
+  reference: string | null;
   statut: StatutIntervention;
   date_prevue: string | null;
   heure_prevue: string | null;
@@ -63,7 +64,7 @@ export function ListeInterventions({
       (l) =>
         (type === 'tous' || l.type === type) &&
         dansPeriode(l.date_prevue, periode, jour) &&
-        (!q || sansAccent(`${l.motif} ${l.client} ${l.ville ?? ''} ${l.techniciens} ${l.numero}`).includes(q)),
+        (!q || sansAccent(`${l.motif} ${l.client} ${l.ville ?? ''} ${l.techniciens} ${l.numero} ${l.reference ?? ''}`).includes(q)),
     );
   }, [lignes, rechercheDiff, type, periode, jour]);
 
@@ -173,7 +174,7 @@ export function ListeInterventions({
             <tbody className="divide-y divide-trait">
               {visibles.map((i) => (
                 <LigneCliquable key={i.id} href={adresse(criteres, i.id)}>
-                  <td className="px-4 py-3 font-mono text-xs text-gris">{numero(i.numero)}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gris">{numeroIntervention(i)}</td>
                   <td className="px-4 py-3 whitespace-nowrap" suppressHydrationWarning>
                     {dateCourte(i.date_prevue)} {heure(i.heure_prevue)}
                   </td>

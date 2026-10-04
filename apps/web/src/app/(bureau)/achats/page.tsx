@@ -1,4 +1,4 @@
-import { aujourdhui, type ReceptionAchat, type StatutAchat } from '@chantio/shared';
+import { aujourdhui, numeroIntervention, type ReceptionAchat, type StatutAchat } from '@chantio/shared';
 import { lectureActivee } from '@/lib/lecture';
 import { contexteBureau } from '@/lib/session';
 import { ListeAchats, type LigneAchatListe } from './liste';
@@ -12,12 +12,12 @@ const SELECT = `id, numero, date_facture, echeance, montant_ttc, statut, recepti
   planifie_le, moyen_prevu, approuvee_le, cree_le,
   fournisseur:fournisseurs(id, nom, categorie),
   responsable:membres!responsable_id(prenom, nom),
-  intervention:interventions(numero),
+  intervention:interventions(numero, reference),
   paiements:paiements_achats(montant, date_paiement)`;
 
 type Lu = Omit<LigneAchatListe, 'responsable' | 'paye' | 'chantier'> & {
   responsable: { prenom: string; nom: string } | null;
-  intervention: { numero: number } | null;
+  intervention: { numero: number; reference: string | null } | null;
 };
 
 export default async function PageAchats({ searchParams }: PageProps<'/achats'>) {
@@ -38,7 +38,7 @@ export default async function PageAchats({ searchParams }: PageProps<'/achats'>)
     paiements: (a.paiements ?? []).map((p) => ({ montant: Number(p.montant), date_paiement: p.date_paiement })),
     paye: (a.paiements ?? []).reduce((s, p) => s + Number(p.montant), 0),
     responsable: responsable ? `${responsable.prenom} ${responsable.nom}`.trim() : null,
-    chantier: intervention?.numero ?? null,
+    chantier: intervention ? numeroIntervention(intervention) : null,
   }));
 
   return (

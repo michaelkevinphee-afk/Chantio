@@ -1,5 +1,5 @@
 // Mode démo : données d'exemple en mémoire, rien n'est enregistré.
-import { ajouterJours, aujourdhui, type Intervention, type Membre } from '@chantio/shared';
+import { ajouterJours, aujourdhui, prefixeIntervention, type Intervention, type Membre } from '@chantio/shared';
 
 import type { InterventionVue, Profil, SourceDonnees } from './donnees';
 
@@ -29,6 +29,10 @@ function exemples(): InterventionVue[] {
   const base = (p: Partial<InterventionVue>): InterventionVue => ({
     id: `demo-${n}`,
     entreprise_id: ENTREPRISE.id,
+    reference: `${prefixeIntervention(p.type ?? 'depannage')}-${t.slice(0, 4)}-${String(n).padStart(4, '0')}`,
+    occupant_id: null,
+    ordre_service: null,
+    devis_id: null,
     numero: n++,
     client_id: 'demo-client',
     site_id: 'demo-site',
@@ -113,7 +117,9 @@ function exemples(): InterventionVue[] {
       date_prevue: ajouterJours(t, 3),
       heure_prevue: '08:00:00',
       client: { nom: 'Syndic Foch', telephone: '01 40 00 00 00', contact: 'Mme Lefèvre' },
-      site: { adresse: '40 avenue Foch', code_postal: '75116', ville: 'Paris', acces: 'Badge à récupérer chez le gardien', consignes: 'Prévenir les occupants du 2e.', latitude: 48.872, longitude: 2.283 },
+      site: { adresse: '40 avenue Foch', code_postal: '75116', ville: 'Paris', acces: 'Badge à récupérer chez le gardien', consignes: 'Prévenir les occupants du 2e.', gardien: 'M. Petit, 06 22 33 44 55', latitude: 48.872, longitude: 2.283 },
+      occupant: { nom: 'Mme Royer', lot: '2e droite', telephone: '06 77 88 99 00' },
+      ordre_service: '55812',
     }),
   ];
 }

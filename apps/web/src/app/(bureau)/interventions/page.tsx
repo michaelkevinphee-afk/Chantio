@@ -40,6 +40,7 @@ export default async function Interventions({ searchParams }: PageProps<'/interv
         lignes={liste.map((i) => ({
           id: i.id,
           numero: i.numero,
+          reference: i.reference,
           statut: i.statut,
           date_prevue: i.date_prevue,
           heure_prevue: i.heure_prevue,

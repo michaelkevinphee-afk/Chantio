@@ -42,32 +42,55 @@ export async function creerIntervention(d: FormData) {
     clientId = data.id as string;
   }
 
-  // 2. L'adresse d'intervention : on réutilise un site identique s'il existe.
-  const adresse = texte(d, 'adresse');
-  if (!adresse) retour(page, 'Indiquez l’adresse de l’intervention.');
-  const { data: siteExistant } = await supabase
-    .from('sites')
-    .select('id')
-    .eq('client_id', clientId)
-    .ilike('adresse', adresse)
-    .limit(1)
-    .maybeSingle();
-  let siteId = siteExistant?.id as string | undefined;
-  if (!siteId) {
-    const { data, error } = await supabase
+  // 2. L'adresse d'intervention : une adresse déjà connue du client (l'immeuble d'un syndic),
+  //    sinon la nouvelle adresse saisie (on réutilise un site identique s'il existe).
+  let siteId: string | undefined;
+  const siteChoisi = texte(d, 'site_id');
+  if (siteChoisi && siteChoisi !== 'autre') {
+    const { data } = await supabase.from('sites').select('id').eq('id', siteChoisi).eq('client_id', clientId).maybeSingle();
+    if (!data) retour(page, 'Cette adresse n’est pas celle de ce client.');
+    siteId = data.id as string;
+  } else {
+    const adresse = texte(d, 'adresse');
+    if (!adresse) retour(page, 'Indiquez l’adresse de l’intervention.');
+    const { data: siteExistant } = await supabase
       .from('sites')
-      .insert({
-        entreprise_id: entreprise.id,
-        client_id: clientId,
-        adresse,
-        code_postal: texte(d, 'code_postal'),
-        ville: texte(d, 'ville'),
-        acces: texte(d, 'acces'),
-      })
+      .select('id')
+      .eq('client_id', clientId)
+      .ilike('adresse', adresse)
+      .limit(1)
+      .maybeSingle();
+    siteId = siteExistant?.id as string | undefined;
+    if (!siteId) {
+      const { data, error } = await supabase
+        .from('sites')
+        .insert({
+          entreprise_id: entreprise.id,
+          client_id: clientId,
+          adresse,
+          code_postal: texte(d, 'code_postal'),
+          ville: texte(d, 'ville'),
+          acces: texte(d, 'acces'),
+        })
+        .select('id')
+        .single();
+      if (error || !data) retour(page, 'L’adresse n’a pas pu être enregistrée.');
+      siteId = data.id as string;
+    }
+  }
+
+  // L'occupant à appeler, dans un immeuble : déjà connu, ou nouveau.
+  let occupantId = texte(d, 'occupant_id');
+  if (occupantId === 'nouveau') {
+    const nom = texte(d, 'occupant_nom');
+    if (!nom) retour(page, 'Indiquez le nom de l’occupant.');
+    const { data, error } = await supabase
+      .from('occupants')
+      .insert({ entreprise_id: entreprise.id, site_id: siteId, nom, lot: texte(d, 'occupant_lot'), telephone: texte(d, 'occupant_telephone') })
       .select('id')
       .single();
-    if (error || !data) retour(page, 'L’adresse n’a pas pu être enregistrée.');
-    siteId = data.id as string;
+    if (error || !data) retour(page, 'L’occupant n’a pas pu être enregistré.');
+    occupantId = data.id as string;
   }
 
   // 3. L'intervention, puis le ou les techniciens.
@@ -85,6 +108,9 @@ export async function creerIntervention(d: FormData) {
       description: texte(d, 'description'),
       date_prevue: texte(d, 'date_prevue'),
       heure_prevue: texte(d, 'heure_prevue'),
+      occupant_id: occupantId,
+      ordre_service: texte(d, 'ordre_service'),
+      devis_id: devis,
       cree_par: membre.id,
     })
     .select('id')
@@ -146,6 +172,17 @@ export async function planifier(
   if (!aPrevenir.length && !retires.length) return { erreur: null };
   const invites = await envoyerInvitations(supabase, interventionId, retires, date_prevue ? aPrevenir : []).catch(() => []);
   return { erreur: null, invites };
+}
+
+/** Occupant à appeler et n° d'ordre de service du syndic, souvent connus après l'appel. */
+export async function modifierOccupant(id: string, d: FormData) {
+  const { supabase } = await contexteBureau();
+  const { error } = await supabase
+    .from('interventions')
+    .update({ occupant_id: texte(d, 'occupant_id'), ordre_service: texte(d, 'ordre_service') })
+    .eq('id', id);
+  if (error) retour(`/interventions/${id}`, 'L’occupant n’a pas pu être enregistré.');
+  revalidatePath('/', 'layout');
 }
 
 // Changements d'état : passent par les fonctions de la base, qui vérifient les droits.
