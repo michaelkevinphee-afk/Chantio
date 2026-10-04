@@ -617,3 +617,66 @@
 @keyframes df-voile { from { opacity: 0; } to { opacity: 1; } }
 .df a.btn, .df a.source { text-decoration: none; }
 .df .btn:disabled { opacity: .6; cursor: default; transform: none; }
+
+/* ---------- Coefficients, marges et métrés ---------- */
+.df .ligne { grid-template-areas: "des des des des des x" "q u pu tva tot tot" "cout cout cout cout cout cout" "av av av av av av"; }
+.df .ligne .cout { grid-area: cout; display: grid; gap: 8px; padding: 0 8px 2px; min-width: 0; }
+.df .cout-resume { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; color: var(--gris); }
+.df .puce-cout { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--gris-doux); color: var(--gris); white-space: nowrap; }
+.df .puce-cout.perso { background: var(--bleu-doux); color: var(--bleu); }
+.df .puce-cout.prive { background: var(--violet-doux); color: var(--violet); }
+.df .lien { border: 0; background: none; padding: 0; color: var(--cobalt); font-weight: 700; font-size: inherit; text-decoration: none; cursor: pointer; }
+.df .lien:hover { text-decoration: underline; }
+.df .cout-saisie { display: grid; gap: 10px; padding: 12px; border-radius: 12px; background: var(--fond); border: 1px dashed var(--trait); }
+.df .cout-saisie .note-tva { margin: 0; background: var(--blanc); font-size: 12.5px; }
+.df .cout-champs { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.df .cout-champs label { display: block; min-width: 0; }
+.df .cout-champs .etiq { font-size: 12px; margin-bottom: 4px; }
+.df .unite-u { display: flex; align-items: center; gap: 6px; }
+.df .unite-u i { font-style: normal; font-size: 12px; color: var(--gris); white-space: nowrap; }
+.df .ligne .cout-saisie .saisie { border: 1px solid var(--trait); background: var(--blanc); border-radius: 10px; padding: 7px 9px; font-size: 14px; font-family: var(--f-chiffres); text-align: right; }
+.df .ligne .cout-saisie .saisie:focus { border-color: var(--cobalt); }
+.df .ligne .radios input { width: auto; padding: 0; }
+.df .ligne .radios label { padding: 6px 10px; font-size: 13.5px; }
+.df .metre-resultat { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--gris); }
+.df .metre-resultat > span { margin-right: auto; }
+.df .metre-resultat b { font-size: 18px; color: var(--cobalt); font-family: var(--f-chiffres); margin-left: 4px; }
+.df .ligne .des-ref { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.df .ligne .des-ref input { flex: 1; font-weight: 600; }
+.df .ref-poste { font-family: var(--f-chiffres); font-size: 12px; font-weight: 700; color: var(--bleu); background: var(--bleu-doux); border-radius: 6px; padding: 2px 6px; white-space: nowrap; }
+.df .coef-saisie { display: inline-flex; align-items: center; gap: 4px; font-size: 20px; font-weight: 800; color: var(--cobalt); }
+.df .coef-saisie .saisie { width: 84px; padding: 6px 8px; font-size: 18px; font-weight: 800; color: var(--cobalt); text-align: right; font-family: var(--f-chiffres); }
+.df .info-dpgf { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.df .info-dpgf p { margin: 0; flex: 1 1 260px; }
+.df .renta-barre { display: flex; height: 12px; border-radius: 99px; overflow: hidden; background: var(--gris-doux); margin-bottom: 10px; }
+.df .renta-barre i { display: block; height: 100%; transition: width .3s; }
+.df .renta-lignes { margin: 14px 0 0; display: grid; }
+.df .renta-lignes div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 14px; }
+.df .renta-lignes dt { color: var(--gris); }
+.df .renta-lignes dd { margin: 0; font-family: var(--f-chiffres); font-weight: 600; white-space: nowrap; }
+.df .renta-lignes .fort { border-top: 1px solid var(--trait); }
+.df .renta-lignes .fort dt, .df .renta-lignes .fort dd { color: var(--encre); font-weight: 800; }
+.df .renta-lignes .ok dd { color: var(--vert); }
+.df .renta-lignes .ko dd { color: var(--rouge); }
+.df .renta-alerte { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; font-weight: 600; border-radius: 12px; padding: 10px 12px; margin-top: 12px; line-height: 1.45; }
+.df .renta-alerte.ok { background: var(--vert-doux); color: var(--vert); }
+.df .renta-alerte.ko { background: var(--rouge-doux); color: var(--rouge); }
+.df .renta-titre { font-size: 15px; font-weight: 800; margin: 18px 0 8px; }
+.df .coefs { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 2px; }
+.df .coefs button { display: grid; grid-template-columns: minmax(0, 1fr) 90px 60px 56px; gap: 10px; align-items: center; width: 100%; border: 0; background: none; padding: 7px 8px; border-radius: 10px; text-align: left; font-size: 13.5px; }
+.df .coefs button:hover, .df .coefs button:focus-visible { background: var(--doux); }
+.df .coefs-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.df .coefs-barre { position: relative; height: 8px; border-radius: 99px; background: var(--gris-doux); }
+.df .coefs-barre i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: var(--lavande); }
+.df .coefs .perso .coefs-barre i { background: var(--cobalt); }
+.df .coefs .bas .coefs-barre i { background: var(--rouge); }
+.df .coefs-barre em { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--encre); }
+.df .coefs-val, .df .coefs-marge { font-family: var(--f-chiffres); text-align: right; white-space: nowrap; }
+.df .coefs .bas .coefs-marge { color: var(--rouge); font-weight: 700; }
+.df .papier .ref-poste { background: none; color: var(--gris); padding: 0; margin-right: 5px; font-size: inherit; }
+.df .papier .metre-p { font-size: 8.5px; color: var(--gris); margin-top: 1px; }
+@media (max-width: 620px) {
+  .df .ligne { grid-template-areas: "des des des des x" "q u pu tva tva" "tot tot tot tot tot" "cout cout cout cout cout" "av av av av av"; }
+  .df .coefs button { grid-template-columns: minmax(0, 1fr) 60px 56px; }
+  .df .coefs-barre { display: none; }
+}

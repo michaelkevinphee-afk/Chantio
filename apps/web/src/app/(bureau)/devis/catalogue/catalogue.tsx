@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { CATEGORIES_ARTICLE, euro, nombre, UNITES } from '@chantio/shared';
+import { CATEGORIES_ARTICLE, euro, nombre, reglagesPrix, UNITES, type ReglagesFacturation } from '@chantio/shared';
 import { annoncer, Roue } from '@/components/retour';
 import type { ArticleLu } from '@/lib/devis';
 import { enregistrerArticle, importerTarif, retirerArticle, type ArticleAEnregistrer } from '../actions';
 import { Ecran, Picto, type NomPicto } from '../composants';
 
 const prix = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/ /g, ' ');
+const decimal = (n: number) => String(+n.toFixed(3)).replace('.', ',');
 
 function vignette(a: ArticleLu): NomPicto {
   if (a.categorie === 'Main-d’œuvre') return 'cle';
@@ -40,6 +41,7 @@ function lireCsv(texte: string): ArticleAEnregistrer[] {
   const iT = col(/tva/, 4);
   const iR = col(/r[ée]f/, 5);
   const iC = col(/cat[ée]gorie|famille/, 6);
+  const iH = col(/temps|pose|heure/, -1);
   return (aEntete ? lignes.slice(1) : lignes).map((l) => {
     const c = cellules(l);
     const achat = iA >= 0 ? nombre(c[iA]) : 0;
@@ -52,18 +54,22 @@ function lireCsv(texte: string): ArticleAEnregistrer[] {
       tva: iT >= 0 ? nombre(c[iT]) || 10 : 10,
       reference: iR >= 0 ? (c[iR] ?? '') : '',
       categorie: (iC >= 0 && c[iC]) || 'Fournitures',
+      heures: iH >= 0 ? nombre(c[iH]) : 0,
     };
   });
 }
 
-export function Catalogue({ articles }: { articles: ArticleLu[] }) {
+export function Catalogue({ articles, reglages }: { articles: ArticleLu[]; reglages: ReglagesFacturation }) {
+  const rp = reglagesPrix(reglages);
+  /** Coût d'un article : prix d'achat, plus le temps de pose au coût horaire pour un ouvrage. */
+  const debourse = (a: ArticleLu) => a.prix_achat + a.heures * rp.cout_horaire;
   const router = useRouter();
   const [enCours, demarrer] = useTransition();
   const [filtre, setFiltre] = useState('Tout');
   const [recherche, setRecherche] = useState('');
   const [ouvert, setOuvert] = useState(false);
   const [edite, setEdite] = useState<ArticleLu | null>(null);
-  const [f, setF] = useState({ designation: '', categorie: 'Fournitures', unite: 'u', achat: '', coef: '1,6', vente: '', tva: 10, reference: '' });
+  const [f, setF] = useState({ designation: '', categorie: 'Fournitures', unite: 'u', achat: '', heures: '', coef: '1,6', vente: '', tva: 10, reference: '' });
   const [prixFixe, setPrixFixe] = useState(false);
   const champDes = useRef<HTMLInputElement>(null);
   const fichier = useRef<HTMLInputElement>(null);
@@ -92,20 +98,25 @@ export function Catalogue({ articles }: { articles: ArticleLu[] }) {
             categorie: a.categorie,
             unite: a.unite,
             achat: prix(a.prix_achat),
-            coef: a.prix_achat ? (a.prix_vente / a.prix_achat).toFixed(2).replace('.', ',') : '',
+            heures: a.heures ? decimal(a.heures) : '',
+            coef: debourse(a) ? (a.prix_vente / debourse(a)).toFixed(2).replace('.', ',') : '',
             vente: prix(a.prix_vente),
             tva: a.tva,
             reference: a.reference ?? '',
           }
-        : { designation: '', categorie: 'Fournitures', unite: 'u', achat: '', coef: '1,6', vente: '', tva: 10, reference: '' },
+        : { designation: '', categorie: 'Fournitures', unite: 'u', achat: '', heures: '', coef: '1,6', vente: '', tva: 10, reference: '' },
     );
     setOuvert(true);
     setTimeout(() => champDes.current?.focus(), 200);
   };
 
+  // Un ouvrage, c'est une fourniture et sa pose : son coût compte le temps de pose au coût horaire des réglages.
+  const ouvrage = f.categorie === 'Ouvrages';
   const achat = nombre(f.achat);
-  const vente = prixFixe || !achat ? nombre(f.vente) : Math.round(achat * nombre(f.coef) * 100) / 100;
-  const marge = vente - achat;
+  const heures = nombre(f.heures);
+  const cout = achat + heures * rp.cout_horaire;
+  const vente = prixFixe || !cout ? nombre(f.vente) : Math.round(cout * nombre(f.coef) * 100) / 100;
+  const marge = vente - cout;
   const taux = vente ? (marge / vente) * 100 : 0;
 
   const enregistrer = () =>
@@ -118,6 +129,7 @@ export function Catalogue({ articles }: { articles: ArticleLu[] }) {
         reference: f.reference,
         prix_achat: achat,
         prix_vente: vente,
+        heures,
         tva: f.tva,
       });
       if (!r.ok) return annoncer(r.erreur, 'erreur');
@@ -207,7 +219,7 @@ export function Catalogue({ articles }: { articles: ArticleLu[] }) {
             </thead>
             <tbody>
               {liste.map((a) => {
-                const t = a.prix_vente ? ((a.prix_vente - a.prix_achat) / a.prix_vente) * 100 : 0;
+                const t = a.prix_vente ? ((a.prix_vente - debourse(a)) / a.prix_vente) * 100 : 0;
                 return (
                   <tr key={a.id} tabIndex={0} onClick={() => ouvrir(a)} onKeyDown={(e) => e.key === 'Enter' && ouvrir(a)}>
                     <td>
@@ -227,6 +239,7 @@ export function Catalogue({ articles }: { articles: ArticleLu[] }) {
                     <td>{a.unite}</td>
                     <td className="droite montant" style={{ color: 'var(--gris)' }}>
                       {euro(a.prix_achat)}
+                      {a.heures > 0 && <span style={{ display: 'block', fontSize: 12 }}>+ {decimal(a.heures)} h de pose</span>}
                     </td>
                     <td className="droite montant">{euro(a.prix_vente)}</td>
                     <td>
@@ -280,7 +293,13 @@ export function Catalogue({ articles }: { articles: ArticleLu[] }) {
             </div>
             <div>
               <div className="etiq">Catégorie</div>
-              <select className="saisie" value={f.categorie} onChange={(e) => setF({ ...f, categorie: e.target.value })}>
+              <select
+                className="saisie"
+                value={f.categorie}
+                onChange={(e) =>
+                  setF({ ...f, categorie: e.target.value, ...(e.target.value === 'Ouvrages' && !edite && f.coef === '1,6' ? { coef: rp.coefficient.toFixed(2).replace('.', ',') } : {}) })
+                }
+              >
                 {categories.slice(1).map((c) => (
                   <option key={c}>{c}</option>
                 ))}
@@ -295,10 +314,16 @@ export function Catalogue({ articles }: { articles: ArticleLu[] }) {
               </select>
             </div>
             <div>
-              <div className="etiq">Prix d’achat HT</div>
+              <div className="etiq">{ouvrage ? 'Fourniture achetée HT' : 'Prix d’achat HT'}</div>
               <input className="saisie" inputMode="decimal" value={f.achat} onChange={(e) => setF({ ...f, achat: e.target.value })} />
             </div>
-            {prixFixe || !achat ? (
+            {(ouvrage || heures > 0) && (
+              <div>
+                <div className="etiq">Temps de pose (h par {f.unite})</div>
+                <input className="saisie" inputMode="decimal" value={f.heures} placeholder="ex. 0,5" onChange={(e) => setF({ ...f, heures: e.target.value })} />
+              </div>
+            )}
+            {prixFixe || !cout ? (
               <div>
                 <div className="etiq">Prix de vente HT</div>
                 <input className="saisie" inputMode="decimal" value={f.vente} onChange={(e) => setF({ ...f, vente: e.target.value })} />
@@ -337,9 +362,14 @@ export function Catalogue({ articles }: { articles: ArticleLu[] }) {
             </div>
           </div>
           <div className="note-tva">
-            {achat ? (
+            {ouvrage && cout > 0 && (
               <>
-                Le prix de vente se calcule avec le coefficient.{' '}
+                Coût : fourniture {euro(achat)} + {decimal(heures)} h × {euro(rp.cout_horaire)} = {euro(cout)}. Dans un devis, un ouvrage suit le coefficient du devis.{' '}
+              </>
+            )}
+            {cout ? (
+              <>
+                {!ouvrage && 'Le prix de vente se calcule avec le coefficient. '}
                 <button
                   type="button"
                   style={{ border: 0, background: 'none', padding: 0, color: 'var(--cobalt)', fontWeight: 700 }}
@@ -351,6 +381,8 @@ export function Catalogue({ articles }: { articles: ArticleLu[] }) {
                   {prixFixe ? 'Revenir au coefficient' : 'Saisir un prix fixe'}
                 </button>
               </>
+            ) : ouvrage ? (
+              'Indiquez la fourniture achetée et le temps de pose : le prix se calcule avec le coefficient.'
             ) : (
               'Sans prix d’achat (main-d’œuvre, forfait), saisissez directement le prix de vente.'
             )}

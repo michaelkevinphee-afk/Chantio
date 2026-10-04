@@ -7,10 +7,12 @@ import {
   completerClient,
   completerConditions,
   nombre,
+  reglagesPrix,
   type ClientDocument,
   type ConditionsDocument,
   type GenreDocument,
   type LigneDocument,
+  type Metre,
   type ReglagesFacturation,
   type TypeFacture,
 } from '@chantio/shared';
@@ -36,6 +38,8 @@ export interface DocumentAEnregistrer {
   avancement: number;
   avancement_precedent: number;
   situation_numero?: number | null;
+  /** Coefficient global du document ; null pour celui des réglages. */
+  coefficient?: number | null;
   lignes: LigneDocument[];
   origine?: 'saisie' | 'import';
   import_id?: string | null;
@@ -44,6 +48,23 @@ export interface DocumentAEnregistrer {
 const borne = (n: number, min = 0, max = 100) => Math.min(max, Math.max(min, Number(n) || 0));
 const TAUX = [0, 2.1, 5.5, 10, 20];
 
+const coefficientValide = (v: unknown) => {
+  const n = Number(v);
+  return v != null && v !== '' && Number.isFinite(n) && n >= 0.5 && n <= 10 ? Math.round(n * 1000) / 1000 : null;
+};
+const positifOuNul = (v: unknown, max: number) => {
+  const n = Number(v);
+  return v != null && v !== '' && Number.isFinite(n) && n >= 0 ? Math.min(max, n) : null;
+};
+
+function nettoyerMetre(m: unknown): Metre | null {
+  if (!m || typeof m !== 'object') return null;
+  const o = m as Record<string, unknown>;
+  const n = (k: string) => Math.max(0, Math.min(1_000_000, Number(o[k]) || 0));
+  return { longueur: n('longueur'), largeur: n('largeur'), hauteur: n('hauteur'), nombre: n('nombre') || 1, deduction: n('deduction'), chute: Math.min(100, n('chute')) };
+}
+
+/** Lignes propres. Le prix des lignes au prix calculé vient de l'éditeur, qui le calcule à la saisie. */
 function nettoyerLignes(lignes: LigneDocument[]) {
   return lignes.map((l, position) => ({
     position,
@@ -56,6 +77,12 @@ function nettoyerLignes(lignes: LigneDocument[]) {
     avancement: borne(l.avancement ?? 0),
     avancement_precedent: borne(l.avancement_precedent ?? 0),
     article_id: l.article_id || null,
+    achat: l.titre ? null : positifOuNul(l.achat, 10_000_000),
+    heures: l.titre ? null : positifOuNul(l.heures, 100_000),
+    coefficient: l.titre ? null : coefficientValide(l.coefficient),
+    prix_calcule: !l.titre && !!l.prix_calcule,
+    metre: l.titre ? null : nettoyerMetre(l.metre),
+    reference: String(l.reference ?? '').trim().slice(0, 40) || null,
   }));
 }
 
@@ -65,6 +92,7 @@ export async function enregistrerDocument(
   valider = false,
 ): Promise<Resultat<{ id: string; numero: string | null }>> {
   const { supabase, entreprise, membre } = await contexteBureau();
+  const coefficient = coefficientValide(doc.coefficient);
   const lignes = nettoyerLignes(doc.lignes ?? []);
   const facture = doc.genre === 'facture';
   const base = {
@@ -82,6 +110,7 @@ export async function enregistrerDocument(
     avancement: borne(doc.avancement),
     avancement_precedent: borne(doc.avancement_precedent),
     situation_numero: doc.situation_numero ?? null,
+    coefficient,
   };
   // Les totaux sont recalculés ici, avec le même calcul que l'aperçu.
   const T = calculer({ ...base, lignes });
@@ -167,6 +196,7 @@ export async function dupliquer(id: string): Promise<Resultat<{ id: string }>> {
     pourcentage: d.pourcentage,
     avancement: 0,
     avancement_precedent: 0,
+    coefficient: d.coefficient,
     lignes: lu.lignes.map((l) => ({ ...l, avancement: 0, avancement_precedent: 0 })),
   });
 }
@@ -204,6 +234,7 @@ export async function facturerDevis(devisId: string, type: TypeFacture = 'totale
     avancement: Math.min(100, dejaPct + 10),
     avancement_precedent: type === 'avancement' || type === 'solde' ? dejaPct : 0,
     situation_numero: situationNumero,
+    coefficient: d.coefficient,
     lignes,
   });
   return res.ok ? { ok: true, id: res.id } : res;
@@ -229,6 +260,7 @@ export async function creerAvoir(factureId: string): Promise<Resultat<{ id: stri
     pourcentage: 0,
     avancement: 0,
     avancement_precedent: 0,
+    coefficient: d.coefficient,
     lignes: lu.lignes.map((l) => ({ ...l, avancement: 0, avancement_precedent: 0 })),
   });
   return res.ok ? { ok: true, id: res.id } : res;
@@ -254,6 +286,8 @@ export interface ArticleAEnregistrer {
   reference: string;
   prix_achat: number;
   prix_vente: number;
+  /** Temps de pose par unité (ouvrages). */
+  heures?: number;
   tva: number;
 }
 
@@ -268,6 +302,7 @@ export async function enregistrerArticle(a: ArticleAEnregistrer): Promise<Result
     reference: String(a.reference ?? '').trim().slice(0, 80) || null,
     prix_achat: Math.max(0, Math.round(nombre(a.prix_achat) * 100) / 100),
     prix_vente: Math.max(0, Math.round(nombre(a.prix_vente) * 100) / 100),
+    heures: Math.max(0, Math.min(100_000, nombre(a.heures))),
     tva: TAUX.includes(Number(a.tva)) ? Number(a.tva) : 10,
   };
   const requete = a.id
@@ -301,6 +336,7 @@ export async function importerTarif(lignes: ArticleAEnregistrer[]): Promise<Resu
       reference: String(a.reference ?? '').trim().slice(0, 80) || null,
       prix_achat: Math.max(0, Math.round(nombre(a.prix_achat) * 100) / 100),
       prix_vente: Math.max(0, Math.round(nombre(a.prix_vente) * 100) / 100),
+      heures: Math.max(0, Math.min(100_000, nombre(a.heures))),
       tva: TAUX.includes(Number(a.tva)) ? Number(a.tva) : 10,
     }));
   if (!propres.length) return { ok: false, erreur: 'Aucun article reconnu dans le fichier.' };
@@ -314,14 +350,21 @@ export async function importerTarif(lignes: ArticleAEnregistrer[]): Promise<Resu
 // Réglages de facturation (dirigeant)
 // ---------------------------------------------------------------------------
 
+const PRIX = ['cout_horaire', 'frais_generaux', 'coefficient', 'marge_min', 'chute'] as const;
+
 export async function enregistrerReglages(r: ReglagesFacturation): Promise<Resultat> {
   const { supabase, entreprise, membre } = await contexteBureau();
   if (membre.role !== 'dirigeant') return { ok: false, erreur: 'Réservé au dirigeant.' };
   const propre: ReglagesFacturation = {};
   for (const [k, v] of Object.entries(r)) {
     if (k === 'objectif_mensuel') propre.objectif_mensuel = Math.max(0, Math.round(nombre(v)));
-    else (propre as Record<string, string>)[k] = String(v ?? '').trim().slice(0, 300);
+    else if (PRIX.includes(k as (typeof PRIX)[number])) {
+      // Prix et coefficients : un nombre, ou rien pour revenir à la valeur par défaut.
+      if (v !== '' && v != null && Number.isFinite(nombre(v))) (propre as Record<string, number>)[k] = nombre(v);
+    } else (propre as Record<string, string>)[k] = String(v ?? '').trim().slice(0, 300);
   }
+  const verifie = reglagesPrix(propre);
+  for (const k of PRIX) if (propre[k] !== undefined) propre[k] = verifie[k];
   const { error } = await supabase.from('entreprises').update({ facturation: propre }).eq('id', entreprise.id);
   if (error) return { ok: false, erreur: 'Les réglages n’ont pas pu être enregistrés.' };
   revalidatePath('/devis', 'layout');

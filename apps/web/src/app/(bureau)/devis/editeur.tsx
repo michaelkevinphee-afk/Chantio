@@ -4,28 +4,43 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from 'react';
 import {
+  aUnCout,
+  appliquerPrix,
   calculer,
   cleTva,
+  coefficientLigne,
   controlerSiret,
+  debourseUnitaire,
+  estMetrable,
   euro,
   formaterSiret,
+  lireDpgf,
   luhn,
+  metreVide,
   nombre,
   nomClient,
+  prixLigne,
+  quantiteMetre,
+  reglagesPrix,
+  texteMetre,
   tvaParDefaut,
   UNITES,
   type ClientDocument,
   type ConditionsDocument,
   type GenreDocument,
   type LigneDocument,
+  type Metre,
+  type ReglagesPrix,
   type StatutDocument,
   type TypeFacture,
 } from '@chantio/shared';
 import { annoncer, Roue } from '@/components/retour';
 import type { ArticleLu, HistoriqueDevis } from '@/lib/devis';
+import { lireTableur } from '@/lib/tableur';
 import { enregistrerDocument, facturerDevis, type DocumentAEnregistrer } from './actions';
 import { Ecran, Picto } from './composants';
 import { nombreClauses, Papier, type DonneesPapier, type EntreprisePapier } from './papier';
+import { Rentabilite } from './rentabilite';
 
 type Etape = 'client' | 'ouvrages' | 'conditions';
 const ORDRE: Etape[] = ['client', 'ouvrages', 'conditions'];
@@ -44,6 +59,8 @@ export interface InitialEditeur extends DonneesPapier {
   origine: 'saisie' | 'import';
   /** Champs remplis par la lecture automatique (affichés en violet). */
   lus: string[];
+  /** Coefficient global du document ; sinon celui des réglages. */
+  coefficient?: number | null;
 }
 
 export interface ClientConnu {
@@ -110,6 +127,10 @@ const OUVRAGES_TYPES: { nom: string; lignes: Omit<LigneDocument, 'tva'>[] }[] = 
 
 const formatPrix = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/ /g, ' ');
 const formatQte = (n: number) => String(+n.toFixed(3)).replace('.', ',');
+const formatCoef = (n: number) => n.toFixed(2).replace('.', ',');
+// Champs de coût laissés vides plutôt qu'à zéro.
+const formatCout = (n: number) => (n ? formatPrix(n) : '');
+const formatHeures = (n: number) => (n ? formatQte(n) : '');
 
 type EntrepriseTrouvee = {
   nom: string;
@@ -188,6 +209,188 @@ function Regle({ titre, texte, badge, children, interrupteur }: { titre: string;
   );
 }
 
+/**
+ * Coût d'une ligne, jamais imprimé : fourniture achetée et temps de pose par
+ * unité, coefficient, prix calculé ou prix fixe. Le métré donne la quantité.
+ */
+function CoutLigne({
+  l,
+  coef,
+  rp,
+  ouvert,
+  ouvrir,
+  majCout,
+  majLigne,
+  metrable,
+}: {
+  l: Ligne;
+  coef: number;
+  rp: ReglagesPrix;
+  ouvert: 'cout' | 'metre' | null;
+  ouvrir: (quoi: 'cout' | 'metre' | null) => void;
+  majCout: (p: Partial<Ligne>) => void;
+  majLigne: (p: Partial<Ligne>) => void;
+  metrable: boolean;
+}) {
+  const cout = debourseUnitaire(l, rp);
+  const k = coefficientLigne(l, coef);
+  const connu = aUnCout(l);
+  return (
+    <div className="cout">
+      <div className="cout-resume">
+        {l.prix_calcule ? (
+          <>
+            <span className="puce-cout">{l.achat ? `Fourniture ${euro(l.achat)}` : 'Sans fourniture'}</span>
+            <span className="puce-cout">{l.heures ? `Pose ${formatQte(l.heures)} h` : 'Sans pose'}</span>
+            <span className={`puce-cout ${l.coefficient ? 'perso' : ''}`} title={l.coefficient ? 'Coefficient propre à cette ligne' : 'Coefficient global du devis'}>
+              × {formatCoef(k)}
+            </span>
+          </>
+        ) : (
+          connu && <span className="puce-cout">Prix fixe</span>
+        )}
+        {connu && (
+          <span className="puce-cout prive" title="Visible seulement par vous, jamais imprimé">
+            Coût {euro(cout)} / {l.unite}
+          </span>
+        )}
+        <button type="button" className="lien" aria-expanded={ouvert === 'cout'} onClick={() => ouvrir(ouvert === 'cout' ? null : 'cout')}>
+          {ouvert === 'cout' ? 'Fermer' : connu || l.prix_calcule ? 'Modifier le coût' : 'Coût et marge'}
+        </button>
+        {metrable && (
+          <button type="button" className="lien" aria-expanded={ouvert === 'metre'} onClick={() => ouvrir(ouvert === 'metre' ? null : 'metre')}>
+            {l.metre ? `Métré : ${texteMetre(l.metre, l.unite)}` : 'Calculer le métré'}
+          </button>
+        )}
+      </div>
+      {ouvert === 'cout' && (
+        <div className="cout-saisie">
+          <div className="cout-champs">
+            <label>
+              <span className="etiq">Fourniture achetée</span>
+              <span className="unite-u">
+                <ChampNombre className="saisie" format={formatCout} valeur={l.achat ?? 0} placeholder="0,00" onChange={(v) => majCout({ achat: v > 0 ? v : null })} />
+                <i>€ / {l.unite}</i>
+              </span>
+            </label>
+            <label>
+              <span className="etiq">Temps de pose</span>
+              <span className="unite-u">
+                <ChampNombre className="saisie" format={formatHeures} valeur={l.heures ?? 0} placeholder="0" onChange={(v) => majCout({ heures: v > 0 ? v : null })} />
+                <i>h / {l.unite}</i>
+              </span>
+            </label>
+            {l.prix_calcule && (
+              <label>
+                <span className="etiq">Coefficient {l.coefficient ? <span className="marque-auto">Propre</span> : null}</span>
+                <span className="unite-u">
+                  <ChampNombre
+                    className="saisie"
+                    format={formatCoef}
+                    valeur={k}
+                    onChange={(v) => {
+                      if (v >= 0.5 && v <= 10) majCout({ coefficient: Math.abs(v - coef) < 0.005 ? null : Math.round(v * 100) / 100 });
+                    }}
+                  />
+                  <i>×</i>
+                </span>
+              </label>
+            )}
+          </div>
+          <div className="radios">
+            <label>
+              <input type="radio" name={`prix-${l.cle}`} checked={!!l.prix_calcule} onChange={() => majCout({ prix_calcule: true })} /> Prix calculé
+            </label>
+            <label>
+              <input type="radio" name={`prix-${l.cle}`} checked={!l.prix_calcule} onChange={() => majLigne({ prix_calcule: false })} /> Prix fixe
+            </label>
+          </div>
+          <p className="note-tva">
+            {l.prix_calcule
+              ? `Prix unitaire = (fourniture + pose × ${euro(rp.cout_horaire)} de l’heure) × ${formatCoef(k)} = ${euro(prixLigne(l, coef, rp))}.`
+              : connu
+                ? `Le prix saisi reste, le coût sert à calculer la marge (prix = coût × ${formatCoef(cout ? l.prix_unitaire / cout : 0)}).`
+                : 'Le prix saisi reste. Indiquez le coût pour voir la marge, ou passez au prix calculé.'}{' '}
+            {l.prix_calcule && l.coefficient ? (
+              <button type="button" className="lien" onClick={() => majCout({ coefficient: null })}>
+                Revenir au coefficient global (× {formatCoef(coef)})
+              </button>
+            ) : null}
+          </p>
+        </div>
+      )}
+      {ouvert === 'metre' && metrable && (
+        <Metrage
+          l={l}
+          rp={rp}
+          fermer={() => ouvrir(null)}
+          reporter={(m, q) => {
+            majLigne({ quantite: q, metre: m });
+            ouvrir(null);
+            annoncer(`Quantité reportée : ${formatQte(q)} ${l.unite}`);
+          }}
+          retirer={() => {
+            majLigne({ metre: null });
+            ouvrir(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Métré : longueur × largeur (× épaisseur) × nombre, moins les ouvertures, plus la chute. */
+function Metrage({ l, rp, reporter, retirer, fermer }: { l: Ligne; rp: ReglagesPrix; reporter: (m: Metre, q: number) => void; retirer: () => void; fermer: () => void }) {
+  const [m, setM] = useState<Metre>(() => l.metre ?? metreVide(l.unite, rp));
+  const surface = l.unite === 'm²';
+  const volume = l.unite === 'm³';
+  const q = quantiteMetre(m, l.unite);
+  const champ = (k: keyof Metre, lib: string) => (
+    <label key={k}>
+      <span className="etiq">{lib}</span>
+      <ChampNombre className="saisie" format={formatQte} valeur={Number(m[k]) || 0} onChange={(v) => setM((x) => ({ ...x, [k]: Math.max(0, v) }))} />
+    </label>
+  );
+  return (
+    <div className="cout-saisie">
+      <p className="note-tva" style={{ marginTop: 0 }}>
+        {surface
+          ? 'Surface = longueur × hauteur (ou largeur) × nombre, moins les ouvertures (portes, fenêtres), plus la chute.'
+          : volume
+            ? 'Volume = longueur × largeur × épaisseur × nombre, moins ce qui est à déduire.'
+            : 'Longueur = longueur × nombre de tronçons, plus la chute.'}
+      </p>
+      <div className="cout-champs">
+        {champ('longueur', 'Longueur (m)')}
+        {(surface || volume) && champ('largeur', surface ? 'Hauteur ou largeur (m)' : 'Largeur (m)')}
+        {volume && champ('hauteur', 'Épaisseur (m)')}
+        {champ('nombre', 'Nombre')}
+        {champ('deduction', `À déduire (${l.unite})`)}
+        {champ('chute', 'Chute (%)')}
+      </div>
+      <div className="metre-resultat">
+        <span>
+          Quantité{' '}
+          <b className="num" aria-live="polite">
+            {formatQte(q)} {l.unite}
+          </b>
+        </span>
+        <button className="btn petit plein" type="button" onClick={() => reporter(m, q)}>
+          Reporter la quantité
+        </button>
+        {l.metre && (
+          <button className="btn petit" type="button" onClick={retirer}>
+            Retirer le métré
+          </button>
+        )}
+        <button className="btn petit" type="button" onClick={fermer}>
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function Editeur(props: PropsEditeur) {
   const { initial, entreprise, historique, articles } = props;
   const router = useRouter();
@@ -208,6 +411,12 @@ export function Editeur(props: PropsEditeur) {
   const [situationNumero, setSituationNumero] = useState(initial.situation_numero);
   const [factureId, setFactureId] = useState(initial.facture_id);
   const [lignes, setLignes] = useState<Ligne[]>(() => initial.lignes.map((l) => ({ ...l, cle: nouvelleCle() })));
+  // Prix et coefficients : réglages de l'entreprise, coefficient global du document.
+  const rp = useMemo(() => reglagesPrix(entreprise.facturation), [entreprise.facturation]);
+  const [coef, setCoef] = useState(initial.coefficient ?? rp.coefficient);
+  const [ouvert, setOuvert] = useState<{ cle: number; quoi: 'cout' | 'metre' } | null>(null);
+  const [lectureDpgf, setLectureDpgf] = useState(false);
+  const fichierDpgf = useRef<HTMLInputElement>(null);
   const [etape, setEtape] = useState<Etape>(props.etapeInitiale ?? 'client');
   const [flash, setFlash] = useState<number | undefined>();
   const [modifie, setModifie] = useState(false);
@@ -226,6 +435,9 @@ export function Editeur(props: PropsEditeur) {
 
   const facture = genre === 'facture';
   const pro = cl.type === 'pro';
+  // Coûts, coefficient et rentabilité : devis et facture unique (pas les acomptes, situations ni avoirs).
+  const avecCouts = !facture || tf === 'totale';
+  const quantitesImposees = !facture && !!c.ao && !!c.aoQuantites;
 
   useEffect(() => {
     const fermer = (e: MouseEvent) => {
@@ -276,6 +488,80 @@ export function Editeur(props: PropsEditeur) {
       ...nouvelles.map((l) => ({ avancement: 0, avancement_precedent: 0, ...l, cle: nouvelleCle(), neuve: true })),
     ]);
     toucher();
+  };
+
+  // --- Coûts et coefficients
+  /** Coût ou coefficient d'une ligne : son prix suit s'il est calculé. */
+  const majCout = (i: number, p: Partial<Ligne>) => {
+    setLignes((ls) =>
+      ls.map((l, j) => {
+        if (j !== i) return l;
+        const n = { ...l, ...p };
+        return { ...n, prix_unitaire: prixLigne(n, coef, rp) };
+      }),
+    );
+    setFlash(i);
+    toucher();
+  };
+  const changerCoef = (k: number) => {
+    const v = Math.round(Math.min(10, Math.max(0.5, k)) * 100) / 100;
+    setCoef(v);
+    setLignes((ls) => appliquerPrix(ls, v, rp));
+    toucher();
+  };
+  const toutAuGlobal = () => {
+    setLignes((ls) => appliquerPrix(ls.map((l) => (l.coefficient ? { ...l, coefficient: null } : l)), coef, rp));
+    toucher();
+    annoncer('Toutes les lignes suivent le coefficient global');
+  };
+  const allerALigne = (cle: number) => {
+    setOuvert({ cle, quoi: 'cout' });
+    document.getElementById(`ligne-${cle}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+  /** Ligne tirée du catalogue : un ouvrage (fourniture et pose) suit le coefficient, un article garde son prix de vente. */
+  const ligneCatalogue = (a: ArticleLu): LigneDocument => {
+    const heureDeMainOeuvre = a.categorie === 'Main-d’œuvre' && a.unite === 'h';
+    const l: LigneDocument = {
+      designation: a.designation,
+      quantite: 1,
+      unite: a.unite,
+      prix_unitaire: a.prix_vente,
+      tva: pro ? 20 : a.tva,
+      article_id: a.id,
+      achat: a.prix_achat || null,
+      heures: a.heures || (heureDeMainOeuvre ? 1 : null),
+      prix_calcule: avecCouts && (a.categorie === 'Ouvrages' || a.heures > 0),
+    };
+    return { ...l, prix_unitaire: prixLigne(l, coef, rp) };
+  };
+  const nbPerso = lignes.filter((l) => !l.titre && l.prix_calcule && l.coefficient).length;
+  const aDesCouts = lignes.some((l) => !l.titre && aUnCout(l));
+  const montrerCoef = avecCouts && (!facture || lignes.some((l) => !l.titre && (l.prix_calcule || aUnCout(l))));
+
+  /** Cadre de réponse du client (DPGF, DQE) : ses lots, ses postes et ses quantités deviennent les lignes. */
+  const importerDpgf = async (fichiers: FileList | null) => {
+    const fi = fichiers?.[0];
+    if (fichierDpgf.current) fichierDpgf.current.value = '';
+    if (!fi) return;
+    setLectureDpgf(true);
+    try {
+      const ouvrages = articles.filter((a) => a.prix_achat > 0 || a.heures > 0);
+      const r = lireDpgf(await lireTableur(fi), ouvrages, tvaParDefaut(cl));
+      if (!r) {
+        annoncer('Aucun tableau reconnu : il faut une colonne « Désignation » et une colonne « Quantité ».', 'erreur');
+        return;
+      }
+      ajouter(appliquerPrix(r.lignes, coef, rp));
+      majC({ aoQuantites: true });
+      const reste = r.postes - r.retrouves;
+      annoncer(
+        `DPGF lue : ${r.postes} poste${r.postes > 1 ? 's' : ''}, quantités du client gardées. ${r.retrouves} retrouvé${r.retrouves > 1 ? 's' : ''} dans le catalogue${reste ? `, ${reste} à chiffrer` : ''}.`,
+      );
+    } catch (e) {
+      annoncer(e instanceof Error ? e.message : 'Ce fichier est illisible.', 'erreur');
+    } finally {
+      setLectureDpgf(false);
+    }
   };
 
   const papier: DonneesPapier = {
@@ -419,6 +705,7 @@ export function Editeur(props: PropsEditeur) {
     avancement,
     avancement_precedent: avPrec,
     situation_numero: facture && tf === 'situation' ? situationNumero : null,
+    coefficient: coef,
     lignes: lignes.map((l) => {
       const { cle, neuve, ...reste } = l;
       void cle;
@@ -882,10 +1169,73 @@ export function Editeur(props: PropsEditeur) {
                   {nbOuvrages} ligne{nbOuvrages > 1 ? 's' : ''}
                 </span>
               </div>
-              {!facture && c.ao && c.aoQuantites && (
-                <div className="info" style={{ marginTop: 0, marginBottom: 12 }}>
-                  Appel d’offres{c.aoConsultation ? ` « ${c.aoConsultation} »` : ''} : reprenez les postes et les quantités du cadre du client (DPGF ou DQE),
-                  puis chiffrez vos prix.
+              {!facture && c.ao && (
+                <div className="info info-dpgf" style={{ marginTop: 0, marginBottom: 12 }}>
+                  <p>
+                    Appel d’offres{c.aoConsultation ? ` « ${c.aoConsultation} »` : ''} :{' '}
+                    {c.aoQuantites
+                      ? 'reprenez les postes et les quantités du cadre du client (DPGF ou DQE), puis chiffrez vos prix.'
+                      : 'importez le cadre de réponse du client (DPGF ou DQE) pour reprendre ses lots, ses postes et ses quantités.'}{' '}
+                    Chantio retrouve vos ouvrages du catalogue et le coefficient global calcule les prix.
+                  </p>
+                  <button className="btn petit" type="button" onClick={() => fichierDpgf.current?.click()} disabled={lectureDpgf}>
+                    {lectureDpgf ? <Roue /> : <Picto nom="importer" />}
+                    Importer la DPGF du client
+                  </button>
+                  <input
+                    ref={fichierDpgf}
+                    type="file"
+                    accept=".xlsx,.csv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    hidden
+                    onChange={(e) => importerDpgf(e.target.files)}
+                  />
+                </div>
+              )}
+              {montrerCoef && (
+                <div className="cadre-fact">
+                  <div className="ligne-range">
+                    <span className="etiq" style={{ margin: 0 }}>
+                      Coefficient global
+                    </span>
+                    <input
+                      type="range"
+                      min="1"
+                      max="2.5"
+                      step="0.01"
+                      value={Math.min(2.5, Math.max(1, coef))}
+                      onChange={(e) => changerCoef(+e.target.value)}
+                      aria-label="Réglage du coefficient global"
+                    />
+                    <span className="coef-saisie">
+                      ×
+                      <ChampNombre
+                        className="saisie num"
+                        aria-label="Coefficient global"
+                        format={formatCoef}
+                        valeur={coef}
+                        onChange={(v) => {
+                          if (v >= 0.5 && v <= 10) changerCoef(v);
+                        }}
+                      />
+                    </span>
+                  </div>
+                  <p>
+                    Prix calculé = (fourniture + temps de pose × {euro(rp.cout_horaire)} de l’heure) × coefficient. Par défaut × {formatCoef(rp.coefficient)}, à
+                    changer dans les{' '}
+                    <Link href="/devis/reglages" className="lien">
+                      réglages
+                    </Link>
+                    . Les coûts ne sont jamais imprimés.
+                    {!aDesCouts && ' Indiquez le coût des lignes (fourniture, temps de pose) pour voir votre marge.'}
+                  </p>
+                  {nbPerso > 0 && (
+                    <p>
+                      {nbPerso} ligne{nbPerso > 1 ? 's ont leur' : ' a son'} propre coefficient.{' '}
+                      <button type="button" className="lien" onClick={toutAuGlobal}>
+                        Tout remettre au global
+                      </button>
+                    </p>
+                  )}
                 </div>
               )}
               {facture && tf === 'acompte' && (
@@ -996,15 +1346,38 @@ export function Editeur(props: PropsEditeur) {
                       </button>
                     </div>
                   ) : (
-                    <div key={l.cle} className={`ligne ${l.neuve ? 'neuve' : ''}`}>
-                      <input className="des" value={l.designation} aria-label="Désignation" onChange={(e) => majLigne(n, { designation: e.target.value })} />
-                      <ChampNombre className="chf" data-k="q" aria-label="Quantité" valeur={l.quantite} format={formatQte} onChange={(v) => majLigne(n, { quantite: v })} />
-                      <select data-k="u" aria-label="Unité" value={l.unite} onChange={(e) => majLigne(n, { unite: e.target.value })}>
+                    <div key={l.cle} id={`ligne-${l.cle}`} className={`ligne ${l.neuve ? 'neuve' : ''}`}>
+                      {l.reference ? (
+                        <div className="des des-ref">
+                          <span className="ref-poste" title="N° de poste du client">
+                            {l.reference}
+                          </span>
+                          <input value={l.designation} aria-label="Désignation" onChange={(e) => majLigne(n, { designation: e.target.value })} />
+                        </div>
+                      ) : (
+                        <input className="des" value={l.designation} aria-label="Désignation" onChange={(e) => majLigne(n, { designation: e.target.value })} />
+                      )}
+                      {/* Une quantité saisie remplace le métré ; un prix saisi devient un prix fixe. */}
+                      <ChampNombre
+                        className="chf"
+                        data-k="q"
+                        aria-label="Quantité"
+                        valeur={l.quantite}
+                        format={formatQte}
+                        onChange={(v) => majLigne(n, l.metre ? { quantite: v, metre: null } : { quantite: v })}
+                      />
+                      <select data-k="u" aria-label="Unité" value={l.unite} onChange={(e) => majLigne(n, { unite: e.target.value, metre: null })}>
                         {[...new Set([...UNITES, l.unite])].map((u) => (
                           <option key={u}>{u}</option>
                         ))}
                       </select>
-                      <ChampNombre className="chf" data-k="pu" aria-label="Prix unitaire HT" valeur={l.prix_unitaire} onChange={(v) => majLigne(n, { prix_unitaire: v })} />
+                      <ChampNombre
+                        className="chf"
+                        data-k="pu"
+                        aria-label="Prix unitaire HT"
+                        valeur={l.prix_unitaire}
+                        onChange={(v) => majLigne(n, { prix_unitaire: v, prix_calcule: false })}
+                      />
                       <select data-k="tva" aria-label="TVA" value={l.tva} onChange={(e) => majLigne(n, { tva: +e.target.value })}>
                         {[5.5, 10, 20].map((t) => (
                           <option key={t} value={t}>
@@ -1035,6 +1408,18 @@ export function Editeur(props: PropsEditeur) {
                           </b>
                         </span>
                       </div>
+                      {avecCouts && (
+                        <CoutLigne
+                          l={l}
+                          coef={coef}
+                          rp={rp}
+                          ouvert={ouvert?.cle === l.cle ? ouvert.quoi : null}
+                          ouvrir={(quoi) => setOuvert(quoi ? { cle: l.cle, quoi } : null)}
+                          majCout={(p) => majCout(n, p)}
+                          majLigne={(p) => majLigne(n, p)}
+                          metrable={estMetrable(l.unite) && !quantitesImposees}
+                        />
+                      )}
                     </div>
                   ),
                 )}
@@ -1064,35 +1449,30 @@ export function Editeur(props: PropsEditeur) {
                       onChange={(e) => setRechercheCat(e.target.value)}
                     />
                     <ul>
-                      {catalogueFiltre.map((a) => (
-                        <li key={a.id}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              ajouter([
-                                {
-                                  designation: a.designation,
-                                  quantite: 1,
-                                  unite: a.unite,
-                                  prix_unitaire: a.prix_vente,
-                                  tva: pro ? 20 : a.tva,
-                                  article_id: a.id,
-                                },
-                              ]);
-                              setChoixOuvert(false);
-                              setRechercheCat('');
-                            }}
-                          >
-                            <div>
-                              {a.designation}
-                              <span>
-                                {a.categorie} · {a.unite}
-                              </span>
-                            </div>
-                            <em>{euro(a.prix_vente)}</em>
-                          </button>
-                        </li>
-                      ))}
+                      {catalogueFiltre.map((a) => {
+                        const l = ligneCatalogue(a);
+                        return (
+                          <li key={a.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                ajouter([l]);
+                                setChoixOuvert(false);
+                                setRechercheCat('');
+                              }}
+                            >
+                              <div>
+                                {a.designation}
+                                <span>
+                                  {a.categorie} · {a.unite}
+                                  {l.prix_calcule ? ` · fourniture ${euro(a.prix_achat)}, pose ${formatQte(a.heures)} h` : ''}
+                                </span>
+                              </div>
+                              <em>{euro(l.prix_unitaire)}</em>
+                            </button>
+                          </li>
+                        );
+                      })}
                       {!catalogueFiltre.length && (
                         <li style={{ padding: 10, color: 'var(--gris)' }}>
                           {articles.length ? 'Aucun article. Ajoutez une ligne libre.' : 'Catalogue vide. '}
@@ -1144,6 +1524,7 @@ export function Editeur(props: PropsEditeur) {
                 </div>
               </div>
             </div>
+            {avecCouts && aDesCouts && <Rentabilite lignes={lignes} remise={remise} coef={coef} rp={rp} appliquer={changerCoef} allerALigne={allerALigne} />}
           </div>
 
           {/* 3. Conditions */}

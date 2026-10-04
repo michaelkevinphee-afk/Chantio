@@ -11,3 +11,5 @@ export * from './position.ts';
 export * from './intervention-devis.ts';
 export * from './achats.ts';
 export * from './suivi-client.ts';
+export * from './rentabilite.ts';
+export * from './dpgf.ts';

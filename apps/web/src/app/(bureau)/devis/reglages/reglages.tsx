@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import type { ReglagesFacturation } from '@chantio/shared';
+import { coefficientPlancher, euro, nombre, pourcent, REGLAGES_PRIX_DEFAUT, reglagesPrix, type ReglagesFacturation, type ReglagesPrix } from '@chantio/shared';
 import { annoncer, Roue } from '@/components/retour';
 import { enregistrerReglages } from '../actions';
 import { Ecran } from '../composants';
@@ -42,14 +42,32 @@ const GROUPES: { titre: string; aide: string; champs: [keyof ReglagesFacturation
   },
 ];
 
+type ClePrix = keyof ReglagesPrix;
+
+const PRIX: { k: ClePrix; lib: string; unite: string; aide: string }[] = [
+  { k: 'cout_horaire', lib: 'Coût horaire chargé', unite: '€ HT / h', aide: 'Salaires et charges, divisés par les heures facturables.' },
+  { k: 'frais_generaux', lib: 'Frais généraux', unite: '% du déboursé', aide: 'Loyer, véhicules, assurances, bureau, comptable.' },
+  { k: 'coefficient', lib: 'Coefficient global par défaut', unite: '×', aide: 'Proposé à chaque nouveau devis, modifiable devis par devis.' },
+  { k: 'marge_min', lib: 'Marge nette minimale', unite: '%', aide: 'En dessous, le devis vous alerte.' },
+  { k: 'chute', lib: 'Chute des métrés en m²', unite: '%', aide: 'Ajoutée par défaut aux surfaces (carrelage, faïence).' },
+];
+
+const texte = (n: number | undefined) => (n == null ? '' : String(n).replace('.', ','));
+
 export function Reglages({ valeurs, modifiable }: { valeurs: ReglagesFacturation; modifiable: boolean }) {
   const router = useRouter();
   const [enCours, demarrer] = useTransition();
   const [r, setR] = useState<ReglagesFacturation>(valeurs);
+  // Prix et coefficients : saisis en texte (« 1,45 »), vides pour la valeur par défaut.
+  const [prix, setPrix] = useState(() => Object.fromEntries(PRIX.map(({ k }) => [k, texte(valeurs[k])])) as Record<ClePrix, string>);
+  const prixSaisis = Object.fromEntries(PRIX.map(({ k }) => [k, prix[k].trim() ? nombre(prix[k]) : undefined])) as Partial<ReglagesPrix>;
+  const essai = reglagesPrix(prixSaisis);
+  const exemple = { vente: 100 * essai.coefficient, revient: 100 * (1 + essai.frais_generaux / 100) };
+  const margeExemple = exemple.vente - exemple.revient;
 
   const enregistrer = () =>
     demarrer(async () => {
-      const res = await enregistrerReglages(r);
+      const res = await enregistrerReglages({ ...r, ...prixSaisis });
       if (!res.ok) return annoncer(res.erreur, 'erreur');
       annoncer('Mentions enregistrées');
       router.push('/devis');
@@ -95,6 +113,52 @@ export function Reglages({ valeurs, modifiable }: { valeurs: ReglagesFacturation
             </div>
           </div>
           <p className="note-tva">Sert à l’anneau « Ce mois-ci » du tableau de bord. Sans objectif, Chantio compare à votre moyenne mensuelle.</p>
+        </div>
+        <div className="carte bloc">
+          <div className="bloc-titre">
+            <h2>Prix et coefficients</h2>
+            <span className="surtitre">Calcul des prix des devis</span>
+          </div>
+          <div className="champs">
+            {PRIX.map(({ k, lib, unite, aide }) => (
+              <div key={k}>
+                <div className="etiq">
+                  {lib} <span className="marque-auto">{unite}</span>
+                </div>
+                <input
+                  className="saisie num"
+                  inputMode="decimal"
+                  disabled={!modifiable}
+                  value={prix[k]}
+                  placeholder={texte(REGLAGES_PRIX_DEFAUT[k])}
+                  onChange={(e) => setPrix({ ...prix, [k]: e.target.value })}
+                />
+                <p className="note-tva" style={{ marginTop: 6, padding: 0, background: 'none' }}>
+                  {aide}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="calcul-marge">
+            <div>
+              <small>Prix de vente</small>
+              <b>{euro(exemple.vente)}</b>
+            </div>
+            <div>
+              <small>Prix de revient</small>
+              <b>{euro(exemple.revient)}</b>
+            </div>
+            <div>
+              <small>Marge nette</small>
+              <b style={{ color: margeExemple / exemple.vente < essai.marge_min / 100 ? 'var(--rouge)' : 'var(--vert)' }}>
+                {pourcent(exemple.vente ? (margeExemple / exemple.vente) * 100 : 0)}
+              </b>
+            </div>
+          </div>
+          <p className="note-tva">
+            Pour 100 € de déboursé sec (fournitures et main-d’œuvre) avec le coefficient × {texte(essai.coefficient)}. Prix d’un ouvrage = (fourniture + temps de pose ×{' '}
+            {euro(essai.cout_horaire)}) × coefficient. Pour garder {pourcent(essai.marge_min)} de marge nette, ne descendez pas sous × {texte(coefficientPlancher(essai))}.
+          </p>
         </div>
         {GROUPES.map((g) => (
           <div className="carte bloc" key={g.titre}>
