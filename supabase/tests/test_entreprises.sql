@@ -161,4 +161,10 @@ do $$ begin
 end $$;
 reset role;
 
+-- L'entreprise active n'est lisible que par les fonctions (RLS sans règle) ;
+-- la bascule ci-dessus a fonctionné malgré tout.
+do $$ begin
+  assert (select relrowsecurity from pg_class where oid = 'prive.entreprise_active'::regclass), 'RLS active sur prive.entreprise_active';
+end $$;
+
 select 'ok' as entreprises;
