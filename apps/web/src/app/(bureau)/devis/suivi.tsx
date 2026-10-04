@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { aujourdhui, etatDocument, euro, nomClient, titreDocument, type TypeFacture } from '@chantio/shared';
+import { aujourdhui, estAppelOffres, etatDocument, euro, nomClient, titreDocument, type TypeFacture } from '@chantio/shared';
 import { annoncer, Roue } from '@/components/retour';
 import type { DocumentLu, HistoriqueDevis } from '@/lib/devis';
 import { changerEtat, creerAvoir, dupliquer, facturerDevis, supprimerDocument } from './actions';
@@ -27,6 +27,7 @@ export function SuiviDocument({ document: d, historique }: { document: DocumentL
   const zoneMenu = useRef<HTMLDivElement>(null);
   const etat = etatDocument(d, aujourdhui());
   const facture = d.genre === 'facture';
+  const ao = estAppelOffres(d);
   const titre = titreDocument(d.genre, d.type_facture, d.situation_numero);
 
   useEffect(() => {
@@ -70,8 +71,10 @@ export function SuiviDocument({ document: d, historique }: { document: DocumentL
         </div>
         <span style={{ fontSize: 13, color: 'var(--gris)' }}>
           {nomClient(d.client)} · {euro(d.net_a_payer)}
+          {ao && ` · appel d’offres${d.conditions.aoConsultation ? ` « ${d.conditions.aoConsultation} »` : ''}`}
+          {ao && d.conditions.aoLimite && ` · réponse avant le ${dateFr(d.conditions.aoLimite)}`}
           {d.finalise_le && ` · validé le ${dateFr(d.finalise_le)}`}
-          {d.signe_le && ` · signé le ${dateFr(d.signe_le)}`}
+          {d.signe_le && ` · ${ao ? 'gagné' : 'signé'} le ${dateFr(d.signe_le)}`}
           {d.paye_le && ` · encaissé le ${dateFr(d.paye_le)}`}
           {d.relances > 0 && ` · ${d.relances} relance${d.relances > 1 ? 's' : ''}`}
           {facture && d.echeance && d.statut === 'a_encaisser' && ` · échéance ${dateFr(d.echeance)}`}
@@ -110,17 +113,25 @@ export function SuiviDocument({ document: d, historique }: { document: DocumentL
           <button className="btn petit" type="button" onClick={() => envoyerParMail(true)}>
             Relancer
           </button>
-          <button className="btn petit" type="button" onClick={() => lancer(() => changerEtat(d.id, 'refuse'), 'Devis marqué refusé')}>
-            Refusé
+          <button
+            className="btn petit"
+            type="button"
+            onClick={() => lancer(() => changerEtat(d.id, 'refuse'), ao ? 'Appel d’offres marqué perdu' : 'Devis marqué refusé')}
+          >
+            {ao ? 'Perdu' : 'Refusé'}
           </button>
-          <button className="btn petit plein" type="button" onClick={() => lancer(() => changerEtat(d.id, 'signe'), 'Devis signé, bravo !')}>
+          <button
+            className="btn petit plein"
+            type="button"
+            onClick={() => lancer(() => changerEtat(d.id, 'signe'), ao ? `Appel d’offres gagné : le devis ${d.numero} passe en signé` : 'Devis signé, bravo !')}
+          >
             <Picto nom="coche" />
-            Signé
+            {ao ? 'Gagné' : 'Signé'}
           </button>
         </>
       )}
       {!facture && d.statut === 'refuse' && (
-        <button className="btn petit" type="button" onClick={() => lancer(() => changerEtat(d.id, 'envoye'), 'Devis remis en attente')}>
+        <button className="btn petit" type="button" onClick={() => lancer(() => changerEtat(d.id, 'envoye'), ao ? 'Réponse remise en attente' : 'Devis remis en attente')}>
           Remettre en attente
         </button>
       )}
@@ -180,7 +191,8 @@ export function SuiviDocument({ document: d, historique }: { document: DocumentL
         </>
       )}
 
-      {!facture && d.statut !== 'refuse' && d.statut !== 'annule' && (
+      {/* Un appel d'offres ne devient un chantier qu'une fois gagné. */}
+      {!facture && d.statut !== 'refuse' && d.statut !== 'annule' && (!ao || d.statut === 'signe') && (
         <Link className={`btn petit ${d.statut === 'signe' ? '' : 'plein'}`} href={`/interventions/nouvelle?devis=${d.id}`}>
           <Picto nom="camion" />
           Créer l’intervention

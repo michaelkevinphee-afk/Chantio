@@ -5,6 +5,7 @@ import {
   titreDocument,
   completerClient,
   completerConditions,
+  estAppelOffres,
   etatDocument,
   nomClient,
   type ClientDocument,
@@ -176,6 +177,8 @@ export interface RangDocument {
   etat: { libelle: string; ton: TonStatut; retard: number };
   statut: StatutDocument;
   importe: boolean;
+  /** Devis qui répond à un appel d'offres. */
+  ao: boolean;
   /** Progression : 0 brouillon, 1 envoyé, 2 signé ou à encaisser, 3 facturé ou payé, -1 refusé ou en retard. */
   jalon: number;
   detail: string;
@@ -247,7 +250,7 @@ export async function lireTableauDeBord(supabase: Supa, nomEntreprise: string, r
     supabase
       .from('documents')
       .select(
-        'id, genre, type_facture, numero, statut, client, objet, date_document, echeance, devis_id, total_ht, total_ttc, net_a_payer, origine, finalise_le, envoye_le, relance_le, relances, signe_le, paye_le, cree_le',
+        'id, genre, type_facture, numero, statut, client, objet, date_document, echeance, conditions, devis_id, total_ht, total_ttc, net_a_payer, origine, finalise_le, envoye_le, relance_le, relances, signe_le, paye_le, cree_le',
       )
       .order('date_document', { ascending: false })
       .order('cree_le', { ascending: false })
@@ -391,6 +394,9 @@ export async function lireTableauDeBord(supabase: Supa, nomEntreprise: string, r
     }
     if (facture && d.statut === 'payee') detail = 'encaissée';
     if (d.statut === 'brouillon') detail = `brouillon du ${dateFr(d.date_document)}`;
+    const ao = estAppelOffres(d);
+    if (ao && d.statut === 'brouillon') detail = [d.conditions.aoConsultation, `brouillon du ${dateFr(d.date_document)}`].filter(Boolean).join(' · ');
+    if (ao && d.statut === 'envoye') detail = `réponse envoyée ${ilYa(d.finalise_le, ajd)} · résultat attendu`;
     return {
       id: d.id,
       lien: `/devis/${d.id}`,
@@ -404,6 +410,7 @@ export async function lireTableauDeBord(supabase: Supa, nomEntreprise: string, r
       etat,
       statut: d.statut,
       importe: d.origine === 'import',
+      ao,
       jalon,
       detail,
       email: d.client.email,
@@ -437,6 +444,7 @@ export async function lireTableauDeBord(supabase: Supa, nomEntreprise: string, r
       etat,
       statut: 'brouillon',
       importe: true,
+      ao: false,
       jalon: 0,
       detail: c.date || dateFr(i.cree_le),
       email: '',

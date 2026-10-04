@@ -1,19 +1,23 @@
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import {
+  achatEchu,
   aujourdhui,
   dateCourte,
   dateLongue,
   initiales,
+  joursAvantLimite,
   LIBELLE_ROLE,
+  type ConditionsDocument,
   type Membre,
   type Pointage,
   type PositionMembre,
+  type StatutAchat,
   type StatutIntervention,
 } from '@chantio/shared';
 import { Compteur } from '@/components/compteur';
 import { EquipeEnDirect } from '@/components/equipe-en-direct';
-import { Icone } from '@/components/icones';
+import { Icone, type NomIcone } from '@/components/icones';
 import { LienBouton, Panneau } from '@/components/ui';
 import { contexteBureau } from '@/lib/session';
 import { liensProfils } from '@/lib/profils';
@@ -24,12 +28,28 @@ export const metadata = { title: 'Pilotage · Chantio' };
 // Décale l'apparition de chaque bloc.
 const cascade = (i: number) => ({ '--i': i }) as CSSProperties;
 
+const s = (n: number) => (n > 1 ? 's' : '');
+const jjmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+
+type APlanifier = { id: string; motif: string; urgence: string; client: { nom: string } | null };
+type AppelOffres = { id: string; objet: string; conditions: Partial<ConditionsDocument> | null };
+type AchatOuvert = { statut: StatutAchat; echeance: string | null; montant_ttc: number; paiements: { montant: number }[] };
+
 export default async function Pilotage() {
   const { supabase, membre } = await contexteBureau();
   const jour = aujourdhui();
   const debutMois = `${jour.slice(0, 8)}01`;
 
-  const [{ data: duJour }, { data: enAttente }, { count: factureesMois }, equipe, { data: positions }] = await Promise.all([
+  const [
+    { data: duJour },
+    { data: enAttente },
+    { count: factureesMois },
+    equipe,
+    { data: positions },
+    { data: sansDate },
+    { data: reponsesAO },
+    { data: achatsOuverts },
+  ] = await Promise.all([
     supabase.from('interventions').select(SELECT_LISTE).eq('date_prevue', jour).order('heure_prevue'),
     supabase
       .from('interventions')
@@ -44,6 +64,10 @@ export default async function Pilotage() {
     listerEquipe(supabase),
     // Dernières positions partagées : seuls le dirigeant et les chefs de chantier les reçoivent.
     supabase.from('positions').select('membre_id, latitude, longitude, precision_m, enregistree_le'),
+    supabase.from('interventions').select('id, motif, urgence, client:clients(nom)').eq('statut', 'a_planifier').order('cree_le'),
+    // Réponses aux appels d'offres en préparation : devis en brouillon marqués « appel d'offres ».
+    supabase.from('documents').select('id, objet, conditions').eq('genre', 'devis').eq('statut', 'brouillon').eq('conditions->>ao', 'true'),
+    supabase.from('achats').select('statut, echeance, montant_ttc, paiements:paiements_achats(montant)').in('statut', ['recu', 'a_payer', 'planifie']),
   ]);
 
   const jourListe = (duJour ?? []) as InterventionListe[];
@@ -60,6 +84,22 @@ export default async function Pilotage() {
   const facturees = factureesMois ?? 0;
   const partFacturee = facturees + aFacturer.length ? facturees / (facturees + aFacturer.length) : 0;
 
+  const aPlanifier = (sansDate ?? []) as unknown as APlanifier[];
+  const urgentes = aPlanifier.filter((i) => i.urgence !== 'normale');
+  const premiere = urgentes[0] ?? aPlanifier[0];
+  // La date limite la plus proche d'abord, les réponses sans date à la fin.
+  const appels = ((reponsesAO ?? []) as AppelOffres[])
+    .map((d) => ({ ...d, jours: joursAvantLimite(d.conditions?.aoLimite, jour) }))
+    .sort((a, b) => (a.jours ?? 99_999) - (b.jours ?? 99_999));
+  const prochain = appels[0];
+  const achats = ((achatsOuverts ?? []) as unknown as AchatOuvert[]).map((a) => ({
+    ...a,
+    montant_ttc: Number(a.montant_ttc),
+    paye: a.paiements.reduce((t, p) => t + Number(p.montant), 0),
+  }));
+  const recues = achats.filter((a) => a.statut === 'recu').length;
+  const echues = achats.filter((a) => achatEchu(a, a.paye, jour)).length;
+
   const terrain = equipe.filter((m) => ['technicien', 'chef_chantier', 'apprenti', 'sous_traitant', 'dirigeant'].includes(m.role));
   const liens = await liensProfils(supabase, [membre.photo_chemin, ...equipe.map((m) => m.photo_chemin)]);
   const photo = (m: Pick<Membre, 'photo_chemin'> | null | undefined) => (m?.photo_chemin ? liens.get(m.photo_chemin) : null);
@@ -74,7 +114,7 @@ export default async function Pilotage() {
   ];
 
   // Ce que le bureau doit traiter, du plus urgent au moins urgent.
-  const aTraiter = [
+  const aTraiter: { n: number; href: string; icone: NomIcone; ton: string; titre: string; detail: string }[] = [
     {
       n: aReprendre.length,
       href: '/interventions?statut=a_reprendre',
@@ -93,6 +133,53 @@ export default async function Pilotage() {
         ? `La plus ancienne : ${aValider[0].client?.nom}, ${dateCourte(aValider[0].modifie_le.slice(0, 10)).toLowerCase()}`
         : 'Les fiches des techniciens arrivent ici',
     },
+    {
+      n: aPlanifier.length,
+      href: '/interventions?statut=a_planifier',
+      icone: 'calendrier',
+      ton: urgentes.length ? 'bg-rouge-doux text-rouge' : 'bg-bleu-doux text-bleu',
+      titre: `${aPlanifier.length} à planifier`,
+      detail: premiere
+        ? `${urgentes.length ? `Dont ${urgentes.length} urgente${s(urgentes.length)} · ` : ''}${[premiere.client?.nom, premiere.motif].filter(Boolean).join(' · ')}`
+        : 'Les demandes sans date arrivent ici',
+    },
+    ...(prochain
+      ? [
+          {
+            n: appels.length,
+            href: appels.length === 1 ? `/devis/${prochain.id}` : '/devis?filtre=ao',
+            icone: 'devis' as const,
+            ton: prochain.jours !== null && prochain.jours <= 3 ? 'bg-rouge-doux text-rouge' : 'bg-violet-doux text-violet',
+            titre: `${appels.length} appel${s(appels.length)} d’offres à rendre`,
+            // L'échéance d'abord : c'est elle qui compte quand la ligne est tronquée.
+            detail: `${
+              prochain.jours === null
+                ? 'Réponse à préparer'
+                : prochain.jours < 0
+                  ? `Date limite du ${jjmm(prochain.conditions!.aoLimite!)} passée`
+                  : prochain.jours === 0
+                    ? 'À rendre aujourd’hui'
+                    : `Avant le ${jjmm(prochain.conditions!.aoLimite!)}, dans ${prochain.jours} jour${s(prochain.jours)}`
+            } · ${prochain.objet || 'Sans objet'}`,
+          },
+        ]
+      : []),
+    ...(recues || echues
+      ? [
+          {
+            n: recues + echues,
+            href: recues ? '/achats?onglet=recu' : '/achats?onglet=a_payer',
+            icone: 'achats' as const,
+            ton: echues ? 'bg-rouge-doux text-rouge' : 'bg-violet-doux text-violet',
+            titre: recues ? `${recues} facture${s(recues)} fournisseur${s(recues)} à vérifier` : `${echues} facture${s(echues)} fournisseur${s(echues)} en retard`,
+            detail: recues
+              ? echues
+                ? `Et ${echues} en retard de paiement`
+                : `Reçue${s(recues)} : à vérifier puis approuver`
+              : 'Échéance dépassée : paiement à déclarer',
+          },
+        ]
+      : []),
     {
       n: aFacturer.length,
       href: '/interventions?statut=validee',

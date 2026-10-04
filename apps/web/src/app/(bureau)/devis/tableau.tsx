@@ -13,7 +13,7 @@ type Onglet = 'devis' | 'factures' | 'importes';
 
 const COULEURS_AVATAR = ['#2F54EB', '#5925DC', '#0E9F6E', '#7C93F5', '#2442C4', '#C026D3'];
 const FILTRES: Record<Onglet, string[]> = {
-  devis: ['Tous', 'Envoyé', 'Signé', 'Brouillon', 'Refusé'],
+  devis: ['Tous', 'Envoyé', 'Signé', 'Brouillon', 'Refusé', 'Appels d’offres'],
   factures: ['Tous', 'À encaisser', 'En retard', 'Payée', 'Brouillon'],
   importes: ['Tous'],
 };
@@ -45,12 +45,21 @@ export function Etincelle({ serie }: { serie: number[] }) {
   );
 }
 
+// Les filtres suivent le statut : un appel d'offres gagné reste un devis signé.
+const PAR_STATUT: Record<string, RangDocument['statut']> = {
+  Envoyé: 'envoye',
+  Signé: 'signe',
+  Brouillon: 'brouillon',
+  Refusé: 'refuse',
+  'À encaisser': 'a_encaisser',
+  Payée: 'payee',
+};
+
 function correspond(r: RangDocument, filtre: string) {
   if (filtre === 'Tous') return true;
-  if (filtre === 'Envoyé') return r.statut === 'envoye';
   if (filtre === 'En retard') return r.etat.retard > 0;
-  if (filtre === 'À encaisser') return r.statut === 'a_encaisser';
-  return r.etat.libelle.startsWith(filtre);
+  if (filtre === 'Appels d’offres') return r.ao;
+  return r.statut === PAR_STATUT[filtre];
 }
 
 function Jalons({ r, onglet }: { r: RangDocument; onglet: Onglet }) {
@@ -70,10 +79,10 @@ function Jalons({ r, onglet }: { r: RangDocument; onglet: Onglet }) {
   );
 }
 
-export function TableauDevis({ donnees, ongletInitial }: { donnees: TableauDeBord; ongletInitial: Onglet }) {
+export function TableauDevis({ donnees, ongletInitial, filtreInitial }: { donnees: TableauDeBord; ongletInitial: Onglet; filtreInitial?: string }) {
   const router = useRouter();
   const [onglet, setOnglet] = useState<Onglet>(ongletInitial);
-  const [filtre, setFiltre] = useState('Tous');
+  const [filtre, setFiltre] = useState(filtreInitial && FILTRES[ongletInitial].includes(filtreInitial) ? filtreInitial : 'Tous');
   const [recherche, setRecherche] = useState('');
   const [tour, setTour] = useState(0);
   const [, demarrer] = useTransition();
@@ -386,6 +395,7 @@ export function TableauDevis({ donnees, ongletInitial }: { donnees: TableauDeBor
                     <span className="ref">{r.numero}</span>
                     {r.lieu && ` · ${r.lieu}`}
                     {r.importe && onglet !== 'importes' && <span className="origine">Importé</span>}
+                    {r.ao && <span className="origine ao">Appel d’offres</span>}
                   </span>
                 </div>
                 <div className="quoi">

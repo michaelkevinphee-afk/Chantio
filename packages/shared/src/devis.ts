@@ -76,6 +76,11 @@ export interface ConditionsDocument {
   penExecMontant: string;
   retract: boolean;
   mediateur: string;
+  /** Devis de chantier qui répond à un appel d'offres : date limite de réponse, consultation, quantités du client. */
+  ao?: boolean;
+  aoLimite?: string;
+  aoConsultation?: string;
+  aoQuantites?: boolean;
 }
 
 export interface LigneDocument {
@@ -263,11 +268,37 @@ export function titreDocument(genre: GenreDocument, type: TypeFacture | null, si
 
 export type TonStatut = 'gris' | 'bleu' | 'violet' | 'vert' | 'rouge';
 
+type ConditionsAppelOffres = Partial<Pick<ConditionsDocument, 'ao' | 'aoLimite' | 'aoConsultation' | 'aoQuantites'>>;
+
+/** Un devis qui répond à un appel d'offres (les factures qui en découlent sont des factures ordinaires). */
+export function estAppelOffres(d: { genre: GenreDocument; conditions?: ConditionsAppelOffres | null }): boolean {
+  return d.genre === 'devis' && !!d.conditions?.ao;
+}
+
+/** Jours restants avant la date limite de réponse (négatif une fois passée), null sans date. */
+export function joursAvantLimite(limite: string | null | undefined, aujourdhui: string): number | null {
+  if (!limite || !/^\d{4}-\d{2}-\d{2}$/.test(limite)) return null;
+  return Math.round((Date.parse(limite) - Date.parse(aujourdhui)) / 86_400_000);
+}
+
 /** Libellé et couleur de l'état, avec le retard calculé à la date du jour. */
 export function etatDocument(
-  d: { genre: GenreDocument; statut: StatutDocument; echeance: string | null; relances?: number },
+  d: { genre: GenreDocument; statut: StatutDocument; echeance: string | null; relances?: number; conditions?: ConditionsAppelOffres | null },
   aujourdhui: string,
 ): { libelle: string; ton: TonStatut; retard: number } {
+  // Appel d'offres : la réponse à rendre, puis gagné ou perdu.
+  if (estAppelOffres(d)) {
+    const limite = d.conditions?.aoLimite;
+    const j = joursAvantLimite(limite, aujourdhui);
+    if (d.statut === 'brouillon') {
+      if (j === null) return { libelle: 'Réponse à préparer', ton: 'violet', retard: 0 };
+      if (j < 0) return { libelle: 'Date limite passée', ton: 'rouge', retard: 0 };
+      return { libelle: `À rendre avant le ${limite!.slice(8, 10)}/${limite!.slice(5, 7)}`, ton: j <= 3 ? 'rouge' : 'violet', retard: 0 };
+    }
+    if (d.statut === 'envoye') return { libelle: 'Réponse envoyée', ton: 'bleu', retard: 0 };
+    if (d.statut === 'signe') return { libelle: 'Gagné', ton: 'vert', retard: 0 };
+    if (d.statut === 'refuse') return { libelle: 'Perdu', ton: 'rouge', retard: 0 };
+  }
   if (d.genre === 'facture' && d.statut === 'a_encaisser' && d.echeance && d.echeance < aujourdhui) {
     const jours = Math.round((Date.parse(aujourdhui) - Date.parse(d.echeance)) / 86_400_000);
     return { libelle: `En retard de ${jours} jour${jours > 1 ? 's' : ''}`, ton: 'rouge', retard: jours };

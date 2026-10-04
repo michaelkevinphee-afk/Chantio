@@ -7,7 +7,9 @@ import {
   clientVide,
   conditionsParDefaut,
   controlerSiret,
+  estAppelOffres,
   etatDocument,
+  joursAvantLimite,
   euro,
   luhn,
   nombre,
@@ -132,6 +134,22 @@ test('état : facture en retard calculée à la date du jour', () => {
   assert.equal(e.libelle, 'En retard de 12 jours');
   assert.equal(e.ton, 'rouge');
   assert.equal(etatDocument({ genre: 'devis', statut: 'envoye', echeance: null, relances: 1 }, '2026-10-02').libelle, 'Relancé');
+});
+
+test('état : réponse à un appel d’offres, puis gagné ou perdu', () => {
+  const ao = (statut: 'brouillon' | 'envoye' | 'signe' | 'refuse', aoLimite?: string) =>
+    etatDocument({ genre: 'devis', statut, echeance: null, conditions: { ao: true, aoLimite } }, '2026-10-04');
+  assert.deepEqual(ao('brouillon', '2026-10-20'), { libelle: 'À rendre avant le 20/10', ton: 'violet', retard: 0 });
+  assert.equal(ao('brouillon', '2026-10-06').ton, 'rouge');
+  assert.equal(ao('brouillon', '2026-10-01').libelle, 'Date limite passée');
+  assert.equal(ao('brouillon').libelle, 'Réponse à préparer');
+  assert.equal(ao('envoye').libelle, 'Réponse envoyée');
+  assert.equal(ao('signe').libelle, 'Gagné');
+  assert.equal(ao('refuse').libelle, 'Perdu');
+  // Une facture issue d'un appel d'offres reste une facture ordinaire.
+  assert.equal(estAppelOffres({ genre: 'facture', conditions: { ao: true } }), false);
+  assert.equal(joursAvantLimite('2026-10-07', '2026-10-04'), 3);
+  assert.equal(joursAvantLimite('', '2026-10-04'), null);
 });
 
 test('nombres saisis à la française', () => {

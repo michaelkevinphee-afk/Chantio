@@ -14,12 +14,16 @@ const LIENS: { href: string; libelle: string; icone: NomIcone }[] = [
   { href: '/equipe', libelle: 'Équipe', icone: 'equipe' },
 ];
 
-export function Navigation() {
+/** Pastille d'une entrée du menu : ce qui attend le bureau (interventions à planifier, factures reçues…). */
+export type Pastille = { n: number; titre: string };
+
+export function Navigation({ pastilles = {} }: { pastilles?: Record<string, Pastille> }) {
   const chemin = usePathname();
   return (
     <nav className="flex min-w-0 gap-1 overflow-x-auto lg:flex-col">
       {LIENS.map((l) => {
         const actif = l.href === '/' ? chemin === '/' : chemin.startsWith(l.href);
+        const pastille = pastilles[l.href];
         return (
           <Link
             key={l.href}
@@ -30,6 +34,17 @@ export function Navigation() {
           >
             <Icone nom={l.icone} taille={20} />
             {l.libelle}
+            {pastille && pastille.n > 0 && (
+              <span
+                title={pastille.titre}
+                className={`ml-auto min-w-6 rounded-full px-1.5 py-0.5 text-center text-xs font-extrabold tabular-nums ${
+                  actif ? 'bg-white/25 text-white' : 'bg-cobalt text-white'
+                }`}
+              >
+                {pastille.n}
+                <span className="sr-only"> : {pastille.titre}</span>
+              </span>
+            )}
           </Link>
         );
       })}

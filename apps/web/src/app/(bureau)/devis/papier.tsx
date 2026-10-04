@@ -237,6 +237,12 @@ export function Papier({ d, entreprise, flash }: { d: DonneesPapier; entreprise:
             <b>Adresse du chantier :</b> {cl.adresseChantier || 'à renseigner'}
           </div>
         )}
+        {!facture && c.ao && (
+          <div className="objet">
+            <b>Réponse à l’appel d’offres :</b> {c.aoConsultation || 'consultation à préciser'}
+            {c.aoQuantites && ' · quantités du cadre de réponse du client'}
+          </div>
+        )}
         {bandeau && <div className="bandeau-sit">{bandeau}</div>}
         <table>
           <thead>

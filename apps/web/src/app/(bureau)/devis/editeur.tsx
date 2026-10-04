@@ -835,6 +835,41 @@ export function Editeur(props: PropsEditeur) {
                   </label>
                 </div>
               )}
+              {!facture && (
+                <div className="coches">
+                  <label className="coche-l">
+                    <input type="checkbox" checked={!!c.ao} onChange={(e) => majC({ ao: e.target.checked })} />{' '}
+                    <span>
+                      Réponse à un appel d’offres<small>Date limite de réponse, consultation, quantités imposées par le client</small>
+                    </span>
+                  </label>
+                </div>
+              )}
+              {!facture && c.ao && (
+                <div className="champs" style={{ marginTop: 12 }}>
+                  <div>
+                    <div className="etiq">Date limite de réponse</div>
+                    <input className="saisie" type="date" value={c.aoLimite ?? ''} onChange={(e) => majC({ aoLimite: e.target.value })} />
+                  </div>
+                  <div>
+                    <div className="etiq">Consultation</div>
+                    <input
+                      className="saisie"
+                      value={c.aoConsultation ?? ''}
+                      onChange={(e) => majC({ aoConsultation: e.target.value })}
+                      placeholder="ex. Marché public, lot 11 plomberie"
+                    />
+                  </div>
+                  <div className="large">
+                    <label className="coche-l">
+                      <input type="checkbox" checked={!!c.aoQuantites} onChange={(e) => majC({ aoQuantites: e.target.checked })} />{' '}
+                      <span>
+                        Quantités imposées par le client (DPGF ou DQE)<small>Reprenez ses quantités telles quelles : seuls vos prix changent</small>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -847,6 +882,12 @@ export function Editeur(props: PropsEditeur) {
                   {nbOuvrages} ligne{nbOuvrages > 1 ? 's' : ''}
                 </span>
               </div>
+              {!facture && c.ao && c.aoQuantites && (
+                <div className="info" style={{ marginTop: 0, marginBottom: 12 }}>
+                  Appel d’offres{c.aoConsultation ? ` « ${c.aoConsultation} »` : ''} : reprenez les postes et les quantités du cadre du client (DPGF ou DQE),
+                  puis chiffrez vos prix.
+                </div>
+              )}
               {facture && tf === 'acompte' && (
                 <div className="cadre-fact">
                   <div className="ligne-range">
