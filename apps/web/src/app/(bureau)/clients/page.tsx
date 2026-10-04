@@ -6,6 +6,7 @@ import { contexteBureau } from '@/lib/session';
 import { chargerSuivi } from '@/lib/suivi-clients';
 import { FormulaireClient } from './formulaire-client';
 import { ListeClients } from './liste';
+import { OngletsClients } from './onglets';
 import { VoletClient } from './volet-client';
 
 export const metadata = { title: 'Clients · Chantio' };
@@ -65,6 +66,7 @@ export default async function Clients({ searchParams }: PageProps<'/clients'>) {
       >
         Clients
       </Titre>
+      <OngletsClients actif="clients" />
       <ListeClients lignes={lignes} />
 
       {nouveau && (

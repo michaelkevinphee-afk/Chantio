@@ -50,7 +50,17 @@ export default async function PageDocument({ params, searchParams }: PageProps<'
     coefficient: d.coefficient,
   };
 
-  const suivi = <SuiviDocument document={d} historique={d.genre === 'devis' ? historique : null} />;
+  const suivi = (
+    <SuiviDocument
+      document={d}
+      historique={d.genre === 'devis' ? historique : null}
+      modeles={{
+        objet: (d.genre === 'facture' ? reglages.mail_facture_objet : reglages.mail_devis_objet) || '',
+        texte: (d.genre === 'facture' ? reglages.mail_facture_texte : reglages.mail_devis_texte) || '',
+        entreprise: entreprise.nom,
+      }}
+    />
+  );
 
   // Une facture validée est figée : on l'affiche, on ne la modifie plus.
   if (d.genre === 'facture' && d.numero) {

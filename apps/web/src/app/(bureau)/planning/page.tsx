@@ -33,7 +33,13 @@ export default async function PagePlanning({ searchParams }: PageProps<'/plannin
       .order('heure_prevue'),
     vueMois
       ? Promise.resolve({ data: [] })
-      : supabase.from('interventions').select(SELECT_LISTE).is('date_prevue', null).in('statut', ['a_planifier', 'planifiee']).order('cree_le'),
+      : supabase
+          .from('interventions')
+          .select(SELECT_LISTE)
+          .is('date_prevue', null)
+          .in('statut', ['a_planifier', 'planifiee'])
+          .order('souhaitee_le', { nullsFirst: true })
+          .order('cree_le'),
     listerEquipe(supabase),
     // Réponses aux appels d'offres en cours : le chantier possible, si le marché est gagné.
     vueMois
@@ -51,6 +57,7 @@ export default async function PagePlanning({ searchParams }: PageProps<'/plannin
     date_fin: i.date_fin ?? null,
     fin_midi: !!i.fin_midi,
     duree: i.duree_prevue == null ? null : Number(i.duree_prevue),
+    souhaitee: i.souhaitee_le ?? null,
     client: i.client?.nom ?? '',
     motif: i.motif,
     ville: i.site?.ville ?? null,

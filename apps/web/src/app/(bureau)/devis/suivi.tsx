@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { aujourdhui, estAppelOffres, etatDocument, euro, nomClient, titreDocument, type TypeFacture } from '@chantio/shared';
+import { MODELES_MAIL, aujourdhui, estAppelOffres, etatDocument, euro, nomClient, remplirModele, titreDocument, type TypeFacture } from '@chantio/shared';
 import { annoncer, Roue } from '@/components/retour';
 import type { DocumentLu, HistoriqueDevis } from '@/lib/devis';
 import { changerEtat, creerAvoir, dupliquer, facturerDevis, supprimerDocument } from './actions';
@@ -20,7 +20,16 @@ const TYPES: { tf: TypeFacture; libelle: string }[] = [
 const dateFr = (iso: string | null) => (iso ? iso.slice(0, 10).split('-').reverse().join('/') : '');
 
 /** Bandeau d'un document enregistré : état, envoi, signature, encaissement, facturation. */
-export function SuiviDocument({ document: d, historique }: { document: DocumentLu; historique: HistoriqueDevis | null }) {
+export function SuiviDocument({
+  document: d,
+  historique,
+  modeles,
+}: {
+  document: DocumentLu;
+  historique: HistoriqueDevis | null;
+  /** Textes d'envoi réglés dans les Paramètres (vides : ceux de Chantio). */
+  modeles?: { objet: string; texte: string; entreprise: string };
+}) {
   const router = useRouter();
   const [enCours, demarrer] = useTransition();
   const [menu, setMenu] = useState(false);
@@ -49,12 +58,13 @@ export function SuiviDocument({ document: d, historique }: { document: DocumentL
 
   const envoyerParMail = (relance = false) => {
     const qui = nomClient(d.client);
-    const sujet = `${titre} ${d.numero ?? ''} · ${d.objet}`.trim();
+    const valeurs = { titre, numero: d.numero ?? '', client: qui, objet: d.objet, montant: euro(d.net_a_payer), entreprise: modeles?.entreprise ?? '' };
+    const sujet = remplirModele(modeles?.objet || MODELES_MAIL[facture ? 'mail_facture_objet' : 'mail_devis_objet'], valeurs).trim();
     const corps = relance
       ? facture
         ? `Bonjour,\n\nSauf erreur de notre part, la facture ${d.numero} (${euro(d.net_a_payer)}) reste à régler. Vous la trouverez en pièce jointe.\n\nBien cordialement`
         : `Bonjour,\n\nJe me permets de revenir vers vous au sujet du devis ${d.numero} (${d.objet}). Avez-vous pu en prendre connaissance ?\n\nBien cordialement`
-      : `Bonjour ${qui},\n\nVeuillez trouver ci-joint ${facture ? 'la facture' : 'le devis'} ${d.numero ?? ''} pour : ${d.objet}.\nMontant : ${euro(d.net_a_payer)}.\n\nBien cordialement`;
+      : remplirModele(modeles?.texte || MODELES_MAIL[facture ? 'mail_facture_texte' : 'mail_devis_texte'], valeurs);
     window.open(`mailto:${encodeURIComponent(d.client.email || '')}?subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent(corps)}`, '_self');
     if (relance) lancer(() => changerEtat(d.id, 'relance'), 'Relance préparée dans votre messagerie');
     else annoncer('Pensez à joindre le PDF (bouton Aperçu PDF)');

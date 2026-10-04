@@ -6,6 +6,7 @@ import {
   LIBELLE_URGENCE,
   MESURES,
   aDesImmeubles,
+  dateCourte,
   adresseComplete,
   dateLongue,
   duree,
@@ -42,7 +43,7 @@ export default async function DetailIntervention({ params, searchParams }: PageP
   const { data } = await supabase
     .from('interventions')
     .select(
-      `${SELECT_LISTE}, site_complet:sites(acces, consignes, gardien, occupants(id, nom, lot)), client_complet:clients(email, contact, type), occupant:occupants(nom, lot, telephone), devis:documents(id, numero)`,
+      `${SELECT_LISTE}, site_complet:sites(acces, consignes, gardien, occupants(id, nom, lot)), client_complet:clients(email, contact, type), occupant:occupants(nom, lot, telephone), devis:documents(id, numero), contrat:contrats(id, reference, client_id)`,
     )
     .eq('id', id)
     .maybeSingle();
@@ -52,6 +53,7 @@ export default async function DetailIntervention({ params, searchParams }: PageP
     client_complet: { email: string | null; contact: string | null; type: TypeClient } | null;
     occupant: Pick<Occupant, 'nom' | 'lot' | 'telephone'> | null;
     devis: { id: string; numero: string | null } | null;
+    contrat: { id: string; reference: string | null; client_id: string } | null;
   };
   const immeuble = !!i.client_complet && aDesImmeubles(i.client_complet.type);
 
@@ -171,6 +173,15 @@ export default async function DetailIntervention({ params, searchParams }: PageP
             {i.devis && (
               <p>
                 Devis : <Link className="underline" href={`/devis/${i.devis.id}`}>{i.devis.numero ?? 'brouillon'}</Link>
+              </p>
+            )}
+            {i.contrat && (
+              <p>
+                Contrat d’entretien :{' '}
+                <Link className="underline" href={`/clients/contrats?client=${i.contrat.client_id}`}>
+                  {i.contrat.reference}
+                </Link>
+                {!i.date_prevue && i.souhaitee_le && ` · visite souhaitée vers le ${dateCourte(i.souhaitee_le)}`}
               </p>
             )}
             {immeuble && (

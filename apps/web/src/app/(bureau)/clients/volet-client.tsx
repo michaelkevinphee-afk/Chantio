@@ -2,6 +2,7 @@ import {
   LIBELLE_TYPE_CLIENT,
   aDesImmeubles,
   adresseComplete,
+  ajouterJours,
   aujourdhui,
   chiffresClient,
   chosesAFaire,
@@ -22,14 +23,18 @@ import { LienBouton, Puce, PuceStatut, classeBouton } from '@/components/ui';
 import { BoutonEnvoi } from '@/components/retour';
 import { Bloc, Ligne, Volet } from '@/components/volet';
 import { contexteBureau } from '@/lib/session';
+import { chargerContrats, suivreContrat } from '@/lib/contrats';
 import { chargerSuivi } from '@/lib/suivi-clients';
 import {
   ajouterContact,
+  ajouterEquipement,
   ajouterImmeuble,
   ajouterOccupant,
   changerFacturation,
+  modifierEquipement,
   modifierImmeuble,
   supprimerContact,
+  supprimerEquipement,
   supprimerOccupant,
 } from './actions';
 
@@ -43,7 +48,16 @@ type LigneIntervention = {
   site: { adresse: string } | null;
   occupant: { nom: string } | null;
 };
-type Immeuble = Site & { occupants: Occupant[] };
+type EquipementSite = {
+  id: string;
+  categorie: string;
+  marque: string | null;
+  modele: string | null;
+  dernier_passage: string | null;
+  prochain_passage: string | null;
+  obligation: string | null;
+};
+type Immeuble = Site & { occupants: Occupant[]; equipements: EquipementSite[] };
 
 const NIVEAU: Record<ChoseAFaire['niveau'], { libelle: string; ton: 'rouge' | 'bleu' | 'gris' }> = {
   urgent: { libelle: 'Urgent', ton: 'rouge' },
@@ -55,8 +69,8 @@ const FACTURATION = { intervention: 'Une facture par intervention', mensuel: 'Un
 /** Fiche d'un client : où on en est, ses chiffres, ses interventions, ses immeubles et occupants. */
 export async function VoletClient({ id, fermer, cree }: { id: string; fermer: string; cree: boolean }) {
   const { supabase } = await contexteBureau();
-  const [{ data }, { data: contactsBruts }, { data: lignes }, suivi] = await Promise.all([
-    supabase.from('clients').select('*, sites(*, occupants(*))').eq('id', id).maybeSingle(),
+  const [{ data }, { data: contactsBruts }, { data: lignes }, suivi, contrats] = await Promise.all([
+    supabase.from('clients').select('*, sites(*, occupants(*), equipements(*))').eq('id', id).maybeSingle(),
     // Table ajoutée par la migration « clients_detail » : sans elle, la fiche s'affiche quand même.
     supabase.from('contacts_client').select('*').eq('client_id', id).order('cree_le'),
     supabase
@@ -66,6 +80,7 @@ export async function VoletClient({ id, fermer, cree }: { id: string; fermer: st
       .order('date_prevue', { ascending: false, nullsFirst: true })
       .limit(60),
     chargerSuivi(supabase, id),
+    chargerContrats(supabase, id),
   ]);
 
   if (!data) {
@@ -284,6 +299,41 @@ export async function VoletClient({ id, fermer, cree }: { id: string; fermer: st
         </Bloc>
       )}
 
+      <Bloc
+        titre={`Contrats d’entretien${contrats.length ? ` (${contrats.length})` : ''}`}
+        action={
+          <Link href={`/clients/contrats?nouveau=1&client=${c.id}`} className="inline-flex items-center gap-1 text-sm font-bold text-cobalt hover:underline">
+            <Icone nom="plus" taille={14} /> Nouveau contrat
+          </Link>
+        }
+      >
+        {contrats.length === 0 ? (
+          <p className="text-sm text-gris">Aucun contrat. Un contrat d’entretien suit les visites, la date limite de préavis et prépare le renouvellement.</p>
+        ) : (
+          <ul className="divide-y divide-trait text-sm">
+            {contrats.map((ct) => {
+              const { etat, aPlanifier } = suivreContrat(ct, ajd);
+              return (
+                <li key={ct.id}>
+                  <Link href={`/clients/contrats?client=${c.id}`} className="flex items-start gap-3 py-2.5 first:pt-0 hover:text-cobalt">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold">
+                        <span className="font-mono text-xs font-normal text-gris">{ct.reference}</span> {ct.objet}
+                      </span>
+                      <span className="block text-xs text-gris">
+                        {etat.detail}
+                        {aPlanifier.length ? ` ${aPlanifier.length} visite${aPlanifier.length > 1 ? 's' : ''} à créer.` : ''}
+                      </span>
+                    </span>
+                    <Puce ton={etat.ton}>{etat.etiquette}</Puce>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Bloc>
+
       {immeubles ? (
         <div id="immeubles">
           <Bloc titre={`Immeubles${c.sites.length ? ` (${c.sites.length})` : ''}`}>
@@ -351,6 +401,7 @@ export async function VoletClient({ id, fermer, cree }: { id: string; fermer: st
                       </form>
                     </details>
                   </div>
+                  <Equipements site={s} jour={ajd} />
                 </li>
               ))}
             </ul>
@@ -386,6 +437,7 @@ export async function VoletClient({ id, fermer, cree }: { id: string; fermer: st
                     <Icone nom="lieu" taille={16} className="shrink-0 text-cobalt" /> {adresseComplete(s)}
                   </p>
                   {(s.acces || s.consignes) && <p className="mt-1 pl-6 text-gris">{[s.acces, s.consignes].filter(Boolean).join(' · ')}</p>}
+                  <Equipements site={s} jour={ajd} />
                 </li>
               ))}
             </ul>
@@ -407,5 +459,78 @@ export async function VoletClient({ id, fermer, cree }: { id: string; fermer: st
         </Bloc>
       )}
     </Volet>
+  );
+}
+
+const jjmmaaaa = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+/** Équipements suivis à une adresse, avec le prochain passage ; ajout et modification sur place. */
+function Equipements({ site, jour }: { site: Immeuble; jour: string }) {
+  const champs = (q?: EquipementSite) => (
+    <div className="grid grid-cols-2 gap-2">
+      <input name="categorie" required defaultValue={q?.categorie ?? ''} className="champ col-span-2" placeholder="Chaudière gaz à condensation 35 kW" aria-label="Équipement" />
+      <input name="marque" defaultValue={q?.marque ?? ''} className="champ" placeholder="Marque" aria-label="Marque" />
+      <input name="modele" defaultValue={q?.modele ?? ''} className="champ" placeholder="Modèle, année de pose" aria-label="Modèle" />
+      <label className="block text-xs font-bold text-gris">
+        Dernier passage
+        <input name="dernier_passage" type="date" defaultValue={q?.dernier_passage ?? ''} className="champ mt-1" />
+      </label>
+      <label className="block text-xs font-bold text-gris">
+        Prochain passage
+        <input name="prochain_passage" type="date" defaultValue={q?.prochain_passage ?? ''} className="champ mt-1" />
+      </label>
+      <input name="obligation" defaultValue={q?.obligation ?? ''} className="champ col-span-2" placeholder="Obligation : entretien annuel obligatoire…" aria-label="Obligation réglementaire" />
+    </div>
+  );
+  const equipements = [...(site.equipements ?? [])].sort((a, b) => (a.prochain_passage ?? '9999').localeCompare(b.prochain_passage ?? '9999'));
+  return (
+    <div className="mt-2 pl-6">
+      {equipements.length > 0 && (
+        <ul className="mb-2 space-y-1.5">
+          {equipements.map((q) => {
+            const proche = q.prochain_passage && q.prochain_passage <= ajouterJours(jour, 15);
+            return (
+              <li key={q.id} className="rounded-xl bg-fond px-3 py-2">
+                <div className="flex items-start gap-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold">{q.categorie}</span>
+                    {(q.marque || q.modele) && <span className="block text-xs text-gris">{[q.marque, q.modele].filter(Boolean).join(' · ')}</span>}
+                    {q.obligation && <span className="mt-1 inline-block rounded-full bg-violet-doux px-2 text-[11px] font-bold text-violet">{q.obligation}</span>}
+                  </span>
+                  <span className="shrink-0 text-right text-xs">
+                    <span className="block text-gris">Prochain passage</span>
+                    <b className={`tabular-nums ${proche ? 'text-rouge' : ''}`}>{q.prochain_passage ? jjmmaaaa(q.prochain_passage) : '—'}</b>
+                    {q.dernier_passage && <span className="block text-gris">Dernier {jjmmaaaa(q.dernier_passage)}</span>}
+                  </span>
+                </div>
+                <details className="group mt-1">
+                  <summary className="inline-flex cursor-pointer list-none text-xs font-bold text-cobalt">Modifier</summary>
+                  <form action={modifierEquipement.bind(null, q.id)} className="mt-2 space-y-2">
+                    {champs(q)}
+                    <div className="flex gap-2">
+                      <button formAction={supprimerEquipement.bind(null, q.id)} formNoValidate className={classeBouton('danger', '!px-3 !py-1.5 text-sm')}>
+                        Retirer
+                      </button>
+                      <BoutonEnvoi className="flex-1 !py-1.5 text-sm" enCours="Enregistrement…">
+                        Enregistrer
+                      </BoutonEnvoi>
+                    </div>
+                  </form>
+                </details>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <details className="group">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 text-sm font-bold text-cobalt">
+          <Icone nom="plus" taille={14} /> Ajouter un équipement
+        </summary>
+        <form action={ajouterEquipement.bind(null, site.id)} className="mt-2 space-y-2">
+          {champs()}
+          <BoutonEnvoi className="w-full" enCours="Ajout…">Ajouter l’équipement</BoutonEnvoi>
+        </form>
+      </details>
+    </div>
   );
 }

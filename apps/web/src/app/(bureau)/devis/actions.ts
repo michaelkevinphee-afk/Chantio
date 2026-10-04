@@ -7,13 +7,11 @@ import {
   completerClient,
   completerConditions,
   nombre,
-  reglagesPrix,
   type ClientDocument,
   type ConditionsDocument,
   type GenreDocument,
   type LigneDocument,
   type Metre,
-  type ReglagesFacturation,
   type TypeFacture,
 } from '@chantio/shared';
 import { lireDocument, lireHistoriqueDevis, type ChampsLus } from '@/lib/devis';
@@ -344,31 +342,6 @@ export async function importerTarif(lignes: ArticleAEnregistrer[]): Promise<Resu
   if (error) return { ok: false, erreur: 'Le tarif n’a pas pu être importé.' };
   revalidatePath('/devis/catalogue');
   return { ok: true, nombre: propres.length };
-}
-
-// ---------------------------------------------------------------------------
-// Réglages de facturation (dirigeant)
-// ---------------------------------------------------------------------------
-
-const PRIX = ['cout_horaire', 'frais_generaux', 'coefficient', 'marge_min', 'chute'] as const;
-
-export async function enregistrerReglages(r: ReglagesFacturation): Promise<Resultat> {
-  const { supabase, entreprise, membre } = await contexteBureau();
-  if (membre.role !== 'dirigeant') return { ok: false, erreur: 'Réservé au dirigeant.' };
-  const propre: ReglagesFacturation = {};
-  for (const [k, v] of Object.entries(r)) {
-    if (k === 'objectif_mensuel') propre.objectif_mensuel = Math.max(0, Math.round(nombre(v)));
-    else if (PRIX.includes(k as (typeof PRIX)[number])) {
-      // Prix et coefficients : un nombre, ou rien pour revenir à la valeur par défaut.
-      if (v !== '' && v != null && Number.isFinite(nombre(v))) (propre as Record<string, number>)[k] = nombre(v);
-    } else (propre as Record<string, string>)[k] = String(v ?? '').trim().slice(0, 300);
-  }
-  const verifie = reglagesPrix(propre);
-  for (const k of PRIX) if (propre[k] !== undefined) propre[k] = verifie[k];
-  const { error } = await supabase.from('entreprises').update({ facturation: propre }).eq('id', entreprise.id);
-  if (error) return { ok: false, erreur: 'Les réglages n’ont pas pu être enregistrés.' };
-  revalidatePath('/devis', 'layout');
-  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------

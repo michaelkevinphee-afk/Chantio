@@ -1222,7 +1222,7 @@ export function Editeur(props: PropsEditeur) {
                   <p>
                     Prix calculé = (fourniture + temps de pose × {euro(rp.cout_horaire)} de l’heure) × coefficient. Par défaut × {formatCoef(rp.coefficient)}, à
                     changer dans les{' '}
-                    <Link href="/devis/reglages" className="lien">
+                    <Link href="/parametres?rubrique=prix" className="lien">
                       réglages
                     </Link>
                     . Les coûts ne sont jamais imprimés.

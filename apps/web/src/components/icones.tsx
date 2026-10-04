@@ -24,6 +24,8 @@ const TRACES = {
   entreprise: 'M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18zM6 12H4a2 2 0 0 0-2 2v8h4M18 9h2a2 2 0 0 1 2 2v11h-4M10 6h4M10 10h4M10 14h4M10 18h4',
   bouclier: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10M9 12l2 2 4-4',
   haut_bas: 'M7 15l5 5 5-5M7 9l5-5 5 5',
+  chiffres: 'M3 3v18h18M8 17v-6M13 17V7M18 17v-4',
+  reglages: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
 } as const;
 
 export type NomIcone = keyof typeof TRACES;
