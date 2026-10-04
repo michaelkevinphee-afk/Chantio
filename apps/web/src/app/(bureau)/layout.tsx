@@ -11,10 +11,25 @@ import { contexteBureau, mesEntreprises } from '@/lib/session';
 
 export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
   const { supabase, membre, entreprise } = await contexteBureau();
-  const entreprises = await mesEntreprises();
-  const liens = await liensProfils(supabase, [membre.photo_chemin, entreprise.logo_chemin]);
+  const compter = (table: string, statut: string) => supabase.from(table).select('id', { count: 'exact', head: true }).eq('statut', statut);
+  const [entreprises, liens, { count: aPlanifier }, { count: aValider }, { count: recues }] = await Promise.all([
+    mesEntreprises(),
+    liensProfils(supabase, [membre.photo_chemin, entreprise.logo_chemin]),
+    compter('interventions', 'a_planifier'),
+    compter('interventions', 'terminee'),
+    compter('achats', 'recu'),
+  ]);
   const logo = entreprise.logo_chemin ? liens.get(entreprise.logo_chemin) : null;
   const photo = membre.photo_chemin ? liens.get(membre.photo_chemin) : null;
+  const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+  // Ce qui attend le bureau, affiché en pastille dans le menu.
+  const pastilles = {
+    '/interventions': {
+      n: (aPlanifier ?? 0) + (aValider ?? 0),
+      titre: [aPlanifier ? `${aPlanifier} à planifier` : '', aValider ? pluriel(aValider, 'fiche') + ' à valider' : ''].filter(Boolean).join(', '),
+    },
+    '/achats': { n: recues ?? 0, titre: `${pluriel(recues ?? 0, 'facture')} reçue${(recues ?? 0) > 1 ? 's' : ''} à vérifier` },
+  };
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[272px_1fr] lg:bg-[linear-gradient(to_right,rgb(255_255_255/0.8)_271px,var(--color-trait)_271px_272px,transparent_272px)]">
@@ -23,7 +38,7 @@ export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
         <LienBouton href="/interventions/nouvelle" className="w-full whitespace-nowrap !px-4">
           <Icone nom="plus" taille={18} /> Nouvelle intervention
         </LienBouton>
-        <Navigation />
+        <Navigation pastilles={pastilles} />
         <div className="mt-auto hidden space-y-4 lg:block">
           <Link href="/equipe#profil" className="flex items-center gap-3 rounded-2xl p-2 transition hover:bg-doux">
             <Avatar url={photo} initiales={initiales(membre.prenom, membre.nom)} taille={40} className="ring-2 ring-cobalt ring-offset-2 ring-offset-white" />

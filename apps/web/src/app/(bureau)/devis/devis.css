@@ -248,6 +248,7 @@
 .df .liste .droite { text-align: right; }
 .df .liste .montant { font-family: var(--f-chiffres); font-weight: 600; }
 .df .origine { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: var(--violet); background: var(--violet-doux); border-radius: 7px; padding: 2px 7px; margin-left: 6px; }
+.df .origine.ao { color: var(--bleu); background: var(--bleu-doux); }
 
 /* ---------- Écran import ---------- */
 .df .grille-import { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }

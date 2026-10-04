@@ -5,7 +5,9 @@ import { LIBELLE_STATUT, LIBELLE_TYPE, dateCourte, heure, numero, type StatutInt
 import { Puce, PuceStatut, Vide } from '@/components/ui';
 import { LigneCliquable } from '@/components/volet';
 import { adresse } from './adresse';
-import { FILTRES } from './filtres';
+import { dansPeriode, FILTRES, PERIODES, type Periode } from './filtres';
+
+type TypeLigne = keyof typeof LIBELLE_TYPE;
 
 export type LigneIntervention = {
   id: string;
@@ -16,7 +18,7 @@ export type LigneIntervention = {
   client: string;
   ville: string | null;
   motif: string;
-  type: keyof typeof LIBELLE_TYPE;
+  type: TypeLigne;
   urgence: string;
   techniciens: string;
 };
@@ -31,25 +33,39 @@ export function ListeInterventions({
   lignes,
   filtreInitial,
   rechercheInitiale,
+  typeInitial,
+  periodeInitiale,
+  jour,
 }: {
   lignes: LigneIntervention[];
   filtreInitial: StatutIntervention | 'toutes';
   rechercheInitiale: string;
+  typeInitial: TypeLigne | 'tous';
+  periodeInitiale: Periode;
+  jour: string;
 }) {
   const [filtre, setFiltre] = useState(filtreInitial);
   const [recherche, setRecherche] = useState(rechercheInitiale);
+  const [type, setType] = useState(typeInitial);
+  const [periode, setPeriode] = useState(periodeInitiale);
   const rechercheDiff = useDeferredValue(recherche);
+  const criteres = { statut: filtre, q: recherche, type, periode };
 
-  // Garde le filtre dans l'adresse (retour arrière, lien partagé) sans recharger.
-  function majAdresse(f: string, q: string) {
-    window.history.replaceState(null, '', adresse(f, q));
+  // Garde les filtres dans l'adresse (retour arrière, lien partagé) sans recharger.
+  function majAdresse(c: Partial<typeof criteres>) {
+    window.history.replaceState(null, '', adresse({ ...criteres, ...c }));
   }
 
+  // La recherche, le type et la période d'abord ; les pastilles de statut comptent ce qui reste.
   const cherchees = useMemo(() => {
     const q = sansAccent(rechercheDiff.trim());
-    if (!q) return lignes;
-    return lignes.filter((l) => sansAccent(`${l.motif} ${l.client} ${l.ville ?? ''} ${l.techniciens} ${l.numero}`).includes(q));
-  }, [lignes, rechercheDiff]);
+    return lignes.filter(
+      (l) =>
+        (type === 'tous' || l.type === type) &&
+        dansPeriode(l.date_prevue, periode, jour) &&
+        (!q || sansAccent(`${l.motif} ${l.client} ${l.ville ?? ''} ${l.techniciens} ${l.numero}`).includes(q)),
+    );
+  }, [lignes, rechercheDiff, type, periode, jour]);
 
   const nombres = useMemo(() => {
     const n: Record<string, number> = { toutes: cherchees.length };
@@ -71,7 +87,7 @@ export function ListeInterventions({
               aria-pressed={actif}
               onClick={() => {
                 setFiltre(f);
-                majAdresse(f, recherche);
+                majAdresse({ statut: f });
               }}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold whitespace-nowrap transition-transform active:scale-[0.96] ${
                 actif ? 'degrade border border-transparent text-white' : 'border border-trait bg-white text-encre hover:border-cobalt'
@@ -86,19 +102,52 @@ export function ListeInterventions({
         })}
       </div>
 
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-center gap-3">
         <input
           type="search"
           value={recherche}
           onChange={(e) => {
             setRecherche(e.target.value);
-            majAdresse(filtre, e.target.value);
+            majAdresse({ q: e.target.value });
           }}
           placeholder="Client, motif, ville…"
           aria-label="Rechercher"
           className="champ w-full py-2 sm:w-72"
         />
-        <p className="text-sm font-bold text-gris">
+        <select
+          value={type}
+          onChange={(e) => {
+            const t = e.target.value as TypeLigne | 'tous';
+            setType(t);
+            majAdresse({ type: t });
+          }}
+          aria-label="Type"
+          className="champ w-auto py-2"
+        >
+          <option value="tous">Tous les types</option>
+          {(Object.keys(LIBELLE_TYPE) as TypeLigne[]).map((t) => (
+            <option key={t} value={t}>
+              {LIBELLE_TYPE[t]}
+            </option>
+          ))}
+        </select>
+        <select
+          value={periode}
+          onChange={(e) => {
+            const p = e.target.value as Periode;
+            setPeriode(p);
+            majAdresse({ periode: p });
+          }}
+          aria-label="Période"
+          className="champ w-auto py-2"
+        >
+          {PERIODES.map(([v, lib]) => (
+            <option key={v} value={v}>
+              {lib}
+            </option>
+          ))}
+        </select>
+        <p className="ml-auto text-sm font-bold text-gris">
           {visibles.length} intervention{visibles.length > 1 ? 's' : ''}
         </p>
       </div>
@@ -123,7 +172,7 @@ export function ListeInterventions({
             </thead>
             <tbody className="divide-y divide-trait">
               {visibles.map((i) => (
-                <LigneCliquable key={i.id} href={adresse(filtre, recherche, i.id)}>
+                <LigneCliquable key={i.id} href={adresse(criteres, i.id)}>
                   <td className="px-4 py-3 font-mono text-xs text-gris">{numero(i.numero)}</td>
                   <td className="px-4 py-3 whitespace-nowrap" suppressHydrationWarning>
                     {dateCourte(i.date_prevue)} {heure(i.heure_prevue)}
