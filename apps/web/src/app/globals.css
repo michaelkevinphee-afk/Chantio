@@ -306,6 +306,15 @@ body {
   .volet-entree, .volet-sortie, .volet-fond, .volet-fond-sortie { animation: none; }
 }
 
+/* Bulle des retours (components/bulle-retours.tsx) : s'ouvre depuis le bouton en bas à droite. */
+@keyframes retours-entree {
+  from { transform: translateY(16px) scale(0.97); opacity: 0; }
+}
+.retours-entree { animation: retours-entree 0.22s cubic-bezier(0.2, 0.7, 0.2, 1) both; transform-origin: bottom right; }
+@media (prefers-reduced-motion: reduce) {
+  .retours-entree { animation: none; }
+}
+
 /* Planning : colonne des techniciens puis une colonne par jour. */
 .grille-planning {
   display: grid;

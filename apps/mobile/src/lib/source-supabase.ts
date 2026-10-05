@@ -159,4 +159,16 @@ export const sourceSupabase: SourceDonnees = {
     });
     if (error) throw enErreur(error);
   },
+
+  async envoyerRetour(r) {
+    // Entreprise et membre posés par la base (entreprise active du compte).
+    const { error } = await supabase().from('retours').insert({
+      auteur: r.auteur,
+      texte: r.texte,
+      page: r.page,
+      titre_page: r.titrePage,
+      appareil: r.appareil,
+    });
+    if (error) throw enErreur(error);
+  },
 };

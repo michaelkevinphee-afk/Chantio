@@ -17,7 +17,8 @@ export type CleRubrique =
   | 'membres'
   | 'cgv'
   | 'prix'
-  | 'compta';
+  | 'compta'
+  | 'retours';
 
 export interface Rubrique {
   cle: CleRubrique;
@@ -78,6 +79,17 @@ export const GROUPES: { titre: string; rubriques: Rubrique[] }[] = [
   {
     titre: 'Comptabilité',
     rubriques: [{ cle: 'compta', libelle: 'Tenue comptable', aide: 'Ce qu’il faut pour transmettre vos ventes à votre expert-comptable.', icone: 'p_compta' }],
+  },
+  {
+    titre: 'Chantio',
+    rubriques: [
+      {
+        cle: 'retours',
+        libelle: 'Retours sur Chantio',
+        aide: 'Les idées et remarques envoyées avec la bulle en bas à droite, avec la page exacte où elles ont été dites.',
+        icone: 'p_retours',
+      },
+    ],
   },
 ];
 

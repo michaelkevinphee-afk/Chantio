@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, type ComponentProps, type ReactNode } from 'react';
+import { Suspense, useState, type ComponentProps, type ReactNode } from 'react';
 import { COOKIE_MENU, ecrireEtatMenu, type EtatMenu } from '@/lib/menu';
+import { BulleRetours } from './bulle-retours';
 import { Icone } from './icones';
 import { BarreBas, LienParametres, Navigation, type Pastilles } from './navigation';
 import { ZoneAnnonces } from './retour';
@@ -20,6 +21,7 @@ export function CadreBureau({
   selecteur,
   pastilles,
   menu,
+  prenom,
   children,
 }: {
   /** Props du sélecteur d'entreprise (sans la variante, choisie ici). */
@@ -27,6 +29,8 @@ export function CadreBureau({
   pastilles: Pastilles;
   /** État du menu relu dans le cookie (premier affichage sans saut). */
   menu: EtatMenu;
+  /** Prénom de l'utilisateur, pour l'accueil de la bulle des retours. */
+  prenom: string;
   children: ReactNode;
 }) {
   const [etat, setEtat] = useState(menu);
@@ -88,6 +92,10 @@ export function CadreBureau({
       </main>
 
       <BarreBas pastilles={pastilles} />
+      {/* Bulle des retours en bas à droite (au-dessus de la barre du bas sur téléphone). */}
+      <Suspense>
+        <BulleRetours prenom={prenom} />
+      </Suspense>
       {/* Bulles « Enregistré » : au-dessus de la barre du bas sur téléphone. */}
       <div className="contents max-menu:[&>div]:bottom-[calc(80px+env(safe-area-inset-bottom))]">
         <ZoneAnnonces />

@@ -46,6 +46,7 @@ export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
       }}
       pastilles={pastilles}
       menu={lireEtatMenu(magasin.get(COOKIE_MENU)?.value)}
+      prenom={membre.prenom}
     >
       {children}
     </CadreBureau>
