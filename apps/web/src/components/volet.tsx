@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { consommerVoletAttente, demarrerNavigation } from './barre-chargement';
 import { Icone } from './icones';
 
 /**
@@ -29,6 +30,8 @@ export function Volet({
 }) {
   const router = useRouter();
   const [sortie, setSortie] = useState(false);
+  // Déjà glissé à l'écran (volet d'attente affiché au clic) : pas de seconde entrée.
+  const [dejaOuvert] = useState(() => typeof window !== 'undefined' && consommerVoletAttente());
 
   const refermer = () => {
     setSortie(true);
@@ -51,11 +54,11 @@ export function Volet({
     <div className={`fixed inset-0 z-50 ${sortie ? 'pointer-events-none' : ''}`} role="dialog" aria-modal="true">
       <div
         onClick={refermer}
-        className={`absolute inset-0 bg-encre/25 backdrop-blur-[2px] ${sortie ? 'volet-fond-sortie' : 'volet-fond'}`}
+        className={`absolute inset-0 bg-encre/25 backdrop-blur-[2px] ${sortie ? 'volet-fond-sortie' : dejaOuvert ? '' : 'volet-fond'}`}
       />
       <section
         className={`absolute inset-y-0 right-0 flex w-full max-w-[600px] flex-col bg-fond shadow-[-24px_0_60px_-30px_var(--halo)] sm:rounded-l-[28px] sm:border-l sm:border-trait ${
-          sortie ? 'volet-sortie' : 'volet-entree'
+          sortie ? 'volet-sortie' : dejaOuvert ? '' : 'volet-entree'
         }`}
       >
         <header className="flex items-start gap-4 border-b border-trait bg-white px-6 py-5 sm:rounded-tl-[28px]">
@@ -107,7 +110,10 @@ export function Ligne({ libelle, children }: { libelle: string; children: ReactN
 export function LigneCliquable({ href, children }: { href: string; children: ReactNode }) {
   const router = useRouter();
   const [enCours, demarrer] = useTransition();
-  const ouvrir = () => demarrer(() => router.push(href, { scroll: false }));
+  const ouvrir = () => {
+    demarrerNavigation(href);
+    demarrer(() => router.push(href, { scroll: false }));
+  };
   return (
     <tr
       tabIndex={0}

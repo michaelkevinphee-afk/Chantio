@@ -19,7 +19,7 @@ import { contexteBureau } from '@/lib/session';
 import { PARAMS_NOUVELLE } from '../interventions/adresse';
 import { etatAffiche } from '../interventions/filtres';
 import { FenetreNouvelleIntervention } from '../interventions/nouvelle/fenetre';
-import { VoletIntervention } from '../interventions/volet-intervention';
+import { prechargerVolet, VoletIntervention } from '../interventions/volet-intervention';
 import { adressePlanning, lireFamilles } from './adresse';
 import { Calendrier, type CarteRdv, type MembrePlanning } from './calendrier';
 import { VueMois, type AppelOffresMois } from './mois';
@@ -40,6 +40,8 @@ const chaine = (v: string | string[] | undefined) => (typeof v === 'string' ? v 
 export default async function PagePlanning({ searchParams }: PageProps<'/planning'>) {
   const { supabase, membre } = await contexteBureau();
   const sp = await searchParams;
+  // Le volet ?fiche= se lit en même temps que la page.
+  prechargerVolet(typeof sp.fiche === 'string' ? sp.fiche : undefined);
   const semaine = chaine(sp.semaine);
   const mois = chaine(sp.mois);
   const jour = aujourdhui();

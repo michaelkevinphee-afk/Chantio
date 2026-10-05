@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { demarrerNavigation } from './barre-chargement';
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 
 // Tableau de gestion du bureau, comme « tab-docs » du bac (Mes devis, Mes factures, Dépenses fournisseurs) :
@@ -162,7 +163,10 @@ export function TableauTrie<T>({
   const ouvrir = (e: MouseEvent, href: string | null | undefined) => {
     if (!href || (e.target as HTMLElement).closest(INTERACTIF)) return;
     if (e.metaKey || e.ctrlKey) window.open(href, '_blank');
-    else router.push(href);
+    else {
+      demarrerNavigation(href);
+      router.push(href);
+    }
   };
 
   if (!lignes.length) return <div className="px-3 py-10 text-center text-[15px] text-gris">{vide}</div>;

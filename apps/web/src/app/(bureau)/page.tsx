@@ -16,7 +16,7 @@ import { messageRetour } from './clients/messages';
 import { PARAMS_FICHE, PARAMS_NOUVELLE } from './interventions/adresse';
 import { etatAffiche, heureParis } from './interventions/filtres';
 import { FenetreNouvelleIntervention } from './interventions/nouvelle/fenetre';
-import { VoletIntervention } from './interventions/volet-intervention';
+import { prechargerVolet, VoletIntervention } from './interventions/volet-intervention';
 
 export const metadata = { title: 'Accueil · Chantio' };
 
@@ -55,6 +55,8 @@ function villeCourte(e: { adresse: string | null; code_postal?: string | null; v
 export default async function Accueil({ searchParams }: PageProps<'/'>) {
   const { supabase, membre, entreprise } = await contexteBureau();
   const sp = await searchParams;
+  // Le volet ?fiche= se lit en même temps que la page.
+  prechargerVolet(typeof sp.fiche === 'string' ? sp.fiche : undefined);
   const jour = aujourdhui();
 
   const [{ liste, resume, attente }, equipe, { data: duJour }, { data: ouvertes }] = await Promise.all([

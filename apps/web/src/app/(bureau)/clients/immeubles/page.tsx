@@ -15,7 +15,7 @@ import {
 } from '@/lib/contrats';
 import { contexteBureau } from '@/lib/session';
 import { FenetreNouvelleIntervention } from '../../interventions/nouvelle/fenetre';
-import { VoletIntervention } from '../../interventions/volet-intervention';
+import { prechargerVolet, VoletIntervention } from '../../interventions/volet-intervention';
 import { chargerFiche } from '@/lib/suivi-clients';
 import { enregistrerEquipement, retirerEquipement } from '../actions';
 import { supprimerContrat } from '../contrats/actions';
@@ -42,6 +42,8 @@ const valeurBatiment = (b: Pick<Batiment, 'site' | 'client'>) => (b.site ? `s:${
 
 export default async function Immeubles({ searchParams }: PageProps<'/clients/immeubles'>) {
   const sp = await searchParams;
+  // Le volet ?fiche= se lit en même temps que la page.
+  prechargerVolet(typeof sp.fiche === 'string' ? sp.fiche : undefined);
   const echeancier = un(sp.vue) === 'echeancier';
   const { supabase } = await contexteBureau();
   const [contrats, { data }] = await Promise.all([chargerContrats(supabase), supabase.from('clients').select(SELECT_CLIENTS_BATIMENTS).order('nom')]);

@@ -14,7 +14,7 @@ import { BoutonNouvelle } from './bouton-nouvelle';
 import { etatAffiche, lireFiltre, lirePeriode, lireType } from './filtres';
 import { ListeInterventions, type LigneIntervention } from './liste';
 import { FenetreNouvelleIntervention } from './nouvelle/fenetre';
-import { VoletIntervention } from './volet-intervention';
+import { prechargerVolet, VoletIntervention } from './volet-intervention';
 import './interventions.css';
 
 export const metadata = { title: 'Interventions · Chantio' };
@@ -25,6 +25,8 @@ const chaine = (v: string | string[] | undefined) => (typeof v === 'string' ? v 
 export default async function Interventions({ searchParams }: PageProps<'/interventions'>) {
   const { supabase } = await contexteBureau();
   const sp = await searchParams;
+  // Le volet ?fiche= se lit en même temps que la page.
+  prechargerVolet(typeof sp.fiche === 'string' ? sp.fiche : undefined);
   const filtre = lireFiltre(sp.statut);
   const recherche = chaine(sp.q)?.trim() ?? '';
   const type = lireType(sp.type);

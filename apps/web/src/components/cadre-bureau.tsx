@@ -2,6 +2,7 @@
 
 import { Suspense, useState, type ComponentProps, type ReactNode } from 'react';
 import { COOKIE_MENU, ecrireEtatMenu, type EtatMenu } from '@/lib/menu';
+import { BarreChargement } from './barre-chargement';
 import { BulleRetours } from './bulle-retours';
 import { Icone } from './icones';
 import { BarreBas, LienParametres, Navigation, type Pastilles } from './navigation';
@@ -92,6 +93,10 @@ export function CadreBureau({
       </main>
 
       <BarreBas pastilles={pastilles} />
+      {/* Barre bleue en haut de l'écran pendant qu'une page arrive. */}
+      <Suspense>
+        <BarreChargement />
+      </Suspense>
       {/* Bulle des retours en bas à droite (au-dessus de la barre du bas sur téléphone). */}
       <Suspense>
         <BulleRetours prenom={prenom} />

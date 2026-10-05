@@ -476,3 +476,23 @@ body:has(.ed-plein) [data-contenu] {
     .compteurs.rangee .compteur { min-height: 52px; }
   }
 }
+
+/* Barre de chargement en haut de l'écran (components/barre-chargement.tsx) : avance vite
+   puis ralentit tant que la page n'est pas arrivée, et se remplit à l'arrivée. */
+@keyframes barre-chargement {
+  0% { width: 0; }
+  20% { width: 45%; }
+  60% { width: 75%; }
+  100% { width: 92%; }
+}
+.barre-chargement {
+  animation: barre-chargement 6s cubic-bezier(0.1, 0.7, 0.2, 1) forwards;
+}
+.barre-chargement-fin {
+  width: 100%;
+  opacity: 0;
+  transition: width 0.15s ease-out, opacity 0.3s ease 0.1s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .barre-chargement { animation: none; width: 70%; }
+}

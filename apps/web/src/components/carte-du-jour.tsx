@@ -4,6 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { adresseComplete, geocoder, type Point } from '@chantio/shared';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { demarrerNavigation } from './barre-chargement';
 import './accueil/accueil.css';
 
 export interface ArretCarte {
@@ -185,6 +186,7 @@ export function CarteDuJour({
           const lien = a.lien;
           point.addEventListener('click', (e) => {
             e.stopPropagation();
+            demarrerNavigation(lien);
             router.push(lien, { scroll: false });
           });
         }
