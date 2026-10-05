@@ -30,7 +30,25 @@ function detailImport(i: ImportLu): string {
   return (morceaux.length ? morceaux.join(' · ') : (c.message ?? 'À compléter')) + (doutes ? ` · ${doutes} champ${doutes > 1 ? 's' : ''} à vérifier` : '');
 }
 
-export function Import({ entrepriseId, imports, lecture }: { entrepriseId: string; imports: ImportLu[]; lecture: boolean }) {
+/** Page d'où l'on vient (Mes devis, Mes factures ou Ventes) : le lien de retour y ramène. */
+const RETOURS = {
+  devis: { href: '/devis', libelle: 'Mes devis' },
+  factures: { href: '/factures', libelle: 'Mes factures' },
+  ventes: { href: '/ventes', libelle: 'Ventes' },
+} as const;
+
+export function Import({
+  entrepriseId,
+  imports,
+  lecture,
+  depuis = 'devis',
+}: {
+  entrepriseId: string;
+  imports: ImportLu[];
+  lecture: boolean;
+  depuis?: keyof typeof RETOURS;
+}) {
+  const retour = RETOURS[depuis];
   const router = useRouter();
   const [survol, setSurvol] = useState(false);
   const [fichiers, setFichiers] = useState<EnCours[]>([]);
@@ -98,14 +116,14 @@ export function Import({ entrepriseId, imports, lecture }: { entrepriseId: strin
       <div className="entete">
         <div>
           <div className="sur">
-            <Link href="/devis" style={{ color: 'inherit' }}>
-              Mes devis
+            <Link href={retour.href} style={{ color: 'inherit' }}>
+              {retour.libelle}
             </Link>
           </div>
           <h1>Importer vos documents</h1>
         </div>
         <div className="actions">
-          <Link className="btn" href="/devis">
+          <Link className="btn" href={retour.href}>
             Retour à la liste
           </Link>
         </div>

@@ -261,11 +261,9 @@ export function ListeDocuments({
         retour={client ? <LienVentes fiche={{ href: `/clients/${client.id}`, nom: client.nom }} /> : <LienVentes />}
         actions={
           <>
-            {!fac && (
-              <LienBouton href="/devis/import" variante="secondaire" className="px-4 py-2.5 !text-cobalt">
-                Importer
-              </LienBouton>
-            )}
+            <LienBouton href={fac ? '/devis/import?depuis=factures' : '/devis/import'} variante="secondaire" className="px-4 py-2.5 !text-cobalt">
+              Importer
+            </LienBouton>
             <button type="button" className={classeBouton('principal', 'px-4 py-2.5')} onClick={() => changer({ nouveau: true })}>
               <Icone nom="plus" taille={18} />
               {fac ? 'Créer une facture' : 'Créer un devis'}

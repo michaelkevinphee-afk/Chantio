@@ -84,7 +84,7 @@ export const GROUPES: { titre: string; rubriques: Rubrique[] }[] = [
       {
         cle: 'budget',
         libelle: 'Budget de l’année',
-        aide: 'Objectifs, achats, frais généraux et coefficients : ce que vous visez cette année. Chiffres › Mon année le compare à ce qui est facturé.',
+        aide: 'Objectifs, achats, frais généraux et coefficients : ce que vous visez cette année. Chiffres › Objectifs de l’année le compare à ce qui est facturé.',
         icone: 'chiffres',
         dirigeantSeul: true,
       },

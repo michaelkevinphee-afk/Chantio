@@ -143,10 +143,10 @@ export const SECTIONS_AIDE: SectionAide[] = [
     quand: 'Une fois par semaine ou par mois.',
     ou: 'Menu › Chiffres',
     etapes: [
-      '« Le point » : facturé, encaissé, charge de travail, prévu contre réalisé.',
-      '« Mon année » : le tableau de production mois par mois. La première fois, « Importer un fichier » (votre Excel), puis « Enregistrer et afficher le tableau ».',
+      'En haut à droite, le menu déroulant choisit la vue. « Activité en cours » : facturé, encaissé, charge de travail, prévu contre réalisé.',
+      '« Objectifs de l’année » : le tableau de production mois par mois. La première fois, « Importer un fichier » (votre Excel), puis « Enregistrer et afficher le tableau ».',
     ],
-    image: { src: '/aide/web-annee.webp', alt: 'Chiffres, onglet Mon année' },
+    image: { src: '/aide/web-annee.webp', alt: 'Chiffres, vue Objectifs de l’année' },
   },
   {
     id: 'clients',

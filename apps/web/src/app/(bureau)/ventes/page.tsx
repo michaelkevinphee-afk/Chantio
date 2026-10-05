@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { Icone, type NomIcone } from '@/components/icones';
-import { Titre } from '@/components/ui';
+import { LienBouton, Titre } from '@/components/ui';
 import { contexteBureau } from '@/lib/session';
 
 export const metadata = { title: 'Ventes · Chantio' };
@@ -53,7 +53,16 @@ export default async function Ventes() {
 
   return (
     <>
-      <Titre texte="Vos factures, vos devis, vos clients, vos produits et services, vos chiffres.">Ventes</Titre>
+      <Titre
+        texte="Vos factures, vos devis, vos clients, vos produits et services, vos chiffres."
+        actions={
+          <LienBouton href="/devis/import?depuis=ventes" variante="secondaire" className="px-4 py-2.5 !text-cobalt">
+            Importer
+          </LienBouton>
+        }
+      >
+        Ventes
+      </Titre>
       <div className="grid gap-4 min-[900px]:grid-cols-3">
         {cartes.map((c, i) => (
           <Link

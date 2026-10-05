@@ -15,7 +15,7 @@ export function adresse(c: CriteresListe, fiche?: string) {
 }
 
 /** Paramètres de la fenêtre « Nouvelle intervention » (retirés de l'adresse à sa fermeture). */
-export const PARAMS_NOUVELLE = ['nouvelle', 'client', 'site', 'devis', 'date', 'heure', 'moment', 'technicien', 'erreur'] as const;
+export const PARAMS_NOUVELLE = ['nouvelle', 'client', 'site', 'devis', 'date', 'heure', 'moment', 'technicien', 'importe', 'erreur'] as const;
 
 /** Paramètres du volet d'une intervention (retirés de l'adresse à sa fermeture). */
 export const PARAMS_FICHE = ['fiche', 'cree', 'erreur', 'facturer', 'chiffrer'] as const;

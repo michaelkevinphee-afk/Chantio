@@ -267,7 +267,7 @@ export async function lireTableauDeBord(supabase: Supa, nomEntreprise: string, r
       .order('date_document', { ascending: false })
       .order('cree_le', { ascending: false })
       .limit(1000),
-    supabase.from('imports').select('*').in('statut', ['a_lire', 'a_verifier', 'pret', 'erreur']).order('cree_le', { ascending: false }),
+    supabase.from('imports').select('*').in('statut', ['a_lire', 'a_verifier', 'pret', 'erreur']).or('champs->>genre.is.null,champs->>genre.neq.intervention').order('cree_le', { ascending: false }),
   ]);
   const tous = (docs ?? []).map((d) => normaliserDocument(d));
   const devis = tous.filter((d) => d.genre === 'devis');
