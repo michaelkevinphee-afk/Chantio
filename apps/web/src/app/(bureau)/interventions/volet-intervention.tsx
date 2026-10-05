@@ -24,6 +24,7 @@ import {
   type Occupant,
   type Site,
 } from '@chantio/shared';
+import { cache } from 'react';
 import { Puce, PuceStatut } from '@/components/ui';
 import { Volet } from '@/components/volet';
 import { lireDocument } from '@/lib/devis';
@@ -82,13 +83,12 @@ function lienFicheClient(client: string, fermer: string): string {
 }
 
 /**
- * Volet d'une intervention, comme le bac : tout s'y lit et s'y modifie (chaque changement s'enregistre seul),
- * et toutes les actions s'y trouvent. Affiché par-dessus la page avec ?fiche=<id> (Interventions, Planning, Accueil) ;
- * `fermer` = l'adresse de la page sans la fiche.
+ * Tout ce qu'affiche le volet d'une intervention, lu une seule fois par requête (React cache).
+ * Les pages qui l'affichent l'appellent dès le début (prechargerVolet) : la fiche se lit en même temps
+ * que la page au lieu d'attendre qu'elle soit prête.
  */
-export async function VoletIntervention({ id, fermer }: { id: string; fermer: string }) {
-  const { supabase, membre, entreprise } = await contexteBureau();
-  const jour = aujourdhui();
+const chargerVolet = cache(async (id: string) => {
+  const { supabase } = await contexteBureau();
   const [{ data }, { data: fichesBrutes }, equipe, { data: parConditions }, { data: catalogue }, { data: arrivees }] = await Promise.all([
     supabase.from('interventions').select(SELECT_VOLET).eq('id', id).maybeSingle(),
     supabase.from('fiches').select('*, fournitures(*), medias(*)').eq('intervention_id', id).order('cree_le'),
@@ -97,6 +97,27 @@ export async function VoletIntervention({ id, fermer }: { id: string; fermer: st
     supabase.from('articles').select('designation, reference, prix_achat'),
     supabase.from('pointages').select('le').eq('intervention_id', id).eq('genre', 'arrivee').order('le', { ascending: false }).limit(1),
   ]);
+  const devisId = (data as { devis_id?: string | null } | null)?.devis_id;
+  const { data: parDevis } = devisId
+    ? await supabase.from('documents').select(SELECT_DOCUMENT).or(`id.eq.${devisId},devis_id.eq.${devisId}`)
+    : { data: [] };
+  return { data, fichesBrutes, equipe, parConditions, catalogue, arrivees, parDevis };
+});
+
+/** Lance la lecture du volet ?fiche=<id> sans l'attendre (à appeler en tête de page). */
+export function prechargerVolet(id: string | undefined) {
+  if (id) void chargerVolet(id).catch(() => {});
+}
+
+/**
+ * Volet d'une intervention, comme le bac : tout s'y lit et s'y modifie (chaque changement s'enregistre seul),
+ * et toutes les actions s'y trouvent. Affiché par-dessus la page avec ?fiche=<id> (Interventions, Planning, Accueil) ;
+ * `fermer` = l'adresse de la page sans la fiche.
+ */
+export async function VoletIntervention({ id, fermer }: { id: string; fermer: string }) {
+  const { supabase, membre, entreprise } = await contexteBureau();
+  const jour = aujourdhui();
+  const { data, fichesBrutes, equipe, parConditions, catalogue, arrivees, parDevis } = await chargerVolet(id);
 
   if (!data) {
     return (
@@ -116,9 +137,6 @@ export async function VoletIntervention({ id, fermer }: { id: string; fermer: st
   const valideur = peutValider(membre.role);
 
   // Devis et factures liés : le devis d'où vient l'intervention et ses factures, et tout document préparé depuis elle.
-  const { data: parDevis } = i.devis_id
-    ? await supabase.from('documents').select(SELECT_DOCUMENT).or(`id.eq.${i.devis_id},devis_id.eq.${i.devis_id}`)
-    : { data: [] };
   const documents = [...new Map([...(parDevis ?? []), ...(parConditions ?? [])].map((d) => [d.id as string, d])).values()].sort(
     (a, b) => String(a.cree_le).localeCompare(String(b.cree_le)),
   ) as (DocumentLie & { cree_le: string })[];

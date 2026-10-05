@@ -26,7 +26,7 @@ import { ajouterOccupant, enregistrerImmeuble, supprimerClient } from '../action
 import { Annonce, ConfirmationAdresse, FormulaireImmeuble, FormulaireOccupant } from '../fenetres';
 import { FormulaireClient, type ClientAModifier } from '../formulaire-client';
 import { FenetreNouvelleIntervention } from '../../interventions/nouvelle/fenetre';
-import { VoletIntervention } from '../../interventions/volet-intervention';
+import { prechargerVolet, VoletIntervention } from '../../interventions/volet-intervention';
 import { messageRetour } from '../messages';
 import { Chiffres, EnTete, Historique, LienRetour, OuOnEnEst, Prochaines, SesImmeubles, surFiche, type ClientFiche } from './blocs';
 
@@ -47,6 +47,8 @@ function retourDepuis(depuis: string, site: string): { href: string; libelle: st
 export default async function FicheClient({ params, searchParams }: PageProps<'/clients/[id]'>) {
   const { id } = await params;
   const sp = await searchParams;
+  // Le volet ?fiche= se lit en même temps que la page.
+  prechargerVolet(typeof sp.fiche === 'string' ? sp.fiche : undefined);
   const retour = retourDepuis(un(sp.depuis), un(sp.site));
   const { supabase } = await contexteBureau();
 

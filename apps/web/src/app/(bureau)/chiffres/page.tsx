@@ -22,7 +22,7 @@ import { Titre } from '@/components/ui';
 import { normaliserLigne } from '@/lib/devis';
 import { listerEquipe } from '@/lib/requetes';
 import { contexteBureau } from '@/lib/session';
-import { VoletIntervention } from '../interventions/volet-intervention';
+import { prechargerVolet, VoletIntervention } from '../interventions/volet-intervention';
 import { CarteCharge, CartePrevu, CarteParType, Tuile, type LignePrevu } from './blocs';
 
 export const metadata = { title: 'Chiffres · Chantio' };
@@ -64,6 +64,8 @@ function versDocument(d: DocumentLu): DocumentChiffres {
 export default async function Chiffres({ searchParams }: PageProps<'/chiffres'>) {
   const { supabase, entreprise } = await contexteBureau();
   const sp = await searchParams;
+  // Le volet ?fiche= se lit en même temps que la page.
+  prechargerVolet(typeof sp.fiche === 'string' ? sp.fiche : undefined);
   const fiche = chaine(sp.fiche);
   const jour = aujourdhui();
   const debutAnnee = `${jour.slice(0, 4)}-01-01`;
