@@ -14,7 +14,7 @@ export default async function PageVerification({ params }: PageProps<'/devis/imp
   const { supabase } = await contexteBureau();
   const [{ data }, { data: suivants }] = await Promise.all([
     supabase.from('imports').select('*').eq('id', id).maybeSingle(),
-    supabase.from('imports').select('id').in('statut', ['a_lire', 'a_verifier', 'pret']).neq('id', id).order('cree_le').limit(1),
+    supabase.from('imports').select('id').in('statut', ['a_lire', 'a_verifier', 'pret']).or('champs->>genre.is.null,champs->>genre.neq.intervention').neq('id', id).order('cree_le').limit(1),
   ]);
   if (!data) notFound();
   const imp = data as ImportLu;

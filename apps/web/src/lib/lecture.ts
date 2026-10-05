@@ -233,6 +233,127 @@ export async function lireFactureFournisseur(fichier: Buffer, typeMime: string, 
   }
 }
 
+// ---------------------------------------------------------------------------
+// Anciennes fiches d'intervention (Interventions › Importer)
+// ---------------------------------------------------------------------------
+
+/** Ce que la lecture rend d'une fiche d'intervention papier ou PDF (chaîne vide quand rien n'est lu). */
+export type FicheLue = {
+  fiche: boolean;
+  numero: string;
+  date: string;
+  heure: string;
+  type: 'depannage' | 'chantier' | 'entretien';
+  client: string;
+  client_type: 'particulier' | 'syndic' | 'bailleur' | 'entreprise' | 'collectivite';
+  telephone: string;
+  adresse: string;
+  code_postal: string;
+  ville: string;
+  motif: string;
+  demande: string;
+  travaux: string;
+  fournitures: { designation: string; quantite: number }[];
+  technicien: string;
+  duree: string;
+  observations: string;
+};
+
+const SCHEMA_FICHE = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    fiche: { type: 'boolean', description: 'false si le document n’est pas une fiche, un bon ou un rapport d’intervention' },
+    numero: { type: 'string', description: 'Numéro de la fiche ou du bon' },
+    date: { type: 'string', description: 'Date de l’intervention au format AAAA-MM-JJ, vide si absente' },
+    heure: { type: 'string', description: 'Heure d’arrivée au format HH:MM, vide si absente' },
+    type: { type: 'string', enum: ['depannage', 'chantier', 'entretien'], description: 'depannage par défaut ; entretien pour une visite annuelle ou un contrat' },
+    client: { type: 'string', description: 'Nom du client tel qu’imprimé ou écrit (ex. Mme Laurent, Cabinet Foncia)' },
+    client_type: { type: 'string', enum: ['particulier', 'syndic', 'bailleur', 'entreprise', 'collectivite'] },
+    telephone: { type: 'string' },
+    adresse: { type: 'string', description: 'Rue du lieu d’intervention' },
+    code_postal: { type: 'string' },
+    ville: { type: 'string' },
+    motif: { type: 'string', description: 'En deux à cinq mots : Fuite, Panne chaudière, Entretien annuel…' },
+    demande: { type: 'string', description: 'Ce que le client a demandé ou constaté' },
+    travaux: { type: 'string', description: 'Travaux réalisés, tels qu’écrits sur la fiche' },
+    fournitures: {
+      type: 'array',
+      description: 'Pièces et fournitures posées, au plus 20',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: { designation: { type: 'string' }, quantite: { type: 'number' } },
+        required: ['designation', 'quantite'],
+      },
+    },
+    technicien: { type: 'string', description: 'Nom ou prénom du technicien' },
+    duree: { type: 'string', description: 'Temps passé tel qu’écrit (ex. 1 h 30)' },
+    observations: { type: 'string', description: 'Remarques, réserves, travaux à prévoir' },
+  },
+  required: [
+    'fiche',
+    'numero',
+    'date',
+    'heure',
+    'type',
+    'client',
+    'client_type',
+    'telephone',
+    'adresse',
+    'code_postal',
+    'ville',
+    'motif',
+    'demande',
+    'travaux',
+    'fournitures',
+    'technicien',
+    'duree',
+    'observations',
+  ],
+} as const;
+
+const CONSIGNE_FICHE = `Tu lis une fiche d'intervention (bon d'intervention, rapport de dépannage) d'une entreprise française du bâtiment (plomberie, chauffage), souvent remplie à la main puis scannée ou photographiée.
+Recopie les champs tels qu'ils sont écrits, sans rien inventer : un champ absent reste une chaîne vide.
+Le client est la personne ou la société chez qui l'intervention a lieu (ou le syndic qui l'a commandée), pas l'entreprise qui intervient.`;
+
+/** Lit une ancienne fiche d'intervention (PDF ou photo). */
+export async function lireFicheIntervention(fichier: Buffer, typeMime: string, nom: string): Promise<FicheLue | { message: string }> {
+  if (!lectureActivee()) return { message: 'Lecture automatique pas encore activée : complétez les champs à la main.' };
+  if (fichier.byteLength > TAILLE_MAX) return { message: 'Fichier trop lourd pour la lecture automatique (20 Mo au plus).' };
+  const pdf = typeMime === 'application/pdf' || /\.pdf$/i.test(nom);
+  const image = /^image\/(jpeg|png|gif|webp)$/.test(typeMime);
+  if (!pdf && !image) return { message: 'Format non lu automatiquement : PDF, JPG, PNG ou WEBP.' };
+
+  const donnees = fichier.toString('base64');
+  const piece: Anthropic.ContentBlockParam = pdf
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: donnees } }
+    : {
+        type: 'image',
+        source: { type: 'base64', media_type: typeMime as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp', data: donnees },
+      };
+  try {
+    const espace = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
+    const client = new Anthropic(espace ? { defaultHeaders: { 'anthropic-workspace-id': espace } } : {});
+    const reponse = await client.messages.create({
+      model: MODELE,
+      max_tokens: 8000,
+      system: CONSIGNE_FICHE,
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA_FICHE as unknown as Record<string, unknown> } },
+      messages: [{ role: 'user', content: [piece, { type: 'text', text: `Fichier : ${nom}. Lis cette fiche d’intervention.` }] }],
+    });
+    if (reponse.stop_reason === 'refusal' || reponse.stop_reason === 'max_tokens') {
+      return { message: 'La fiche n’a pas pu être lue entièrement : complétez les champs à la main.' };
+    }
+    const texte = reponse.content.find((b) => b.type === 'text');
+    if (!texte || texte.type !== 'text') return { message: 'Aucun champ reconnu.' };
+    return JSON.parse(texte.text) as FicheLue;
+  } catch (e) {
+    console.error('Lecture automatique (fiche)', e);
+    return { message: raisonEchec(e) };
+  }
+}
+
 /** Traduit l'erreur de l'API en une phrase qui dit quoi faire. */
 function raisonEchec(e: unknown): string {
   if (e instanceof Anthropic.APIConnectionTimeoutError) return 'La lecture a pris trop de temps : relancez-la.';

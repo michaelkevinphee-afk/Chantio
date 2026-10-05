@@ -160,9 +160,9 @@ export function RubriqueBudget({ annee, budget: initial }: { annee: number; budg
             <span>Après impôt</span>
             <b>{eur(B.apres)}</b>
           </div>
-          <p className={c('note')}>Les graphiques de Chiffres › Mon année suivent chaque changement.</p>
+          <p className={c('note')}>Les graphiques de Chiffres › Objectifs de l’année suivent chaque changement.</p>
           <Link href="/chiffres?vue=annee" className={c('btn principal')} style={{ textAlign: 'center' }}>
-            Voir Mon année
+            Voir les objectifs de l’année
           </Link>
         </aside>
       </div>

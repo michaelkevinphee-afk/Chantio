@@ -32,6 +32,8 @@ export type ValeursInitiales = {
   motif?: string;
   description?: string;
   devis?: { id: string; numero: string | null };
+  /** Ancienne fiche d'intervention importée (nom du fichier, message si la lecture n'a pas abouti). */
+  importe?: { nom: string; message?: string };
   nouveauClient?: { nom: string; telephone: string; type: string };
   adresse?: { adresse: string; code_postal: string; ville: string };
 };
@@ -124,6 +126,14 @@ export function FormulaireIntervention({
       {initial.devis && (
         <p className="rounded-[10px] bg-doux px-3 py-2.5 text-[13px] font-semibold text-cobalt">
           Pré-remplie d’après le devis {initial.devis.numero ?? '(brouillon)'}. Vérifiez, choisissez la date et le technicien, puis créez l’intervention.
+        </p>
+      )}
+
+      {initial.importe && (
+        <p className="rounded-[10px] bg-doux px-3 py-2.5 text-[13px] font-semibold text-cobalt">
+          {initial.importe.message
+            ? `${initial.importe.message} (fiche ${initial.importe.nom})`
+            : `Pré-remplie d’après la fiche ${initial.importe.nom}. Vérifiez le client, l’adresse et la date, puis créez l’intervention.`}
         </p>
       )}
 

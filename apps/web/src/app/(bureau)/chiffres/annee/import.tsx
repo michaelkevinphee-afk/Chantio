@@ -115,7 +115,7 @@ export function CaseImport({ annee, titre = 'Importer votre fichier de pilotage'
           </ul>
           {anneeFichier !== annee && (
             <p className={c('note alerte')}>
-              Ce fichier est celui de {anneeFichier}. Ses chiffres seront rangés en {anneeFichier} ; Mon année affiche {annee}.
+              Ce fichier est celui de {anneeFichier}. Ses chiffres seront rangés en {anneeFichier} ; la vue Objectifs de l’année affiche {annee}.
             </p>
           )}
           <p className={c('note')}>

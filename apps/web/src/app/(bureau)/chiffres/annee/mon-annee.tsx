@@ -67,7 +67,7 @@ export function MonAnnee({ donnees, entreprise }: { donnees: DonneesMonAnnee; en
         <div className={c('vide')}>
           <CaseImport annee={an} />
           <section className={c('carte')} aria-labelledby="t-quoi">
-            <h2 id="t-quoi">Ce que Mon année vous montre</h2>
+            <h2 id="t-quoi">Ce que cette vue vous montre</h2>
             <ul className={c('lu')}>
               <li>Où vous en êtes face à l’objectif de l’année, mois par mois ou trimestre par trimestre</li>
               <li>La prévision de fin d’année, avec sa fourchette et des curseurs « Et si… »</li>

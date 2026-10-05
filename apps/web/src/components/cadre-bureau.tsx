@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState, type ComponentProps, type ReactNode } from 'react';
+import { deconnecter } from '@/app/actions-session';
 import { COOKIE_MENU, ecrireEtatMenu, type EtatMenu } from '@/lib/menu';
 import { BarreChargement } from './barre-chargement';
 import { BulleRetours } from './bulle-retours';
@@ -13,8 +14,8 @@ import { Logo } from './ui';
 
 /**
  * Cadre de l'appli bureau, comme le bac à sable.
- * Ordinateur (≥ 821 px) : menu latéral (sélecteur d'entreprise, menu, « Propulsé par chantio », Paramètres,
- * « Réduire le menu ») et le contenu sur toute la largeur restante.
+ * Ordinateur (≥ 821 px) : menu latéral (sélecteur d'entreprise, menu, Aide, Paramètres, Se déconnecter,
+ * « Réduire le menu », puis « Propulsé par chantio » tout en bas) et le contenu sur toute la largeur restante.
  * Téléphone : barre du haut (sélecteur, roue des Paramètres) et barre du bas à cinq boutons.
  * Pages pleines : le menu et les barres portent data-menu, la zone principale data-contenu ;
  * globals.css les masque / libère quand la page contient .ed-plein (composant PleinEcran).
@@ -71,15 +72,19 @@ export function CadreBureau({
           ouverts={{ ventes: etat.ventes, achats: etat.achats }}
           onBasculer={(g) => changer({ ...etat, [g]: !etat[g] })}
         />
-        {reduit ? (
-          <div className="mt-auto" />
-        ) : (
-          <div className="mt-auto mb-1.5 rounded-[12px] bg-fond px-3 py-2.5 text-xs font-semibold text-gris">
-            Propulsé par <Logo taille={16} />
-          </div>
-        )}
+        <div className="mt-auto" />
         <LienAide variante={reduit ? 'reduit' : 'menu'} />
         <LienParametres variante={reduit ? 'reduit' : 'menu'} />
+        {/* Se déconnecter : juste sous Paramètres. */}
+        <form action={deconnecter}>
+          <button
+            title={reduit ? 'Se déconnecter' : undefined}
+            className={`flex w-full items-center gap-2.5 rounded-[12px] font-bold text-gris transition hover:bg-doux hover:text-encre ${reduit ? 'justify-center py-2.5' : 'px-2.5 py-2 text-[15px]'}`}
+          >
+            <Icone nom="sortie" taille={20} className="shrink-0" />
+            <span className={reduit ? 'sr-only' : 'min-w-0 truncate'}>Se déconnecter</span>
+          </button>
+        </form>
         <button
           type="button"
           onClick={() => changer({ ...etat, reduit: !reduit })}
@@ -90,6 +95,12 @@ export function CadreBureau({
           <Icone nom="reduire" taille={16} className={`shrink-0 ${reduit ? 'rotate-180' : ''}`} />
           <span className={reduit ? 'sr-only' : ''}>{reduit ? 'Agrandir le menu' : 'Réduire le menu'}</span>
         </button>
+        {/* « Propulsé par chantio » : tout en bas du menu. */}
+        {!reduit && (
+          <div className="mt-1.5 border-t border-trait px-2.5 pt-2.5 pb-0.5 text-xs font-semibold text-gris">
+            Propulsé par <Logo taille={16} />
+          </div>
+        )}
       </aside>
 
       {/* Contenu sur toute la largeur ; sur téléphone, place laissée à la barre du bas. */}

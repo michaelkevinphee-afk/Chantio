@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import type { BudgetPilotage, Douze, FamilleImportee, FraisBudget } from '@chantio/shared';
 import { contexteBureau } from '@/lib/session';
 
-// Enregistrements du pilotage de l'année (Chiffres › Mon année, Paramètres › Pilotage) : réservés au dirigeant,
+// Enregistrements du pilotage de l'année (Chiffres › Objectifs de l’année, Paramètres › Pilotage) : réservés au dirigeant,
 // comme les tables budgets et production_importee (la base refuse aussi les autres).
 
 export type Resultat = { ok: true } | { ok: false; erreur: string };

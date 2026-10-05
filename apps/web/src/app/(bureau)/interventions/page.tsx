@@ -10,6 +10,7 @@ import { Titre } from '@/components/ui';
 import { contexteBureau } from '@/lib/session';
 import { nomsCourts, SELECT_LISTE_INTERVENTIONS, type InterventionListeComplete } from '@/lib/requetes';
 import { PARAMS_FICHE, PARAMS_NOUVELLE } from './adresse';
+import { BoutonImporterFiche } from './bouton-importer';
 import { BoutonNouvelle } from './bouton-nouvelle';
 import { etatAffiche, lireFiltre, lirePeriode, lireType } from './filtres';
 import { ListeInterventions, type LigneIntervention } from './liste';
@@ -19,11 +20,14 @@ import './interventions.css';
 
 export const metadata = { title: 'Interventions · Chantio' };
 
+// « Importer » lit une ancienne fiche d'intervention : jusqu'à une minute.
+export const maxDuration = 60;
+
 const sansAccent = (t: string) => t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 const chaine = (v: string | string[] | undefined) => (typeof v === 'string' ? v : undefined);
 
 export default async function Interventions({ searchParams }: PageProps<'/interventions'>) {
-  const { supabase } = await contexteBureau();
+  const { supabase, entreprise } = await contexteBureau();
   const sp = await searchParams;
   // Le volet ?fiche= se lit en même temps que la page.
   prechargerVolet(typeof sp.fiche === 'string' ? sp.fiche : undefined);
@@ -101,7 +105,12 @@ export default async function Interventions({ searchParams }: PageProps<'/interv
     <>
       <Titre
         texte="Toutes les interventions : à planifier, planifiées, fiches à valider, terminées. La recherche retrouve aussi les plus anciennes."
-        actions={<BoutonNouvelle />}
+        actions={
+          <>
+            <BoutonImporterFiche entrepriseId={entreprise.id} />
+            <BoutonNouvelle />
+          </>
+        }
       >
         Interventions
       </Titre>
@@ -126,6 +135,7 @@ export default async function Interventions({ searchParams }: PageProps<'/interv
             heure: chaine(sp.heure),
             moment: moment === 'matin' || moment === 'apres-midi' ? moment : undefined,
             technicien: chaine(sp.technicien),
+            importe: chaine(sp.importe),
           }}
         />
       )}
