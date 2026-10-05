@@ -19,6 +19,7 @@ export type CleMenu =
   | 'fournisseurs'
   | 'chiffres'
   | 'parametres'
+  | 'aide'
   | 'ventes';
 
 /** Une entrée : `pastille` est la clé de son compteur dans `pastilles` (voir Navigation). */
@@ -55,6 +56,9 @@ export const MENU: (EntreeMenu | GroupeMenu)[] = [
 
 /** Paramètres, séparé en bas du menu (et roue en haut à droite sur téléphone). */
 export const PARAMETRES: EntreeMenu = { cle: 'parametres', libelle: 'Paramètres', href: '/parametres', icone: 'engrenage' };
+
+/** Aide (guide tâche par tâche), au-dessus de Paramètres (point d'interrogation en haut à droite sur téléphone). */
+export const AIDE: EntreeMenu = { cle: 'aide', libelle: 'Aide', href: '/aide', icone: 'aide' };
 
 /** Barre du bas du téléphone : `allume` liste les pages où le bouton est allumé. */
 export const BARRE_TELEPHONE: (EntreeMenu & { allume: CleMenu[] })[] = [
@@ -96,6 +100,7 @@ export function entreeActive(chemin: string): CleMenu | null {
   if (commencePar(chemin, '/achats/fournisseurs')) return 'fournisseurs';
   if (commencePar(chemin, '/achats')) return 'ach-factures';
   if (commencePar(chemin, '/chiffres')) return 'chiffres';
+  if (commencePar(chemin, '/aide')) return 'aide';
   if (commencePar(chemin, '/parametres') || commencePar(chemin, '/equipe')) return 'parametres';
   return null;
 }

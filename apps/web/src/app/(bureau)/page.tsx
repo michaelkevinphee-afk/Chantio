@@ -4,10 +4,12 @@ import { ApercuAppli } from '@/components/accueil/apercu-appli';
 import { CoupDOeil, type CaseAccueil } from '@/components/accueil/coup-d-oeil';
 import { FAITES } from '@/components/accueil/du-jour';
 import { EquipeDuJour, type ArretEquipe, type InterventionDuJour } from '@/components/accueil/equipe-du-jour';
+import { PremiersPas } from '@/components/accueil/premiers-pas';
 import { Rafraichir } from '@/components/accueil/rafraichir';
 import { presentsSurLeTerrain, techniciensTerrain } from '@/components/accueil/techniciens';
 import { LienBouton, Titre } from '@/components/ui';
 import { chargerAFaire } from '@/lib/a-faire';
+import { chargerPremiersPas } from '@/lib/premiers-pas-serveur';
 import { liensProfils } from '@/lib/profils';
 import { listerEquipe, SELECT_LISTE, type InterventionListe } from '@/lib/requetes';
 import { contexteBureau } from '@/lib/session';
@@ -58,7 +60,7 @@ export default async function Accueil({ searchParams }: PageProps<'/'>) {
   prechargerVolet(typeof sp.fiche === 'string' ? sp.fiche : undefined);
   const jour = aujourdhui();
 
-  const [{ liste, resume, attente }, equipe, { data: duJour }] = await Promise.all([
+  const [{ liste, resume, attente }, equipe, { data: duJour }, premiersPas] = await Promise.all([
     chargerAFaire(),
     listerEquipe(supabase),
     // Les interventions du jour, et les chantiers sur plusieurs jours en cours aujourd'hui.
@@ -68,6 +70,7 @@ export default async function Accueil({ searchParams }: PageProps<'/'>) {
       .lte('date_prevue', jour)
       .or(`date_prevue.eq.${jour},date_fin.gte.${jour}`)
       .order('heure_prevue', { ascending: true, nullsFirst: false }),
+    chargerPremiersPas(supabase, membre.id),
   ]);
 
   const jourListe = ((duJour ?? []) as unknown as InterventionJour[]).filter((i) => occupe(i, jour));
@@ -179,6 +182,8 @@ export default async function Accueil({ searchParams }: PageProps<'/'>) {
       </Titre>
 
       <div className="flex flex-col gap-4">
+        {/* Tant qu'elles ne sont pas toutes faites (ou masquées) : les missions « Mes premiers pas ». */}
+        {!premiersPas.masque && premiersPas.faites.length < 6 && <PremiersPas faites={premiersPas.faites} />}
         {/* En haut : l'équipe (la carte, puis chacun et sa journée) ; dessous, les choses à faire rangées en cases. */}
         <EquipeDuJour
           arrets={arrets}

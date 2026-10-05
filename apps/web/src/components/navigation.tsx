@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BARRE_TELEPHONE, DANS_GROUPE, entreeActive, MENU, PARAMETRES, type CleMenu, type EntreeMenu, type GroupeMenu } from '@/lib/menu';
+import { AIDE, BARRE_TELEPHONE, DANS_GROUPE, entreeActive, MENU, PARAMETRES, type CleMenu, type EntreeMenu, type GroupeMenu } from '@/lib/menu';
 import { Icone } from './icones';
 
 /**
@@ -124,24 +124,29 @@ export function Navigation({
   );
 }
 
-/** Paramètres : entrée en bas du menu latéral, ou bouton carré (roue) en haut à droite sur téléphone. */
-export function LienParametres({ variante = 'menu' }: { variante?: 'menu' | 'reduit' | 'barre' }) {
-  const allume = entreeActive(usePathname()) === 'parametres';
+/** Paramètres (ou Aide, avec `entree`) : entrée en bas du menu latéral, ou bouton carré (roue) en haut à droite sur téléphone. */
+export function LienParametres({ variante = 'menu', entree = PARAMETRES }: { variante?: 'menu' | 'reduit' | 'barre'; entree?: EntreeMenu }) {
+  const allume = entreeActive(usePathname()) === entree.cle;
   if (variante === 'barre')
     return (
       <Link
-        href={PARAMETRES.href}
-        aria-label="Paramètres"
+        href={entree.href}
+        aria-label={entree.libelle}
         aria-current={allume ? 'page' : undefined}
-        title="Paramètres"
+        title={entree.libelle}
         className={`grid h-10 w-10 shrink-0 place-items-center rounded-[12px] border transition ${
           allume ? 'border-transparent bg-doux text-cobalt' : 'border-trait bg-white text-gris hover:text-encre'
         }`}
       >
-        <Icone nom="engrenage" taille={20} />
+        <Icone nom={entree.icone} taille={20} />
       </Link>
     );
-  return <Entree e={PARAMETRES} actif={allume ? 'parametres' : null} reduit={variante === 'reduit'} />;
+  return <Entree e={entree} actif={allume ? entree.cle : null} reduit={variante === 'reduit'} />;
+}
+
+/** Aide : même présentation que Paramètres, juste au-dessus. */
+export function LienAide({ variante = 'menu' }: { variante?: 'menu' | 'reduit' | 'barre' }) {
+  return <LienParametres variante={variante} entree={AIDE} />;
 }
 
 /**

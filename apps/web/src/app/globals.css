@@ -496,3 +496,18 @@ body:has(.ed-plein) [data-contenu] {
 @media (prefers-reduced-motion: reduce) {
   .barre-chargement { animation: none; width: 70%; }
 }
+
+/* Visite guidée (components/guide/visite.tsx) : le bouton à cliquer clignote en bleu. */
+.guide-cible {
+  animation: guide-cible 1.6s ease-out infinite;
+}
+@keyframes guide-cible {
+  0% { box-shadow: 0 0 0 0 rgb(47 84 235 / 0.6); }
+  70% { box-shadow: 0 0 0 12px rgb(47 84 235 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(47 84 235 / 0); }
+}
+.guide-bravo { animation: rebond 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .guide-cible { animation: none; outline: 3px solid var(--color-pervenche, #7c93f5); outline-offset: 3px; }
+  .guide-bravo { animation: none; }
+}
