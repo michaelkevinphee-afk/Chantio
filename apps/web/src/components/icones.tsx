@@ -52,6 +52,7 @@ const TRACES = {
   telecharger: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
   droite: 'M5 12h14M13 6l6 6-6 6',
   // Bulle des retours : bulle de discussion, micro (Dicter), flèche d'envoi.
+  aide: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01',
   bulle: 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.9L3 20.5l1.6-4.7A8.4 8.4 0 0 1 3 11.5 8.5 8.5 0 0 1 12 3a8.5 8.5 0 0 1 9 8.5zM8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01',
   micro: 'M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0zM19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8',
   envoyer: 'M12 19V5M5 12l7-7 7 7',

@@ -3,12 +3,18 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { demanderAide } from '@/app/actions-aide';
 import { envoyerRetour } from '@/app/actions-retours';
+import { SECTIONS_AIDE } from '@/lib/aide-contenu';
+import type { IdMission } from '@/lib/premiers-pas';
+import { lancerVisite } from './guide/visite';
 import { Icone } from './icones';
 import { Roue } from './retour';
 
-// Bulle « Vos idées pour Chantio », en bas à droite comme celle de Kolecto : l'utilisateur dicte
-// ou écrit ce qu'il voudrait améliorer, et le retour part avec la page exacte où il se trouve.
+// Bulle en bas à droite, comme celle de Kolecto, avec deux usages :
+// « Une idée » : l'utilisateur dicte ou écrit ce qu'il voudrait améliorer, le retour part avec la page exacte ;
+// « Une question » : l'assistant répond à partir du guide (actions-aide.ts), avec la capture de la page Aide
+// et un bouton « Me montrer » qui lance la visite guidée sur les vrais boutons.
 
 /** Ce que l'écran affiche : titre de la page, onglet ou rubrique choisi, volet ou fenêtre ouverts. */
 function lirePage() {
@@ -47,10 +53,12 @@ function nouvelleReconnaissance(): Reconnaissance | null {
   return R ? new R() : null;
 }
 
-type Message = { de: 'chantio' | 'moi'; texte: string; page?: string };
+type Mode = 'idee' | 'question';
+type Message = { mode: Mode; de: 'chantio' | 'moi'; texte: string; page?: string; section?: string | null; visite?: IdMission | null };
 
 export function BulleRetours({ prenom }: { prenom: string }) {
   const [ouvert, setOuvert] = useState(false);
+  const [mode, setMode] = useState<Mode>('idee');
   const [texte, setTexte] = useState('');
   const [lieu, setLieu] = useState({ page: '', titrePage: '' });
   const [messages, setMessages] = useState<Message[]>([]);
@@ -137,6 +145,18 @@ export function BulleRetours({ prenom }: { prenom: string }) {
     setEnvoi(true);
     setErreur('');
     const l = lirePage();
+    if (mode === 'question') {
+      setMessages((m) => [...m, { mode, de: 'moi', texte: message }]);
+      setTexte('');
+      const q = await demanderAide({ question: message, page: l.page, titrePage: l.titrePage }).catch(() => ({
+        ok: false as const,
+        erreur: 'Pas de réseau : réessayez dans un instant.',
+      }));
+      setEnvoi(false);
+      if (!q.ok) return setErreur(q.erreur);
+      setMessages((m) => [...m, { mode, de: 'chantio', texte: q.reponse, section: q.section, visite: q.visite }]);
+      return;
+    }
     const r = await envoyerRetour({ texte: message, page: l.page, titrePage: l.titrePage, appareil: lireAppareil() }).catch(() => ({
       ok: false as const,
       erreur: 'Le message n’est pas parti. Vérifiez la connexion et réessayez.',
@@ -147,8 +167,8 @@ export function BulleRetours({ prenom }: { prenom: string }) {
     setAideClavier(false);
     setMessages((m) => [
       ...m,
-      { de: 'moi', texte: message, page: l.titrePage || l.page },
-      { de: 'chantio', texte: `Merci ${prenom}, c’est noté ! Vous pouvez en envoyer un autre, ici ou depuis une autre page.` },
+      { mode, de: 'moi', texte: message, page: l.titrePage || l.page },
+      { mode, de: 'chantio', texte: `Merci ${prenom}, c’est noté ! Vous pouvez en envoyer un autre, ici ou depuis une autre page.` },
     ]);
   };
 
@@ -156,7 +176,7 @@ export function BulleRetours({ prenom }: { prenom: string }) {
     <>
       {ouvert && (
         <section
-          aria-label="Vos idées pour Chantio"
+          aria-label={mode === 'question' ? 'Une question sur Chantio' : 'Vos idées pour Chantio'}
           className="retours-entree fixed right-5 bottom-[92px] z-[55] flex max-h-[min(640px,calc(100dvh-120px))] w-[392px] flex-col overflow-hidden rounded-[24px] border border-trait bg-white shadow-[0_30px_70px_-25px_rgb(16_26_61/0.45)] max-menu:inset-x-3 max-menu:bottom-[calc(148px+env(safe-area-inset-bottom))] max-menu:w-auto max-menu:max-h-[calc(100dvh-200px)]"
         >
           <header className="flex items-center gap-3 border-b border-trait px-4 py-3">
@@ -168,8 +188,8 @@ export function BulleRetours({ prenom }: { prenom: string }) {
               </svg>
             </span>
             <div className="min-w-0 flex-1">
-              <p className="font-extrabold leading-tight">Vos idées pour Chantio</p>
-              <p className="text-[13px] text-gris">Chaque message est lu par l’équipe</p>
+              <p className="font-extrabold leading-tight">{mode === 'question' ? 'Une question sur Chantio' : 'Vos idées pour Chantio'}</p>
+              <p className="text-[13px] text-gris">{mode === 'question' ? 'L’assistant vous répond tout de suite' : 'Chaque message est lu par l’équipe'}</p>
             </div>
             <button
               type="button"
@@ -183,8 +203,36 @@ export function BulleRetours({ prenom }: { prenom: string }) {
               <Icone nom="fermer" taille={18} />
             </button>
           </header>
+          <div role="tablist" aria-label="Que voulez-vous faire ?" className="grid grid-cols-2 gap-1 border-b border-trait bg-fond p-1.5">
+            {(
+              [
+                ['idee', 'Une idée'],
+                ['question', 'Une question'],
+              ] as const
+            ).map(([m, libelle]) => (
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={mode === m}
+                onClick={() => (setMode(m), setErreur(''))}
+                className={`rounded-[10px] py-2 text-[14.5px] font-bold transition ${mode === m ? 'bg-white text-cobalt shadow-sm' : 'text-gris hover:text-encre'}`}
+              >
+                {libelle}
+              </button>
+            ))}
+          </div>
 
           <div ref={fil} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+            {mode === 'question' ? (
+              <div className="max-w-[92%] rounded-[18px] rounded-tl-[6px] bg-fond px-4 py-3 text-[15px] leading-relaxed">
+                <p>Bonjour {prenom},</p>
+                <p className="mt-2">
+                  Demandez-moi <strong>comment faire</strong> quelque chose dans Chantio, par exemple « comment je fais un avoir ? ».
+                </p>
+                <p className="mt-2">Je vous réponds étape par étape, et je peux vous montrer les boutons.</p>
+              </div>
+            ) : (
             <div className="max-w-[92%] rounded-[18px] rounded-tl-[6px] bg-fond px-4 py-3 text-[15px] leading-relaxed">
               <p>Bonjour {prenom},</p>
               <p className="mt-2">
@@ -194,17 +242,21 @@ export function BulleRetours({ prenom }: { prenom: string }) {
                 Appuyez sur <strong>Dicter</strong> et parlez, puis sur la flèche pour envoyer. La page où vous êtes part avec votre message.
               </p>
             </div>
-            {messages.map((m, i) =>
+            )}
+            {messages.filter((m) => m.mode === mode).map((m, i) =>
               m.de === 'moi' ? (
                 <div key={i} className="ml-auto max-w-[88%]">
                   <p className="rounded-[18px] rounded-tr-[6px] bg-cobalt px-4 py-3 text-[15px] leading-relaxed whitespace-pre-wrap text-white">{m.texte}</p>
-                  <p className="mt-1 text-right text-xs text-gris">Envoyé · {m.page}</p>
+                  {m.page && <p className="mt-1 text-right text-xs text-gris">Envoyé · {m.page}</p>}
                 </div>
               ) : (
-                <p key={i} className="max-w-[92%] rounded-[18px] rounded-tl-[6px] bg-fond px-4 py-3 text-[15px] leading-relaxed">
-                  {m.texte}
-                </p>
+                <Reponse key={i} m={m} montrer={(v) => (arreter(), setOuvert(false), lancerVisite(v))} />
               ),
+            )}
+            {envoi && mode === 'question' && (
+              <p className="flex items-center gap-2 text-[14px] text-gris">
+                <Roue taille={14} /> L’assistant cherche…
+              </p>
             )}
           </div>
 
@@ -228,7 +280,7 @@ export function BulleRetours({ prenom }: { prenom: string }) {
                 }}
                 rows={3}
                 maxLength={5000}
-                placeholder={ecoute ? 'Je vous écoute…' : 'Écrivez ou dictez votre idée…'}
+                placeholder={ecoute ? 'Je vous écoute…' : mode === 'question' ? 'Écrivez ou dictez votre question…' : 'Écrivez ou dictez votre idée…'}
                 aria-label="Votre message"
                 className="block max-h-40 w-full resize-none rounded-t-[18px] bg-transparent px-4 pt-3 text-[15px] outline-none"
               />
@@ -259,23 +311,60 @@ export function BulleRetours({ prenom }: { prenom: string }) {
               <p className="mt-2 text-[13px] text-gris">Touchez le micro de votre clavier pour dicter (dictée de l’iPhone, d’Android ou du Mac).</p>
             )}
             {erreur && <p className="mt-2 text-[13px] font-semibold text-rouge">{erreur}</p>}
-            <Link href="/parametres?rubrique=retours" className="mt-2.5 inline-block text-[13px] font-bold text-cobalt hover:underline">
-              Voir tous les retours
-            </Link>
+            {mode === 'question' ? (
+              <Link href="/aide" className="mt-2.5 inline-block text-[13px] font-bold text-cobalt hover:underline">
+                Ouvrir la page Aide
+              </Link>
+            ) : (
+              <Link href="/parametres?rubrique=retours" className="mt-2.5 inline-block text-[13px] font-bold text-cobalt hover:underline">
+                Voir tous les retours
+              </Link>
+            )}
           </div>
         </section>
       )}
 
       <button
         type="button"
+        data-bulle
         onClick={() => (ouvert ? (arreter(), setOuvert(false)) : setOuvert(true))}
         aria-expanded={ouvert}
-        aria-label={ouvert ? 'Fermer la bulle des retours' : 'Une idée pour améliorer Chantio ?'}
-        title={ouvert ? undefined : 'Une idée pour améliorer Chantio ?'}
+        aria-label={ouvert ? 'Fermer la bulle' : 'Une idée ou une question ?'}
+        title={ouvert ? undefined : 'Une idée ou une question ?'}
         className="fixed right-5 bottom-5 z-[55] grid h-[60px] w-[60px] place-items-center rounded-full bg-encre text-white shadow-[0_14px_30px_-10px_rgb(16_26_61/0.6)] transition hover:scale-105 max-menu:bottom-[calc(84px+env(safe-area-inset-bottom))] max-menu:h-[52px] max-menu:w-[52px]"
       >
         <Icone nom={ouvert ? 'fermer' : 'bulle'} taille={26} />
       </button>
     </>
+  );
+}
+
+/** Réponse de l'assistant : le texte, la capture de la section du guide, « Me montrer » et « Lire dans l'Aide ». */
+function Reponse({ m, montrer }: { m: Message; montrer: (v: IdMission) => void }) {
+  const section = SECTIONS_AIDE.find((s) => s.id === m.section);
+  return (
+    <div className="max-w-[92%] rounded-[18px] rounded-tl-[6px] bg-fond px-4 py-3 text-[15px] leading-relaxed">
+      <p className="whitespace-pre-wrap">{m.texte}</p>
+      {section?.image && (
+        <Link href={`/aide#${section.id}`} className="mt-3 block overflow-hidden rounded-[12px] border border-trait bg-white">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={section.image.src} alt={section.image.alt} className={section.image.telephone ? 'mx-auto max-h-56 w-auto' : 'w-full'} loading="lazy" />
+        </Link>
+      )}
+      {(m.visite || section) && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {m.visite && (
+            <button type="button" onClick={() => montrer(m.visite!)} className="degrade rounded-[12px] px-3.5 py-2 text-[14px] font-bold text-white">
+              Me montrer
+            </button>
+          )}
+          {section && (
+            <Link href={`/aide#${section.id}`} className="rounded-[12px] border border-lavande bg-white px-3.5 py-2 text-[14px] font-bold text-cobalt">
+              Lire dans l’Aide
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

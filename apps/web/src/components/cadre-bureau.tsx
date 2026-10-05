@@ -4,8 +4,9 @@ import { Suspense, useState, type ComponentProps, type ReactNode } from 'react';
 import { COOKIE_MENU, ecrireEtatMenu, type EtatMenu } from '@/lib/menu';
 import { BarreChargement } from './barre-chargement';
 import { BulleRetours } from './bulle-retours';
+import { VisiteGuidee } from './guide/visite';
 import { Icone } from './icones';
-import { BarreBas, LienParametres, Navigation, type Pastilles } from './navigation';
+import { BarreBas, LienAide, LienParametres, Navigation, type Pastilles } from './navigation';
 import { ZoneAnnonces } from './retour';
 import { SelecteurEntreprise } from './selecteur-entreprise';
 import { Logo } from './ui';
@@ -48,7 +49,10 @@ export function CadreBureau({
         <div className="flex min-w-0 flex-1">
           <SelecteurEntreprise {...selecteur} variante="barre" />
         </div>
-        <LienParametres variante="barre" />
+        <div className="flex gap-2">
+          <LienAide variante="barre" />
+          <LienParametres variante="barre" />
+        </div>
       </header>
 
       {/* Ordinateur : menu latéral, 72 px quand il est réduit. */}
@@ -74,6 +78,7 @@ export function CadreBureau({
             Propulsé par <Logo taille={16} />
           </div>
         )}
+        <LienAide variante={reduit ? 'reduit' : 'menu'} />
         <LienParametres variante={reduit ? 'reduit' : 'menu'} />
         <button
           type="button"
@@ -101,6 +106,8 @@ export function CadreBureau({
       <Suspense>
         <BulleRetours prenom={prenom} />
       </Suspense>
+      {/* Visite guidée des missions « Mes premiers pas » et du bouton « Me montrer » de l'assistant. */}
+      <VisiteGuidee />
       {/* Bulles « Enregistré » : au-dessus de la barre du bas sur téléphone. */}
       <div className="contents max-menu:[&>div]:bottom-[calc(80px+env(safe-area-inset-bottom))]">
         <ZoneAnnonces />
