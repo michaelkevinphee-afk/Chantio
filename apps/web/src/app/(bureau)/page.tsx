@@ -1,11 +1,10 @@
-import { aujourdhui, dateLongue, familleIntervention, heureCourte, numeroIntervention, occupe, type StatutIntervention } from '@chantio/shared';
-import { AFaireAccueil } from '@/components/accueil/a-faire';
+import { aujourdhui, dateLongue, eurBac, familleIntervention, heureCourte, numeroIntervention, occupe, rangerAFaire } from '@chantio/shared';
+import { AttenteAccueil, lienAccueil, LignesAFaire } from '@/components/accueil/a-faire';
 import { ApercuAppli } from '@/components/accueil/apercu-appli';
-import { InterventionsAccueil } from '@/components/accueil/interventions-accueil';
-import { FAITES, QuiEstOu, type InterventionDuJour } from '@/components/accueil/qui-est-ou';
+import { CoupDOeil, type CaseAccueil } from '@/components/accueil/coup-d-oeil';
+import { EquipeDuJour, FAITES, type ArretEquipe, type InterventionDuJour } from '@/components/accueil/equipe-du-jour';
 import { Rafraichir } from '@/components/accueil/rafraichir';
 import { presentsSurLeTerrain, techniciensTerrain } from '@/components/accueil/techniciens';
-import { CarteDuJour, type ArretCarte } from '@/components/carte-du-jour';
 import { LienBouton, Titre } from '@/components/ui';
 import { chargerAFaire } from '@/lib/a-faire';
 import { liensProfils } from '@/lib/profils';
@@ -23,7 +22,6 @@ export const metadata = { title: 'Accueil · Chantio' };
 // Les interventions du jour, avec ce qu'il faut pour l'état affiché (fiche renvoyée) et l'heure d'arrivée.
 const SELECT_JOUR = `${SELECT_LISTE}, fiches(debut, envoyee_le)`;
 type InterventionJour = InterventionListe & { fiches: { debut: string | null; envoyee_le: string | null }[] | null };
-type EtatCompte = { statut: StatutIntervention; description: string | null; fiches: { envoyee_le: string | null }[] | null };
 
 const chaine = (v: string | string[] | undefined) => (typeof v === 'string' ? v : undefined);
 const maj1 = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -46,9 +44,9 @@ function villeCourte(e: { adresse: string | null; code_postal?: string | null; v
 }
 
 /**
- * Accueil, comme vAujourdhui() du bac à sable : « Bonjour … » et le résumé des choses à faire,
- * la carte du jour et « Qui est où » côte à côte, les quatre compteurs des interventions,
- * puis la liste « À faire » et « On attend aussi ».
+ * Accueil : « Bonjour … », le résumé des choses à faire, les boutons « Planning équipe » et
+ * « Nouvelle intervention » ; puis l'équipe du jour (carte, journée de chacun), et « En un coup d'œil » :
+ * les paiements clients en retard en grand et les autres choses à faire rangées en cases.
  * Par-dessus la page : le volet d'une intervention (?fiche=), la fenêtre « Nouvelle intervention »
  * (?nouvelle=1) et l'aperçu de l'appli d'un technicien (?appli=<membre>).
  */
@@ -59,7 +57,7 @@ export default async function Accueil({ searchParams }: PageProps<'/'>) {
   prechargerVolet(typeof sp.fiche === 'string' ? sp.fiche : undefined);
   const jour = aujourdhui();
 
-  const [{ liste, resume, attente }, equipe, { data: duJour }, { data: ouvertes }] = await Promise.all([
+  const [{ liste, resume, attente }, equipe, { data: duJour }] = await Promise.all([
     chargerAFaire(),
     listerEquipe(supabase),
     // Les interventions du jour, et les chantiers sur plusieurs jours en cours aujourd'hui.
@@ -69,8 +67,6 @@ export default async function Accueil({ searchParams }: PageProps<'/'>) {
       .lte('date_prevue', jour)
       .or(`date_prevue.eq.${jour},date_fin.gte.${jour}`)
       .order('heure_prevue', { ascending: true, nullsFirst: false }),
-    // Pour les compteurs : mêmes règles que la liste des interventions (une fiche renvoyée compte « renvoyée »).
-    supabase.from('interventions').select('statut, description, fiches(envoyee_le)').in('statut', ['a_planifier', 'planifiee', 'terminee', 'a_reprendre']).limit(10000),
   ]);
 
   const jourListe = ((duJour ?? []) as unknown as InterventionJour[]).filter((i) => occupe(i, jour));
@@ -119,7 +115,7 @@ export default async function Accueil({ searchParams }: PageProps<'/'>) {
     };
   });
 
-  const arrets: ArretCarte[] = jourListe.map((i, n) => {
+  const arrets: ArretEquipe[] = jourListe.map((i, n) => {
     const iv = interventions[n];
     const premier = i.affectations.find((a) => a.membre)?.membre ?? null;
     return {
@@ -133,11 +129,21 @@ export default async function Accueil({ searchParams }: PageProps<'/'>) {
       etiquette: [iv.heure, premier?.prenom].filter(Boolean).join(' ') || iv.reference,
       lien: `/?fiche=${i.id}`,
       site: i.site,
+      membres: iv.membres,
     };
   });
 
-  const etats = ((ouvertes ?? []) as unknown as EtatCompte[]).map((i) => etatAffiche(i));
-  const compte = (s: StatutIntervention) => etats.filter((e) => e === s).length;
+  // « En un coup d'œil » : les retards de paiement en grand, puis une case par sorte de chose à faire.
+  const [retards, ...autres] = rangerAFaire(liste);
+  const cases: CaseAccueil[] = autres.map((c) => ({
+    cle: c.cle,
+    titre: c.titre,
+    phrase: c.phrase,
+    n: c.lignes.length,
+    urgent: c.urgent,
+    somme: c.montant > 0 ? `${eurBac(c.montant, 0)} ${c.cle === 'devis' ? 'HT' : 'TTC'}` : null,
+  }));
+  const details = Object.fromEntries([retards, ...autres].filter((c) => c.lignes.length).map((c) => [c.cle, <LignesAFaire key={c.cle} lignes={c.lignes} />]));
 
   // Adresse de l'Accueil sans le volet, la fenêtre ou l'aperçu : là où l'on revient en les fermant.
   const sans = (cles: readonly string[]) => {
@@ -158,49 +164,44 @@ export default async function Accueil({ searchParams }: PageProps<'/'>) {
       <Titre
         texte={`${maj1(dateLongue(jour))} · ${resume.texte}`}
         actions={
-          <LienBouton href="/?nouvelle=1" scroll={false} prefetch={false}>
-            Nouvelle intervention
-          </LienBouton>
+          <>
+            <LienBouton variante="secondaire" href="/planning">
+              Planning équipe
+            </LienBouton>
+            <LienBouton href="/?nouvelle=1" scroll={false} prefetch={false}>
+              Nouvelle intervention
+            </LienBouton>
+          </>
         }
       >
         Bonjour {membre.prenom}
       </Titre>
 
       <div className="flex flex-col gap-4">
-        {/* En haut : où sont les techniciens (la carte, puis chacun) ; dessous, ce qui est à faire. */}
-        <div className="grid gap-4 menu:grid-cols-2">
-          <section aria-labelledby="aj-c" className="carte flex min-w-0 flex-col gap-3 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <h2 id="aj-c" className="text-[17px] font-extrabold">
-                Carte du jour
-              </h2>
-              {ville && <span className="text-[12.5px] text-gris">{ville}</span>}
-            </div>
-            <CarteDuJour
-              arrets={arrets}
-              entreprise={entreprise.adresse ? { nom: entreprise.nom, site: { adresse: entreprise.adresse, code_postal: entreprise.code_postal ?? null, ville: entreprise.ville ?? null, latitude: null, longitude: null } } : null}
-              legende={techniciens.map((t) => ({ id: t.id, prenom: t.prenom, couleur: t.couleur }))}
-            />
-          </section>
-          <section aria-labelledby="aj-q" className="carte flex min-w-0 flex-col gap-1.5 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <h2 id="aj-q" className="text-[17px] font-extrabold">
-                Qui est où
-              </h2>
-              <span className="text-[12.5px] text-gris">
-                {jourListe.length ? `${jourListe.length} intervention${jourListe.length > 1 ? 's' : ''} aujourd’hui` : 'Aucune intervention aujourd’hui'}
-              </span>
-            </div>
-            <QuiEstOu
-              techniciens={techniciens.map((t) => ({ id: t.id, prenom: t.prenom, nom: t.nom, couleur: t.couleur, photo: (t.photo_chemin && photos.get(t.photo_chemin)) || null }))}
-              interventions={interventions}
-            />
-          </section>
-        </div>
+        {/* En haut : l'équipe (la carte, puis chacun et sa journée) ; dessous, les choses à faire rangées en cases. */}
+        <EquipeDuJour
+          arrets={arrets}
+          entreprise={entreprise.adresse ? { nom: entreprise.nom, site: { adresse: entreprise.adresse, code_postal: entreprise.code_postal ?? null, ville: entreprise.ville ?? null, latitude: null, longitude: null } } : null}
+          techniciens={techniciens.map((t) => ({ id: t.id, prenom: t.prenom, nom: t.nom, couleur: t.couleur, photo: (t.photo_chemin && photos.get(t.photo_chemin)) || null }))}
+          interventions={interventions}
+          aPlacer={cases.find((c) => c.cle === 'placer')?.n ?? 0}
+          repere={[ville, jourListe.length ? `${jourListe.length} intervention${jourListe.length > 1 ? 's' : ''} aujourd’hui` : 'Aucune intervention aujourd’hui'].filter(Boolean).join(' · ')}
+        />
 
-        <InterventionsAccueil aujourdhui={jourListe.length} aPlanifier={compte('a_planifier')} aValider={compte('terminee')} renvoyees={compte('a_reprendre')} />
+        <CoupDOeil
+          retards={retards.lignes.map((x) => ({
+            cle: x.cle,
+            qui: x.client?.nom ?? x.module ?? 'Sans client',
+            montant: eurBac(x.montant ?? 0, 0),
+            jours: x.jours ?? null,
+            lien: lienAccueil(x.lien),
+          }))}
+          totalRetards={eurBac(retards.montant, 0)}
+          cases={cases}
+          details={details}
+        />
 
-        <AFaireAccueil liste={liste} attente={attente} />
+        {attente && <AttenteAccueil attente={attente} />}
       </div>
 
       {fiche && <VoletIntervention key={fiche} id={fiche} fermer={sans([...PARAMS_FICHE, ...PARAMS_NOUVELLE, 'appli'])} />}
