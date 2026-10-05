@@ -40,6 +40,47 @@ export async function lireTableur(fichier: File): Promise<string[][]> {
   return rangees;
 }
 
+/**
+ * Toutes les feuilles d'un classeur .xlsx, dans l'ordre des onglets, chaque rangée à sa place
+ * (une rangée vide reste vide) et chaque cellule en texte : la valeur calculée pour une formule.
+ * Un CSV donne une seule feuille.
+ */
+export async function lireClasseur(fichier: File): Promise<{ nom: string; rangees: string[][] }[]> {
+  if (/\.(csv|txt)$/i.test(fichier.name)) return [{ nom: fichier.name, rangees: lireCsv(await fichier.text()) }];
+  if (!/\.xlsx$/i.test(fichier.name)) throw new Error('Enregistrez le fichier au format .xlsx (Excel) ou CSV, puis importez-le.');
+  const zip = ouvrirZip(await fichier.arrayBuffer());
+  const xml = (t: string) => new DOMParser().parseFromString(t, 'application/xml');
+  const [classeur, liens, textes] = await Promise.all([zip.lire('xl/workbook.xml'), zip.lire('xl/_rels/workbook.xml.rels'), zip.lire('xl/sharedStrings.xml')]);
+  if (!classeur || !liens) throw new Error('Ce fichier Excel est illisible.');
+  const partages = textes
+    ? [...xml(textes).getElementsByTagName('si')].map((si) => [...si.getElementsByTagName('t')].map((t) => t.textContent ?? '').join(''))
+    : [];
+  const cibles = new Map([...xml(liens).getElementsByTagName('Relationship')].map((r) => [r.getAttribute('Id'), r.getAttribute('Target') ?? '']));
+  const feuilles: { nom: string; rangees: string[][] }[] = [];
+  for (const f of xml(classeur).getElementsByTagName('sheet')) {
+    const cible = cibles.get(f.getAttribute('r:id'));
+    if (!cible) continue;
+    const contenu = await zip.lire(cible.startsWith('/') ? cible.slice(1) : `xl/${cible}`);
+    if (!contenu) continue;
+    const rangees: string[][] = [];
+    for (const row of xml(contenu).getElementsByTagName('row')) {
+      const r: string[] = [];
+      for (const c of row.getElementsByTagName('c')) {
+        const col = colonne(c.getAttribute('r') ?? '');
+        const type = c.getAttribute('t');
+        const v = c.getElementsByTagName('v')[0]?.textContent ?? '';
+        r[col >= 0 ? col : r.length] =
+          type === 's' ? (partages[Number(v)] ?? '') : type === 'inlineStr' ? [...c.getElementsByTagName('t')].map((t) => t.textContent ?? '').join('') : v;
+      }
+      const numero = Number(row.getAttribute('r'));
+      rangees[numero > 0 ? numero - 1 : rangees.length] = Array.from(r, (x) => x ?? '');
+    }
+    feuilles.push({ nom: f.getAttribute('name') ?? '', rangees: Array.from(rangees, (x) => x ?? []) });
+  }
+  if (!feuilles.length) throw new Error('Aucune feuille trouvée dans ce fichier Excel.');
+  return feuilles;
+}
+
 /** « AB12 » → 27 (colonnes comptées depuis 0). */
 function colonne(ref: string): number {
   const lettres = ref.match(/^[A-Z]+/)?.[0];

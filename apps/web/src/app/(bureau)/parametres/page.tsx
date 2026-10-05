@@ -8,9 +8,11 @@ import { Avatar, Bouton, LienBouton, Titre } from '@/components/ui';
 import { liensProfils } from '@/lib/profils';
 import { contexteBureau, mesEntreprises } from '@/lib/session';
 import { Note, Section } from './elements';
+import { lireBudget } from '../chiffres/annee/donnees';
 import { RubriquePrix } from './formulaire';
 import { RubriqueMembres } from './membres';
 import { RubriqueRetours } from './retours';
+import { RubriqueBudget, RubriqueProduction } from './pilotage';
 import { CasesNotifications } from './notifications';
 import { ChampsProfil, ChangerMotDePasse } from './profil';
 import { RubriqueEntreprise } from './rubrique-entreprise';
@@ -221,6 +223,26 @@ export default async function Parametres({ searchParams }: PageProps<'/parametre
     contenu = <RubriqueCgv r={r} />;
   } else if (cle === 'retours') {
     contenu = <RubriqueRetours ctx={ctx} />;
+  } else if (cle === 'budget' || cle === 'production') {
+    // Réservées au dirigeant (rubriqueDemandee les refuse aux autres), comme les tables du pilotage.
+    const annee = Number(aujourdhui().slice(0, 4));
+    const [{ data: budgetLu }, { data: importeeLue }] = await Promise.all([
+      supabase.from('budgets').select('*').eq('annee', annee).maybeSingle(),
+      cle === 'production'
+        ? supabase.from('production_importee').select('mois, famille, montant_ht').gte('mois', `${annee - 1}-01-01`).lt('mois', `${annee + 1}-01-01`)
+        : Promise.resolve({ data: [] }),
+    ]);
+    const budget = lireBudget(budgetLu as Record<string, unknown> | null, annee);
+    contenu =
+      cle === 'budget' ? (
+        <RubriqueBudget annee={annee} budget={budget} />
+      ) : (
+        <RubriqueProduction
+          annee={annee}
+          importee={((importeeLue ?? []) as { mois: string; famille: 'depannage' | 'chantier' | 'total'; montant_ht: number | string }[]).map((l) => ({ ...l, montant_ht: Number(l.montant_ht) || 0 }))}
+          carnet={{ carnet_accepte: budget.carnet_accepte, carnet_facture: budget.carnet_facture, carnet_le: budget.carnet_le }}
+        />
+      );
   } else if (cle === 'prix') {
     contenu = <RubriquePrix r={r} />;
   } else {
