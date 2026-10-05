@@ -33,3 +33,18 @@ export const tons = {
   vert: { fond: couleurs.vertDoux, texte: couleurs.vert },
   rouge: { fond: couleurs.rougeDoux, texte: couleurs.rouge },
 } as const;
+
+/**
+ * Couleurs des techniciens (COULEURS du bac à sable) : avatar, points de la carte du jour, légende.
+ * Il n'y a pas de couleur en base : chaque membre de terrain prend la couleur de son rang
+ * (membres triés par date d'arrivée, puis prénom), et la palette recommence après le 7e.
+ */
+export const COULEURS_TECHNICIENS = ['#2F54EB', '#5925DC', '#12B76A', '#0BA5EC', '#7C93F5', '#D92D20', '#101A3D'] as const;
+
+/** Couleur d'une intervention sans technicien (gris du bac). */
+export const COULEUR_SANS_TECHNICIEN = '#8A93AE';
+
+/** Couleur du technicien de rang `n` (0 = le premier) ; gris s'il n'a pas de rang. */
+export function couleurTechnicien(n: number | null | undefined): string {
+  return n == null || n < 0 ? COULEUR_SANS_TECHNICIEN : COULEURS_TECHNICIENS[n % COULEURS_TECHNICIENS.length];
+}

@@ -1,131 +1,131 @@
 'use client';
 
-import { useState } from 'react';
-import { LIBELLE_TYPE_CLIENT, type TonSuivi, type TypeClient } from '@chantio/shared';
-import { Puce, Vide } from '@/components/ui';
-import { LigneCliquable } from '@/components/volet';
+import Link from 'next/link';
+import { useSyncExternalStore } from 'react';
+import {
+  FILTRES_TYPE_CLIENT,
+  LIBELLE_TYPE_CLIENT,
+  TON_TYPE_CLIENT,
+  contientMots,
+  texteImmeubles,
+  trouveDans,
+  type ImmeubleRecherche,
+  type TonSuivi,
+  type TypeClient,
+} from '@chantio/shared';
+import { ChampRecherche, PucesFiltre } from '@/components/outils-liste';
+import { Puce } from '@/components/ui';
 
-export type LigneClient = {
+export type CarteClient = {
   id: string;
   nom: string;
   type: TypeClient;
-  telephone: string | null;
-  adresse: string;
-  /** Autres adresses (immeubles) que la première. */
-  autres: number;
-  interventions: number;
-  etat: { ton: TonSuivi; etiquette: string; urgent: number; afaire: number };
-  /** Texte où chercher : nom, contact, adresses, occupants. */
-  recherche: string;
+  initiales: string;
+  /** « M. Leroy, gestionnaire · 01 45 20 11 08 · 2 immeubles » */
+  sous: string;
+  etat: { ton: TonSuivi; etiquette: string };
+  /** Syndic ou bailleur : passe en tête de liste. */
+  aDesImmeubles: boolean;
+  /** Nom, contact, adresse, SIREN, téléphone, e-mail : où chercher le client lui-même. */
+  texte: string;
+  immeubles: ImmeubleRecherche[];
 };
 
-const FILTRES = [
-  ['tous', 'Tous'],
-  ['urgent', 'Urgents'],
-  ['afaire', 'Choses à faire'],
-  ['ajour', 'À jour'],
-] as const;
-type Filtre = (typeof FILTRES)[number][0];
-
-const sansAccent = (t: string) => t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
-
-/** « Mes clients » : chaque client avec son état, filtré et cherché dans le navigateur. */
-export function ListeClients({ lignes }: { lignes: LigneClient[] }) {
-  const [filtre, setFiltre] = useState<Filtre>('tous');
-  const [recherche, setRecherche] = useState('');
-  const [type, setType] = useState<TypeClient | 'tous'>('tous');
-
-  const q = sansAccent(recherche.trim());
-  const cherchees = lignes.filter((l) => (type === 'tous' || l.type === type) && (!q || sansAccent(l.recherche).includes(q)));
-  const garde: Record<Filtre, (l: LigneClient) => boolean> = {
-    tous: () => true,
-    urgent: (l) => l.etat.urgent > 0,
-    afaire: (l) => l.etat.urgent + l.etat.afaire > 0,
-    ajour: (l) => l.etat.urgent + l.etat.afaire === 0,
+// La recherche et le type restent le temps de la visite, comme dans le bac (retour depuis une fiche, rechargement).
+const CLE_MEMOIRE = 'chantio-clients-liste';
+type Memoire = { q: string; type: string };
+const abonnes = new Set<() => void>();
+let enMemoire: string | null = null;
+function lireBrut(): string {
+  if (enMemoire === null) {
+    try {
+      enMemoire = sessionStorage.getItem(CLE_MEMOIRE) ?? '';
+    } catch {
+      enMemoire = '';
+    }
+  }
+  return enMemoire;
+}
+function lireMemoire(brut: string): Memoire {
+  try {
+    const v = JSON.parse(brut || 'null') as Memoire | null;
+    if (v && typeof v.q === 'string' && typeof v.type === 'string') return v;
+  } catch {}
+  return { q: '', type: 'tous' };
+}
+function ecrireMemoire(m: Memoire) {
+  enMemoire = JSON.stringify(m);
+  try {
+    sessionStorage.setItem(CLE_MEMOIRE, enMemoire);
+  } catch {}
+  abonnes.forEach((f) => f());
+}
+const abonner = (f: () => void) => {
+  abonnes.add(f);
+  return () => {
+    abonnes.delete(f);
   };
-  const visibles = cherchees.filter(garde[filtre]);
+};
+
+/** « Mes clients » : une carte par client, cherchée et filtrée dans le navigateur (vClients du bac). */
+export function ListeClients({ cartes }: { cartes: CarteClient[] }) {
+  const memoire = lireMemoire(useSyncExternalStore(abonner, lireBrut, () => ''));
+  const changer = (m: Partial<Memoire>) => ecrireMemoire({ ...memoire, ...m });
+  const { q, type } = memoire;
+
+  const visibles = cartes
+    .filter((c) => (type === 'tous' || c.type === type) && (!q.trim() || contientMots(`${c.texte} ${texteImmeubles(c.immeubles)}`, q)))
+    .sort((a, b) => Number(b.aDesImmeubles) - Number(a.aDesImmeubles) || a.nom.localeCompare(b.nom));
 
   return (
-    <>
-      <div className="mb-4 flex flex-wrap gap-1.5">
-        {FILTRES.map(([f, libelle]) => {
-          const actif = f === filtre;
-          return (
-            <button
-              key={f}
-              type="button"
-              aria-pressed={actif}
-              onClick={() => setFiltre(f)}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold whitespace-nowrap transition-transform active:scale-[0.96] ${
-                actif ? 'degrade border border-transparent text-white' : 'border border-trait bg-white text-encre hover:border-cobalt'
-              }`}
-            >
-              {libelle}
-              <span className={`min-w-5 rounded-full px-1.5 text-center text-xs ${actif ? 'bg-white/25' : 'bg-doux text-gris'}`}>
-                {cherchees.filter(garde[f]).length}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mb-3 flex flex-wrap items-center gap-3">
-        <input
-          type="search"
-          value={recherche}
-          onChange={(e) => setRecherche(e.target.value)}
-          placeholder="Client, immeuble, occupant…"
-          aria-label="Rechercher un client"
-          className="champ w-full py-2 sm:w-72"
+    <section className="carte flex flex-col gap-3 p-4" aria-label="Liste des clients">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <ChampRecherche
+          etiquette="Rechercher un client"
+          placeholder="Rechercher un client, un immeuble, un occupant…"
+          loupe={false}
+          valeur={q}
+          onChange={(v) => changer({ q: v })}
         />
-        <select value={type} onChange={(e) => setType(e.target.value as TypeClient | 'tous')} aria-label="Type de client" className="champ w-auto py-2">
-          <option value="tous">Tous les types</option>
-          {(Object.keys(LIBELLE_TYPE_CLIENT) as TypeClient[]).map((t) => (
-            <option key={t} value={t}>
-              {LIBELLE_TYPE_CLIENT[t]}
-            </option>
-          ))}
-        </select>
-        <p className="ml-auto text-sm font-bold text-gris">
-          {visibles.length} client{visibles.length > 1 ? 's' : ''}
-        </p>
+        <PucesFiltre etiquette="Type de client" choix={FILTRES_TYPE_CLIENT} actif={type} onChoisir={(v) => changer({ type: v })} />
       </div>
 
-      {visibles.length === 0 ? (
-        <Vide titre="Aucun client">{lignes.length ? 'Rien ne correspond à ce filtre.' : 'Ajoutez votre premier client avec le bouton « Nouveau client ».'}</Vide>
-      ) : (
-        <div className="carte overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b border-trait text-left text-xs uppercase text-gris">
-              <tr>
-                <th className="px-4 py-3">Nom</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Téléphone</th>
-                <th className="px-4 py-3">Adresse</th>
-                <th className="px-4 py-3 text-right">Interventions</th>
-                <th className="px-4 py-3">Où on en est</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-trait">
-              {visibles.map((c) => (
-                <LigneCliquable key={c.id} href={`/clients?fiche=${c.id}`}>
-                  <td className="px-4 py-3 font-semibold">{c.nom}</td>
-                  <td className="px-4 py-3">{LIBELLE_TYPE_CLIENT[c.type]}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{c.telephone ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    {c.adresse || '—'}
-                    {c.autres > 0 && <span className="text-gris"> (+{c.autres})</span>}
-                  </td>
-                  <td className="px-4 py-3 text-right">{c.interventions}</td>
-                  <td className="px-4 py-3">
-                    <Puce ton={c.etat.ton}>{c.etat.etiquette}</Puce>
-                  </td>
-                </LigneCliquable>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </>
+      <div className="flex flex-col gap-2">
+        {visibles.length ? (
+          visibles.map((c) => {
+            const trouve = trouveDans(c.texte, c.immeubles, q);
+            return (
+              <Link
+                key={c.id}
+                href={`/clients/${c.id}`}
+                className="grid min-h-14 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[12px] border border-trait bg-white px-3.5 py-3 text-left transition hover:border-lavande hover:bg-[#F9FAFF] max-[700px]:grid-cols-[auto_minmax(0,1fr)] max-[700px]:text-[15px]"
+              >
+                <span aria-hidden="true" className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[10px] bg-doux text-[13px] font-extrabold text-cobalt">
+                  {c.initiales}
+                </span>
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <b className="text-[15px] font-extrabold [overflow-wrap:anywhere]">{c.nom}</b>
+                    <Puce ton={TON_TYPE_CLIENT[c.type]}>{LIBELLE_TYPE_CLIENT[c.type]}</Puce>
+                  </span>
+                  {c.sous && <span className="text-[13px] text-gris [overflow-wrap:anywhere] max-[700px]:text-[15px]">{c.sous}</span>}
+                  {trouve && <span className="text-[13px] font-bold text-violet [overflow-wrap:anywhere] max-[700px]:text-[15px]">{trouve}</span>}
+                </span>
+                <span className="flex flex-col items-end gap-1 max-[700px]:col-start-2 max-[700px]:flex-row max-[700px]:flex-wrap max-[700px]:items-center max-[700px]:justify-between">
+                  <Puce ton={c.etat.ton}>{c.etat.etiquette}</Puce>
+                  <span className="text-[13px] font-bold whitespace-nowrap text-cobalt">
+                    Voir la fiche <span aria-hidden="true">›</span>
+                  </span>
+                </span>
+              </Link>
+            );
+          })
+        ) : (
+          <p className="px-4 py-8 text-center text-gris">
+            {cartes.length ? 'Aucun client ne correspond.' : 'Aucun client pour l’instant. Créez le premier avec « Nouveau client ».'}
+          </p>
+        )}
+      </div>
+    </section>
   );
 }

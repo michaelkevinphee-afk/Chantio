@@ -1,7 +1,13 @@
-import '../devis/devis.css';
 import './achats.css';
+import { PanneauImports } from './imports';
 
-// Le module « Achats » reprend l'apparence du module « Devis et factures ».
+// Achats : « Dépenses fournisseurs », fiche d'une facture fournisseur, fournisseurs.
+// Le panneau d'importation reste affiché d'un écran à l'autre (masqué sur la fiche plein écran).
 export default function LayoutAchats({ children }: LayoutProps<'/achats'>) {
-  return children;
+  return (
+    <>
+      {children}
+      <PanneauImports />
+    </>
+  );
 }

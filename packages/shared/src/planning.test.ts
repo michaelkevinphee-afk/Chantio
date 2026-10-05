@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { demiJournees, deplacer, heuresDuJour, heuresSur, indexDemi, jourSemaine, occupe, periode, texteReserve } from './planning.ts';
+import { aPlacer, demiJournees, deplacer, heuresDuJour, heuresSur, indexDemi, jourSemaine, numeroSemaine, occupe, periode, texteReserve } from './planning.ts';
 import { prevuRealise, reglagesPrix } from './rentabilite.ts';
 
 // Semaine du lundi 5 au dimanche 11 octobre 2026.
@@ -9,6 +9,27 @@ const chantier = { date_prevue: '2026-10-08', heure_prevue: '08:00:00', date_fin
 test('jour de la semaine, lundi = 0', () => {
   assert.equal(jourSemaine('2026-10-05'), 0);
   assert.equal(jourSemaine('2026-10-11'), 6);
+});
+
+test('numéro de semaine ISO 8601', () => {
+  assert.equal(numeroSemaine('2026-09-28'), 40);
+  assert.equal(numeroSemaine('2026-10-04'), 40);
+  assert.equal(numeroSemaine('2026-10-05'), 41);
+  assert.equal(numeroSemaine('2026-01-01'), 1);
+  assert.equal(numeroSemaine('2026-12-31'), 53);
+  assert.equal(numeroSemaine('2027-01-01'), 53);
+  assert.equal(numeroSemaine('2027-01-04'), 1);
+  assert.equal(numeroSemaine('2024-12-30'), 1);
+  assert.equal(numeroSemaine('2021-01-03'), 53);
+});
+
+test('à placer au planning : à planifier (même datée), ou sans date ni validée ni facturée', () => {
+  assert.equal(aPlacer({ statut: 'a_planifier', date_prevue: '2026-09-28' }), true);
+  assert.equal(aPlacer({ statut: 'a_planifier', date_prevue: null }), true);
+  assert.equal(aPlacer({ statut: 'planifiee', date_prevue: '2026-09-28' }), false);
+  assert.equal(aPlacer({ statut: 'terminee', date_prevue: null }), true);
+  assert.equal(aPlacer({ statut: 'validee', date_prevue: null }), false);
+  assert.equal(aPlacer({ statut: 'facturee', date_prevue: null }), false);
 });
 
 test('un chantier saute le week-end, sauf ses premier et dernier jours', () => {

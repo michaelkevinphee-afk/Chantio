@@ -1,27 +1,34 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useRef, useState, useTransition, type DragEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import {
   achatEchu,
-  ajouterJours,
-  ecartJours,
-  euro,
-  GROUPES_ACHAT,
+  compterSegments,
+  dansSegment,
+  dateMois,
+  ECHEANCES_ACHAT,
+  euroAchat,
+  filtrerAchats,
   LIBELLE_RECEPTION,
   LIBELLE_STATUT_ACHAT,
-  resteAPayer,
+  MONTANTS_ACHAT,
+  PERIODES_ACHAT,
   TON_STATUT_ACHAT,
+  ttcSigne,
   type ReceptionAchat,
   type StatutAchat,
 } from '@chantio/shared';
-import { Icone } from '@/components/icones';
-import { annoncer } from '@/components/retour';
-import { supabaseNavigateur } from '@/lib/supabase/client';
-import { Blocs, Compte, Ecran, Picto } from '../devis/composants';
-import { Etincelle } from '../devis/tableau';
-import { declarerPaiement, enregistrerAchats, lireFacture } from './actions';
+import { CompteursOnglets } from '@/components/compteurs-onglets';
+import { ChampRecherche, MenuFiltre } from '@/components/outils-liste';
+import { LienLigne, TableauTrie, type Colonne } from '@/components/tableau-trie';
+import { classeBouton, Puce, Titre } from '@/components/ui';
+import { BasculeAchats } from './bascule';
+import { FenetreCollecte } from './collecte';
+import { FORMATS_ACHAT } from './fichiers';
+import { IconeAchat } from './icones';
+import { importerFactures, useLecturesEnCours } from './imports';
+import { memoireAchats, type EtatListeAchats } from './memoire';
 
 export type LigneAchatListe = {
   id: string;
@@ -32,564 +39,304 @@ export type LigneAchatListe = {
   statut: StatutAchat;
   reception: ReceptionAchat;
   avoir: boolean;
-  lecture: 'ia' | 'pas_facture' | 'manuel' | null;
-  fichier_nom: string | null;
-  planifie_le: string | null;
-  moyen_prevu: string | null;
-  approuvee_le: string | null;
+  responsable_id: string | null;
   cree_le: string;
-  fournisseur: { id: string; nom: string; categorie: string } | null;
+  fournisseur: { id: string; nom: string; siret: string | null } | null;
   responsable: string | null;
-  /** Numéro de l'intervention liée (« CH-2026-0012 »). */
-  chantier: string | null;
-  paiements: { montant: number; date_paiement: string }[];
   paye: number;
 };
 
-type EnCours = { cle: string; nom: string; type: string; etat: 'envoi' | 'lecture' | 'fait' | 'erreur'; p: number; detail: string; id?: string };
-type Tuile = {
-  cle: string;
-  libelle: string;
-  teinte: string;
-  valeur: number;
-  montant: number;
-  unite: string;
-  delta: string;
-  sens: 'haut' | 'bas' | 'neutre';
-  serie: number[];
-  onglet: string;
-  filtre?: Filtre;
-  alerte?: boolean;
-};
+// Les quatre menus et la recherche tiennent sur une ligne à 1500 px, comme dans le bac (flèche un peu plus près du texte).
+const MENU = '!pr-8';
 
-export const FORMATS_ACHAT = '.pdf,.jpg,.jpeg,.png,.webp,.heic';
-const TAILLE_MAX = 20 * 1024 * 1024;
-const FILTRES = ['Toutes', 'En retard', 'Sous 7 jours', 'Avoirs'] as const;
-type Filtre = (typeof FILTRES)[number];
-const COULEURS_AVATAR = ['#2F54EB', '#5925DC', '#0E9F6E', '#7C93F5', '#2442C4', '#C026D3'];
-const MOIS_LONG = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const sansAccents = (t: string) => t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+const nomF = (a: LigneAchatListe) => a.fournisseur?.nom ?? 'Fournisseur à vérifier';
 
-const dateFr = (iso: string | null) => (iso ? iso.slice(0, 10).split('-').reverse().join('/') : '');
-const signe = (a: { avoir: boolean }) => (a.avoir ? -1 : 1);
-const pluriel = (n: number, mot: string) => `${mot}${n > 1 ? 's' : ''}`;
-const initiales = (n: string) =>
-  n
-    .split(/[\s-]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((x) => x[0])
-    .join('')
-    .toUpperCase() || '?';
-
-export function typeCourt(nom: string) {
-  const ext = nom.split('.').pop()?.toUpperCase() ?? '';
-  return ext === 'JPEG' ? 'JPG' : ext.slice(0, 4);
-}
-
-/** Extension du fichier envoyé dans le stockage (une photo de téléphone n'a pas toujours de nom parlant). */
-export function extension(f: File) {
-  const brute = f.name.includes('.') ? f.name.split('.').pop() : f.type.split('/')[1];
-  return (brute ?? 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '') || 'pdf';
-}
-
-export const fichierAccepte = (f: File) => f.size <= TAILLE_MAX && (/\.(pdf|jpe?g|png|webp|heic)$/i.test(f.name) || /^image\//.test(f.type));
-
-/** Nombre d'éléments par semaine sur les 8 dernières semaines (petite courbe des tuiles). */
-function parSemaine(dates: (string | null)[], jour: string) {
-  const serie = Array<number>(8).fill(0);
-  for (const d of dates) {
-    if (!d) continue;
-    const s = Math.floor(ecartJours(d.slice(0, 10), jour) / 7);
-    if (s >= 0 && s < 8) serie[7 - s] += 1;
-  }
-  return serie;
-}
-
-function Jalons({ statut }: { statut: StatutAchat }) {
-  const n = { recu: 0, a_payer: 1, planifie: 2, payee: 3, suspendu: -1, refusee: -1 }[statut];
-  const classes = [0, 1, 2, 3].map((i) => (n === 3 ? 'ok' : n === -1 ? (i === 1 ? 'ko' : i < 1 ? 'fait' : '') : i < n ? 'fait' : i === n ? 'actif' : ''));
+function Echeance({ a, jour, prefixe = '' }: { a: LigneAchatListe; jour: string; prefixe?: string }) {
+  if (!a.echeance) return <>—</>;
+  const tard = achatEchu(a, a.paye, jour);
   return (
-    <span className="jalons" aria-hidden="true">
-      {classes.map((c, i) => (
-        <i key={i} className={c} />
-      ))}
+    <span className={tard ? 'font-bold text-[#B42318]' : ''}>
+      {tard && <IconeAchat nom="horloge" taille={15} className="mr-1.5 inline align-[-2px]" />}
+      {prefixe}
+      {dateMois(a.echeance)}
     </span>
   );
 }
 
-function correspond(a: LigneAchatListe, filtre: Filtre, jour: string) {
-  if (filtre === 'En retard') return achatEchu(a, a.paye, jour);
-  if (filtre === 'Sous 7 jours')
-    return (a.statut === 'a_payer' || a.statut === 'planifie') && !!a.echeance && a.echeance >= jour && a.echeance <= ajouterJours(jour, 7);
-  if (filtre === 'Avoirs') return a.avoir;
-  return true;
-}
-
-function detailMontant(a: LigneAchatListe, jour: string): { texte: string; retard?: boolean } {
-  if (a.statut === 'payee') {
-    const dernier = a.paiements.map((p) => p.date_paiement).sort().pop() ?? null;
-    return { texte: dernier ? `Payée le ${dateFr(dernier)}` : 'Payée' };
-  }
-  if (a.statut === 'refusee') return { texte: 'TTC · refusée' };
-  if (a.statut === 'planifie' && a.planifie_le) return { texte: `Paiement prévu le ${dateFr(a.planifie_le)}` };
-  if (achatEchu(a, a.paye, jour)) {
-    const j = ecartJours(a.echeance as string, jour);
-    return { texte: `En retard de ${j} ${pluriel(j, 'jour')}`, retard: true };
-  }
-  return { texte: a.echeance ? `Échéance ${dateFr(a.echeance)}` : 'TTC' };
-}
-
+/** « Dépenses fournisseurs » : compteurs, recherche, quatre filtres, tableau triable, glisser-déposer. */
 export function ListeAchats({
   entrepriseId,
   achats,
+  membres,
   lecture,
   jour,
-  ongletInitial,
+  segInitial,
 }: {
   entrepriseId: string;
   achats: LigneAchatListe[];
+  membres: { id: string; nom: string }[];
   lecture: boolean;
   jour: string;
-  ongletInitial: string;
+  segInitial: string;
 }) {
   const router = useRouter();
-  const [onglet, setOnglet] = useState(GROUPES_ACHAT.some((g) => g.cle === ongletInitial) ? ongletInitial : 'tous');
-  const [filtre, setFiltre] = useState<Filtre>('Toutes');
-  const [recherche, setRecherche] = useState('');
-  const [tour, setTour] = useState(0);
+  // En revenant d'une facture (✕ ou Échap), la liste reprend où on l'avait laissée ; sinon, à neuf.
+  const [etat, setEtat] = useState<EtatListeAchats>(() =>
+    memoireAchats.retour && memoireAchats.etat
+      ? memoireAchats.etat
+      : { seg: segInitial, q: '', periode: 'tout', echeance: 'tout', responsable: 'tous', montant: 'tous' },
+  );
+  const [collecte, setCollecte] = useState(false);
   const [survol, setSurvol] = useState(false);
-  const [fichiers, setFichiers] = useState<EnCours[]>([]);
-  const [, demarrer] = useTransition();
-  const liste = useRef<HTMLDivElement>(null);
   const champ = useRef<HTMLInputElement>(null);
   const champPhoto = useRef<HTMLInputElement>(null);
-  const maj = (cle: string, p: Partial<EnCours>) => setFichiers((fs) => fs.map((f) => (f.cle === cle ? { ...f, ...p } : f)));
+  const lectures = useLecturesEnCours();
 
-  const groupe = GROUPES_ACHAT.find((g) => g.cle === onglet) ?? GROUPES_ACHAT[0];
-  const rangs = useMemo(() => {
-    const q = recherche.trim().toLowerCase();
-    return achats.filter(
-      (a) =>
-        (!groupe.statuts || groupe.statuts.includes(a.statut)) &&
-        correspond(a, filtre, jour) &&
-        (!q ||
-          [a.fournisseur?.nom, a.fournisseur?.categorie, a.numero, a.fichier_nom, a.responsable, euro(a.montant_ttc), dateFr(a.date_facture)]
-            .join(' ')
-            .toLowerCase()
-            .includes(q)),
-    );
-  }, [achats, groupe, filtre, recherche, jour]);
-  const total = rangs.reduce((s, a) => s + signe(a) * a.montant_ttc, 0);
-
-  // Tuiles du haut.
-  const recues = achats.filter((a) => a.statut === 'recu');
-  const aPayer = achats.filter((a) => a.statut === 'a_payer' || a.statut === 'planifie');
-  const planifiees = aPayer.filter((a) => a.statut === 'planifie').length;
-  const enRetard = aPayer.filter((a) => achatEchu(a, a.paye, jour));
-  const retardMax = Math.max(0, ...enRetard.map((a) => ecartJours(a.echeance as string, jour)));
-  const lues = recues.filter((a) => a.lecture === 'ia').length;
-  const paiementsMois = achats.flatMap((a) => a.paiements.filter((p) => p.date_paiement.startsWith(jour.slice(0, 7))).map((p) => signe(a) * p.montant));
-  const reste = (l: LigneAchatListe[]) => l.reduce((s, a) => s + signe(a) * resteAPayer(a, a.paye), 0);
-  const tuiles: Tuile[] = [
-    {
-      cle: 'recu',
-      libelle: 'Reçues à vérifier',
-      teinte: 'var(--cobalt)',
-      valeur: recues.length,
-      montant: recues.reduce((s, a) => s + signe(a) * a.montant_ttc, 0),
-      unite: pluriel(recues.length, 'facture'),
-      delta: !recues.length ? 'Rien à vérifier' : lues ? `${lues} ${pluriel(lues, 'lue')} automatiquement` : 'À compléter',
-      sens: 'neutre',
-      serie: parSemaine(
-        achats.map((a) => a.cree_le),
-        jour,
-      ),
-      onglet: 'recu',
-    },
-    {
-      cle: 'a_payer',
-      libelle: 'À payer',
-      teinte: 'var(--violet)',
-      valeur: aPayer.length,
-      montant: reste(aPayer),
-      unite: pluriel(aPayer.length, 'facture'),
-      delta: planifiees ? `${planifiees} ${pluriel(planifiees, 'paiement')} ${pluriel(planifiees, 'planifié')}` : 'Aucun paiement planifié',
-      sens: 'neutre',
-      serie: parSemaine(
-        achats.map((a) => a.approuvee_le),
-        jour,
-      ),
-      onglet: 'a_payer',
-    },
-    {
-      cle: 'retard',
-      libelle: 'En retard',
-      teinte: 'var(--rouge)',
-      valeur: enRetard.length,
-      montant: reste(enRetard),
-      unite: pluriel(enRetard.length, 'facture'),
-      delta: enRetard.length ? `${retardMax} ${pluriel(retardMax, 'jour')} de retard` : 'Aucun retard',
-      sens: enRetard.length ? 'bas' : 'haut',
-      serie: parSemaine(
-        enRetard.map((a) => a.echeance),
-        jour,
-      ),
-      onglet: 'a_payer',
-      filtre: 'En retard',
-      alerte: enRetard.length > 0,
-    },
-    {
-      cle: 'paye',
-      libelle: 'Payé ce mois-ci',
-      teinte: 'var(--vert)',
-      valeur: paiementsMois.length,
-      montant: paiementsMois.reduce((s, m) => s + m, 0),
-      unite: pluriel(paiementsMois.length, 'paiement'),
-      delta: `en ${MOIS_LONG[Number(jour.slice(5, 7)) - 1]}`,
-      sens: 'neutre',
-      serie: parSemaine(
-        achats.flatMap((a) => a.paiements.map((p) => p.date_paiement)),
-        jour,
-      ),
-      onglet: 'termine',
-    },
-  ];
-
-  const choisirOnglet = (o: string, f: Filtre = 'Toutes') => {
-    setOnglet(o);
-    setFiltre(f);
-    setTour((t) => t + 1);
+  const changer = (p: Partial<EtatListeAchats>) => {
+    const e = { ...etat, ...p };
+    setEtat(e);
+    if (p.seg && typeof window !== 'undefined') {
+      const u = new URL(window.location.href);
+      u.searchParams.delete('onglet');
+      u.searchParams.set('filtre', p.seg);
+      window.history.replaceState(null, '', `${u.pathname}?${u.searchParams}`);
+    }
   };
 
-  const deposer = async (liste: FileList | File[] | null, photo = false) => {
-    const tous = Array.from(liste ?? []);
-    if (!tous.length) return;
-    const valides = tous.filter(fichierAccepte);
-    if (valides.length < tous.length) annoncer('Certains fichiers sont ignorés : PDF ou photo, 20 Mo au plus', 'erreur');
-    if (!valides.length) return;
-    const nouveaux: EnCours[] = valides.map((f) => ({ cle: crypto.randomUUID(), nom: f.name, type: typeCourt(f.name), etat: 'envoi', p: 10, detail: 'Envoi…' }));
-    setFichiers((fs) => [...nouveaux, ...fs]);
-    const supabase = supabaseNavigateur();
+  // Mémoire de la liste ; au retour d'une facture, le focus revient sur son nom (comme le bac).
+  useEffect(() => {
+    memoireAchats.etat = etat;
+  }, [etat]);
+  useEffect(() => {
+    if (!memoireAchats.retour) return;
+    memoireAchats.retour = false;
+    const u = new URL(window.location.href);
+    if (u.searchParams.get('filtre') !== memoireAchats.etat?.seg && memoireAchats.etat) {
+      u.searchParams.set('filtre', memoireAchats.etat.seg);
+      window.history.replaceState(null, '', `${u.pathname}?${u.searchParams}`);
+    }
+    const id = memoireAchats.id;
+    if (id) [...document.querySelectorAll<HTMLElement>(`[data-achat="${id}"] a`)].find((x) => x.offsetParent !== null)?.focus();
+  }, []);
 
-    const envoyes: { nom: string; chemin: string; taille: number; type: string; cle: string }[] = [];
-    await Promise.all(
-      valides.map(async (f, n) => {
-        const cle = nouveaux[n].cle;
-        const chemin = `${entrepriseId}/achats/${cle}.${extension(f)}`;
-        const { error } = await supabase.storage.from('documents').upload(chemin, f, { contentType: f.type || undefined });
-        if (error) {
-          maj(cle, { etat: 'erreur', p: 100, detail: 'Envoi impossible, réessayez' });
-          return;
-        }
-        maj(cle, { p: 40, detail: 'Reçue' });
-        envoyes.push({ nom: f.name, chemin, taille: f.size, type: f.type, cle });
-      }),
-    );
-    if (!envoyes.length) return;
-    const r = await enregistrerAchats(
-      envoyes.map((e) => ({ nom: e.nom, chemin: e.chemin, taille: e.taille, type: e.type })),
-      photo,
-    );
-    if (!r.ok) {
-      envoyes.forEach((e) => maj(e.cle, { etat: 'erreur', p: 100, detail: r.erreur }));
-      return;
-    }
-    router.refresh();
-    // Lecture une par une (la plus longue étape).
-    for (const [n, id] of r.ids.entries()) {
-      const cle = envoyes[n].cle;
-      if (!lecture) {
-        maj(cle, { etat: 'fait', p: 100, detail: 'À compléter à côté de la facture', id });
-        continue;
-      }
-      maj(cle, { etat: 'lecture', p: 64, detail: 'Lecture de la facture…', id });
-      const lu = await lireFacture(id);
-      maj(cle, lu.ok ? { etat: 'fait', p: 100, detail: lu.resume } : { etat: 'erreur', p: 100, detail: lu.erreur });
-    }
-    router.refresh();
+  const base = useMemo(() => filtrerAchats(achats, etat, jour), [achats, etat, jour]);
+  const compteurs = compterSegments(base);
+  const lignes = base.filter((a) => dansSegment(a, etat.seg));
+
+  const importer = async (fichiers: FileList | File[] | null, photo = false) => {
+    const ok = await importerFactures({ fichiers, photo, entrepriseId, lecture, rafraichir: () => router.refresh() });
+    // Après un import, la liste passe sur « Reçu », sans recherche (comme le bac).
+    if (ok) changer({ seg: 'recu', q: '' });
   };
 
   const glisser = {
-    onDragOver: (e: DragEvent) => {
+    onDragEnter: (e: DragEvent) => {
+      if (!Array.from(e.dataTransfer?.types ?? []).includes('Files')) return;
       e.preventDefault();
       setSurvol(true);
     },
-    onDragLeave: () => setSurvol(false),
+    onDragOver: (e: DragEvent) => {
+      if (!Array.from(e.dataTransfer?.types ?? []).includes('Files')) return;
+      e.preventDefault();
+      setSurvol(true);
+    },
+    onDragLeave: (e: DragEvent) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSurvol(false);
+    },
     onDrop: (e: DragEvent) => {
       e.preventDefault();
       setSurvol(false);
-      deposer(e.dataTransfer.files);
+      importer(e.dataTransfer.files);
     },
   };
 
-  const payer = (a: LigneAchatListe) =>
-    demarrer(async () => {
-      const r = await declarerPaiement(a.id, a.moyen_prevu ?? 'Virement', String(resteAPayer(a, a.paye)), jour);
-      if (!r.ok) return annoncer(r.erreur, 'erreur');
-      annoncer(a.avoir ? 'Remboursement enregistré' : 'Paiement enregistré');
-      router.refresh();
-    });
+  const lien = (a: LigneAchatListe) => `/achats/${a.id}`;
 
-  const occupe = fichiers.some((f) => f.etat === 'envoi' || f.etat === 'lecture');
-  const compte = (statuts: StatutAchat[] | null) => (statuts ? achats.filter((a) => statuts.includes(a.statut)).length : achats.length);
+  const colonnes: Colonne<LigneAchatListe>[] = [
+    {
+      cle: 'st',
+      titre: 'Statut',
+      rendu: (a) => (
+        <>
+          <Puce ton={TON_STATUT_ACHAT[a.statut]}>{LIBELLE_STATUT_ACHAT[a.statut]}</Puce>
+          {lectures.has(a.id) && <small className="mt-1 block text-[12.5px] text-gris">lecture en cours…</small>}
+        </>
+      ),
+    },
+    {
+      cle: 'four',
+      titre: 'Fournisseur',
+      tri: (a) => sansAccents(nomF(a)),
+      sensInitial: 'asc',
+      rendu: (a) => (
+        <span data-achat={a.id}>
+          <LienLigne href={lien(a)}>{nomF(a)}</LienLigne>
+          <small className="mt-0.5 block max-w-[230px] truncate text-[12.5px] font-medium text-gris max-[1360px]:max-w-[170px]">
+            {a.avoir && <b className="font-bold text-violet">Avoir</b>}
+            {a.avoir && ' · '}
+            {a.numero ?? 'n° à compléter'}
+          </small>
+        </span>
+      ),
+    },
+    { cle: 'date', titre: 'Date de facturation', tri: (a) => a.date_facture, rendu: (a) => dateMois(a.date_facture) || '—', className: 'whitespace-nowrap' },
+    { cle: 'ech', titre: 'Date d’échéance', tri: (a) => a.echeance ?? '', rendu: (a) => <Echeance a={a} jour={jour} />, className: 'whitespace-nowrap' },
+    { cle: 'resp', titre: 'Responsable', rendu: (a) => <span className="text-gris">{a.responsable ?? '—'}</span>, className: 'max-[1360px]:hidden' },
+    { cle: 'rec', titre: 'Type de réception', rendu: (a) => <span className="text-[13px] whitespace-nowrap text-gris">{LIBELLE_RECEPTION[a.reception] ?? '—'}</span> },
+    {
+      cle: 'ttc',
+      titre: 'Montant TTC',
+      aligne: 'droite',
+      tri: (a) => ttcSigne(a),
+      rendu: (a) => <b className="font-extrabold whitespace-nowrap">{euroAchat(a, a.montant_ttc)}</b>,
+    },
+  ];
 
-  return (
-    <Ecran label="Achats">
-      <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
-        <defs>
-          <linearGradient id="deg-aire" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="currentColor" stopOpacity=".22" />
-            <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-      </svg>
-
-      <div className="entete">
-        <div>
-          <div className="sur">
-            Factures fournisseurs
-            {recues.length > 0 && ` · ${recues.length} à vérifier`}
-          </div>
-          <h1>Achats</h1>
+  // Sur téléphone et écran moyen : une petite carte par facture (fournisseur et montant, statut, détails).
+  const carte = (a: LigneAchatListe) => {
+    const aPayer = a.statut === 'a_payer' || a.statut === 'planifie';
+    return (
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5">
+        <div className="min-w-0" data-achat={a.id}>
+          <LienLigne href={lien(a)}>{nomF(a)}</LienLigne>
+          <small className="mt-0.5 block text-[12.5px] font-medium text-gris">
+            {a.avoir && <b className="font-bold text-violet">Avoir · </b>}
+            {a.numero ?? 'n° à compléter'}
+          </small>
         </div>
-        <div className="actions">
-          <Link className="btn" href="/achats/fournisseurs">
-            <Picto nom="pro" />
-            Fournisseurs
-          </Link>
-          <button className="btn seulement-tactile" type="button" onClick={() => champPhoto.current?.click()}>
-            <Icone nom="photo" />
-            Prendre en photo
-          </button>
-          <button className="btn plein" type="button" onClick={() => champ.current?.click()}>
-            <Picto nom="importer" epaisseur={2.4} />
-            Importer des factures
-          </button>
-          <input
-            ref={champ}
-            type="file"
-            multiple
-            accept={FORMATS_ACHAT}
-            hidden
-            onChange={(e) => {
-              deposer(e.target.files);
-              e.target.value = '';
-            }}
-          />
-          <input
-            ref={champPhoto}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            hidden
-            onChange={(e) => {
-              deposer(e.target.files, true);
-              e.target.value = '';
-            }}
-          />
+        <b className="text-right font-extrabold whitespace-nowrap tabular-nums">{euroAchat(a, a.montant_ttc)}</b>
+        <div className="col-span-2">
+          <Puce ton={TON_STATUT_ACHAT[a.statut]}>{LIBELLE_STATUT_ACHAT[a.statut]}</Puce>
+          {lectures.has(a.id) && <small className="ml-2 text-[12.5px] text-gris">lecture en cours…</small>}
+        </div>
+        <div className="col-span-2 text-[12.5px] text-gris">
+          {[
+            a.numero && (
+              <span key="n" className="font-mono text-xs">
+                {a.numero}
+              </span>
+            ),
+            a.date_facture && <span key="d">du {dateMois(a.date_facture)}</span>,
+            a.echeance && aPayer && <Echeance key="e" a={a} jour={jour} prefixe="échéance " />,
+            LIBELLE_RECEPTION[a.reception] && <span key="r">{LIBELLE_RECEPTION[a.reception]}</span>,
+          ]
+            .filter(Boolean)
+            .flatMap((x, i) => (i ? [' · ', x] : [x]))}
         </div>
       </div>
+    );
+  };
 
-      {fichiers.length > 0 && (
-        <div className="carte fichiers" style={{ marginTop: 0, marginBottom: 18 }}>
-          <h3>
-            Factures déposées
-            <button className="btn petit fantome" type="button" onClick={() => setFichiers([])} disabled={occupe}>
-              Masquer
+  const choixResponsable = [['tous', 'Responsable'] as const, ...membres.map((m) => [m.id, m.nom] as const)];
+
+  return (
+    <>
+      <BasculeAchats actif="factures" />
+      <Titre
+        actions={
+          <>
+            <button type="button" className={classeBouton('principal', 'px-4 py-2.5')} onClick={() => champ.current?.click()}>
+              Importer
             </button>
-          </h3>
-          {fichiers.map((f) => (
-            <div className="fichier" key={f.cle}>
-              <span className="type">{f.type}</span>
-              <div style={{ minWidth: 0 }}>
-                <div className="nom">{f.nom}</div>
-                <div className="detail">{f.detail}</div>
-                {f.etat !== 'fait' && f.etat !== 'erreur' && (
-                  <div className="barre">
-                    <i style={{ width: `${f.p}%` }} />
-                  </div>
-                )}
-              </div>
-              {f.etat === 'fait' && f.id ? (
-                <Link className="btn petit plein" href={`/achats/${f.id}`}>
-                  Vérifier
-                </Link>
-              ) : f.etat === 'erreur' ? (
-                <span className="pastille p-rouge">Erreur</span>
-              ) : (
-                <span className="pastille p-bleu">{f.etat === 'envoi' ? 'Envoi' : 'Lecture'}</span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+            <button type="button" className={classeBouton('secondaire', 'px-4 py-2.5 menu:hidden')} onClick={() => champPhoto.current?.click()}>
+              <IconeAchat nom="photo" taille={18} />
+              Scanner
+            </button>
+            <button type="button" className={classeBouton('secondaire', 'px-4 py-2.5')} onClick={() => setCollecte(true)}>
+              <IconeAchat nom="eclair" taille={18} />
+              Collecte automatique
+            </button>
+          </>
+        }
+      >
+        Dépenses fournisseurs
+      </Titre>
+      <input
+        ref={champ}
+        type="file"
+        multiple
+        accept={FORMATS_ACHAT}
+        hidden
+        onChange={(e) => {
+          importer(e.target.files);
+          e.target.value = '';
+        }}
+      />
+      <input
+        ref={champPhoto}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          importer(e.target.files, true);
+          e.target.value = '';
+        }}
+      />
 
-      {!achats.length && !fichiers.length ? (
-        <label className={`depot ${survol ? 'survol' : ''}`} {...glisser}>
-          <Blocs className="blocs" />
-          <h2>Déposez vos factures fournisseurs ici</h2>
-          <p>
-            PDF reçus par e-mail, scans ou photos de tickets.{' '}
-            {lecture
-              ? 'Chantio lit le fournisseur, le numéro, les montants et l’échéance ; vous vérifiez, approuvez, puis notez le paiement.'
-              : 'Vous complétez ensuite les champs à côté de chaque facture, puis vous l’approuvez.'}
-          </p>
-          <span className="btn plein">Choisir des fichiers</span>
-          <input
-            type="file"
-            multiple
-            accept={FORMATS_ACHAT}
-            hidden
-            onChange={(e) => {
-              deposer(e.target.files);
-              e.target.value = '';
-            }}
+      <section
+        aria-label="Factures fournisseurs"
+        className={`carte p-4 pt-[18px] transition-colors sm:p-5 ${survol ? 'bg-doux outline-2 -outline-offset-[6px] outline-cobalt outline-dashed' : ''}`}
+        {...glisser}
+      >
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <ChampRecherche
+            etiquette="Rechercher une facture fournisseur"
+            placeholder="N° de facture ou fournisseur"
+            valeur={etat.q}
+            onChange={(q) => changer({ q })}
+            // La recherche cède la place pour que les quatre menus tiennent sur sa ligne, comme dans le bac.
+            className="!basis-[220px]"
           />
-          <div className="formats">PDF, JPG, PNG, photo de téléphone · 20 Mo maximum par fichier</div>
-        </label>
-      ) : (
-        <>
-          <div className="tuiles">
-            {tuiles.map((t, i) => (
-              <button
-                key={t.cle}
-                type="button"
-                className={`carte tuile apparition ${t.alerte ? 'alerte' : ''}`}
-                style={{ ['--teinte' as string]: t.teinte, ['--i' as string]: i }}
-                onClick={() => {
-                  choisirOnglet(t.onglet, t.filtre);
-                  liste.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
-              >
-                <span className="lib">
-                  <i />
-                  {t.libelle}
-                </span>
-                <span className="val">
-                  <span>
-                    <Compte valeur={t.valeur} />
-                  </span>
-                  <small>{t.unite}</small>
-                </span>
-                <span className="mont">
-                  <Compte valeur={t.montant} monnaie />
-                </span>
-                <span className={`delta ${t.sens}`}>
-                  {t.sens === 'haut' ? '↗' : t.sens === 'bas' ? '!' : '·'} {t.delta}
-                </span>
-                <Etincelle serie={t.serie} />
-              </button>
-            ))}
-          </div>
+          <MenuFiltre etiquette="Date de facturation" choix={PERIODES_ACHAT} valeur={etat.periode} onChange={(periode) => changer({ periode })} className={MENU} />
+          <MenuFiltre etiquette="Date d’échéance" choix={ECHEANCES_ACHAT} valeur={etat.echeance} onChange={(echeance) => changer({ echeance })} className={MENU} />
+          <MenuFiltre etiquette="Responsable" choix={choixResponsable} valeur={etat.responsable} onChange={(responsable) => changer({ responsable })} className={MENU} />
+          <MenuFiltre etiquette="Montant TTC" choix={MONTANTS_ACHAT} valeur={etat.montant} onChange={(montant) => changer({ montant })} className={MENU} />
+        </div>
 
-          <div className={`carte documents ${survol ? 'survol' : ''}`} ref={liste} style={{ scrollMarginTop: 16 }} {...glisser}>
-            <div className="onglets" role="tablist">
-              {GROUPES_ACHAT.map((g) => (
-                <button key={g.cle} role="tab" type="button" aria-selected={onglet === g.cle} onClick={() => choisirOnglet(g.cle)}>
-                  {g.libelle}
-                  <span>{compte(g.statuts)}</span>
-                </button>
-              ))}
-              <label className="recherche">
-                <Picto nom="recherche" />
-                <input type="search" placeholder="Fournisseur, numéro, montant…" aria-label="Rechercher" value={recherche} onChange={(e) => setRecherche(e.target.value)} />
-              </label>
-            </div>
-            <div className="filtres">
-              {FILTRES.map((f) => (
-                <button
-                  key={f}
-                  className="btn petit"
-                  type="button"
-                  aria-pressed={f === filtre}
-                  onClick={() => {
-                    setFiltre(f);
-                    setTour((t) => t + 1);
-                  }}
-                >
-                  {f}
-                </button>
-              ))}
-              <span className="total">
-                {rangs.length} {pluriel(rangs.length, 'facture')} · <b>{euro(total)}</b>
-              </span>
-            </div>
-            <div className="rangs" key={`${onglet}-${filtre}-${tour}`}>
-              {rangs.map((a, i) => {
-                const lien = `/achats/${a.id}`;
-                const nom = a.fournisseur?.nom ?? 'Fournisseur à compléter';
-                const detail = detailMontant(a, jour);
-                const avance = a.montant_ttc ? Math.min(100, (a.paye / a.montant_ttc) * 100) : 0;
-                return (
-                  <div
-                    key={a.id}
-                    className="rang apparu"
-                    tabIndex={0}
-                    role="link"
-                    style={{ ['--i' as string]: i, ['--a' as string]: COULEURS_AVATAR[(nom.length + i) % COULEURS_AVATAR.length] }}
-                    onClick={(e) => {
-                      if ((e.target as HTMLElement).closest('.actions-rapides')) return;
-                      router.push(lien);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && e.target === e.currentTarget) router.push(lien);
-                    }}
-                  >
-                    <span className="avatar pro">{a.fournisseur ? initiales(a.fournisseur.nom) : '?'}</span>
-                    <div className="qui">
-                      <b style={a.fournisseur ? undefined : { color: 'var(--gris)' }}>{nom}</b>
-                      <span>
-                        {a.numero && <span className="ref">{a.numero}</span>}
-                        {a.numero ? ' · ' : ''}
-                        {dateFr(a.date_facture)}
-                        {a.avoir && <span className="origine">Avoir</span>}
-                        {a.statut === 'recu' && a.lecture === 'pas_facture' && <span className="origine">Pas une facture ?</span>}
-                        {a.statut === 'recu' && a.lecture === 'manuel' && <span className="origine">À compléter</span>}
-                      </span>
-                    </div>
-                    <div className="quoi">
-                      {a.fournisseur?.categorie ?? a.fichier_nom ?? 'Facture'}
-                      <span>
-                        {[a.responsable, a.chantier ? `Chantier ${a.chantier}` : null, LIBELLE_RECEPTION[a.reception]]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </span>
-                      {(a.statut === 'a_payer' || a.statut === 'planifie') && (
-                        <div className="actions-rapides">
-                          <button type="button" onClick={() => payer(a)}>
-                            {a.avoir ? 'Remboursé' : 'Payée'} ({euro(resteAPayer(a, a.paye))})
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <div className="combien">
-                      <b>{euro(signe(a) * a.montant_ttc)}</b>
-                      <span className={detail.retard ? 'retard' : ''}>{detail.texte}</span>
-                      {(a.statut === 'a_payer' || a.statut === 'planifie' || a.statut === 'payee') && (
-                        <div className="encaisse-barre">
-                          <i style={{ ['--w' as string]: a.statut === 'payee' ? 100 : avance }} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="etat">
-                      <span className={`pastille p-${TON_STATUT_ACHAT[a.statut]}`}>{LIBELLE_STATUT_ACHAT[a.statut]}</span>
-                      <Jalons statut={a.statut} />
-                    </div>
-                    <span className="fleche">
-                      <Picto nom="fleche" taille={16} epaisseur={2.4} />
-                    </span>
-                  </div>
-                );
-              })}
-              {!rangs.length && (
-                <div className="vide-liste">
-                  {achats.length ? 'Aucune facture ne correspond.' : 'Les factures déposées apparaîtront ici.'}
-                </div>
-              )}
-            </div>
+        <CompteursOnglets
+          actif={etat.seg}
+          onChoisir={(seg) => changer({ seg })}
+          compteurs={compteurs.map((c) => ({
+            cle: c.cle,
+            libelle: c.libelle,
+            nombre: c.nombre,
+            ton: c.ton,
+            // Comme le bac : « 0,00 € TTC » quand le compteur est vide (pas de « — »).
+            ...(c.sous ? { texte: c.sous } : { montant: c.total, unite: 'TTC', montantAZero: true }),
+          }))}
+        />
+
+        {achats.length ? (
+          <TableauTrie
+            lignes={lignes}
+            colonnes={colonnes}
+            cle={(a) => a.id}
+            triInitial={memoireAchats.tri ?? { cle: 'date', sens: 'desc' }}
+            onTri={(t) => {
+              memoireAchats.tri = t;
+            }}
+            departage={(a, b) => b.cree_le.localeCompare(a.cree_le)}
+            lien={lien}
+            carte={carte}
+            cartesSous={1180}
+            parPage={false}
+            etiquette="Factures fournisseurs"
+            vide={etat.q.trim() ? `Aucune facture fournisseur pour « ${etat.q.trim()} ».` : 'Aucune facture fournisseur dans cette sélection.'}
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-2 px-4 py-[70px] text-center text-gris">
+            <IconeAchat nom="eclair" taille={44} className="text-cobalt" />
+            <b className="text-[22px] text-encre">Aucune facture fournisseur à afficher</b>
+            <span>Importez vos premières factures pour les afficher.</span>
           </div>
-        </>
-      )}
-    </Ecran>
+        )}
+
+        <p className="mt-3 text-center text-[13px] text-gris">Glissez ici vos factures (PDF ou photos) pour les importer.</p>
+      </section>
+
+      {collecte && <FenetreCollecte fermer={() => setCollecte(false)} />}
+    </>
   );
 }

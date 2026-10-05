@@ -1,0 +1,371 @@
+/* Planning, comme le bac à sable (.plan, .zone, .bloc, .gantt, .legende de base.css et 21-ajouts.css),
+   avec les couleurs de la charte : trait #d9e0f7, fond #f4f6ff, doux #e9eeff, gris #5b6480, cobalt #2f54eb. */
+
+/* ---------- Semaine : une ligne par technicien, deux colonnes (matin, après-midi) par jour ---------- */
+.pl-plan {
+  display: grid;
+  border: 1px solid #d9e0f7;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+.pl-coin {
+  background: #f4f6ff;
+  border-right: 1px solid #d9e0f7;
+  border-bottom: 1px solid #d9e0f7;
+  padding: 6px 8px;
+}
+.pl-etiq {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #5b6480;
+}
+.pl-jour {
+  grid-column: span 2;
+  padding: 8px 4px;
+  border-right: 1px solid #c4cef0;
+  border-bottom: 1px solid #d9e0f7;
+  background: #f4f6ff;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.pl-jour small {
+  display: block;
+  color: #5b6480;
+  font-size: 11px;
+  font-weight: 600;
+}
+.pl-jour.we {
+  background: #e9eeff;
+}
+.pl-jour.auj {
+  background: #e9eeff;
+  color: #2f54eb;
+}
+.pl-ampm {
+  padding: 2px;
+  border-right: 1px solid #d9e0f7;
+  border-bottom: 1px solid #d9e0f7;
+  background: #f4f6ff;
+  color: #8a93ae;
+  text-align: center;
+  font-size: 10.5px;
+}
+.pl-ampm.pm {
+  border-right-color: #c4cef0;
+}
+.pl-tech {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px;
+  border-right: 1px solid #d9e0f7;
+  border-bottom: 1px solid #d9e0f7;
+  background: #fff;
+}
+.pl-charge {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #e9eeff;
+}
+.pl-charge i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: #2f54eb;
+}
+.pl-charge.plein i {
+  background: #d92d20;
+}
+
+/* La piste d'un technicien : lignes des jours en fond, blocs posés sur leurs demi-journées. */
+.pl-zone {
+  position: relative;
+  grid-column: 2 / -1;
+  display: grid;
+  grid-auto-rows: minmax(30px, auto);
+  grid-auto-flow: row dense;
+  gap: 3px;
+  min-height: 48px;
+  padding: 4px 0;
+  border-bottom: 1px solid #d9e0f7;
+  background-image: linear-gradient(90deg, transparent calc(100% - 1px), #c4cef0 calc(100% - 1px));
+  background-repeat: repeat-x;
+  cursor: cell;
+}
+.pl-auj {
+  position: absolute;
+  inset-block: 0;
+  width: 100%;
+  background: rgb(47 84 235 / 0.07);
+  pointer-events: none;
+}
+.pl-ombre {
+  position: absolute;
+  inset-block: 3px;
+  width: 100%;
+  border: 2px dashed #2f54eb;
+  border-radius: 8px;
+  background: rgb(47 84 235 / 0.1);
+  pointer-events: none;
+}
+.pl-reserve {
+  position: relative;
+  margin: 0 3px;
+  padding: 4px 8px;
+  overflow: hidden;
+  border: 1px dashed rgb(217 45 32 / 0.5);
+  border-radius: 8px;
+  background: repeating-linear-gradient(135deg, rgb(254 228 226 / 0.7) 0 6px, #fff 6px 12px);
+  color: #d92d20;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Un bloc : le motif sur deux lignes, puis l'heure et le numéro (et le lieu s'il a la place). */
+.pl-bloc {
+  position: relative;
+  z-index: 1;
+  display: block;
+  min-width: 0;
+  min-height: 36px;
+  margin: 0 3px;
+  padding: 4px 16px 4px 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  cursor: grab;
+  transition: box-shadow 0.15s, opacity 0.15s;
+}
+.pl-bloc:hover {
+  box-shadow: 0 6px 14px -8px rgb(16 26 61 / 0.45);
+}
+.pl-bloc:active {
+  cursor: grabbing;
+}
+.pl-motif {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.pl-bloc small {
+  display: block;
+  overflow: hidden;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pl-bloc.chantier {
+  background-image: var(--degrade);
+  color: #fff;
+}
+.pl-bloc.depannage {
+  border-left: 3px solid #d92d20;
+  background: #fee4e2;
+  color: #912018;
+}
+.pl-bloc.entretien {
+  border-left: 3px solid #12b76a;
+  background: #dcfae6;
+  color: #067647;
+}
+.pl-urg {
+  margin-right: 5px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: #d92d20;
+  color: #fff;
+  font-style: normal;
+  font-weight: 800;
+}
+.pl-bloc.chantier .pl-urg {
+  background: #fff;
+  color: #d92d20;
+}
+.pl-pt {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.pl-bloc.st-terminee .pl-pt {
+  background: #5925dc;
+  box-shadow: 0 0 0 2px #fff;
+}
+.pl-bloc.st-a_reprendre .pl-pt {
+  background: #d92d20;
+  box-shadow: 0 0 0 2px #fff;
+}
+.pl-bloc.st-en_cours .pl-pt {
+  background: #12b76a;
+  box-shadow: 0 0 0 2px #fff;
+}
+.pl-bloc.st-validee,
+.pl-bloc.st-facturee {
+  opacity: 0.6;
+}
+.pl-bloc.st-a_planifier {
+  outline: 2px dashed #b9c6fb;
+  outline-offset: -2px;
+}
+.pl-bloc.glisse,
+.pl-carte.glisse {
+  opacity: 0.4;
+}
+
+/* ---------- Légende, sous la grille ---------- */
+.pl-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: #5b6480;
+  font-size: 12.5px;
+}
+.pl-legende > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pl-legende i {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* ---------- À placer au planning : cartes en grille ---------- */
+.pl-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr));
+  gap: 8px;
+}
+.pl-carte {
+  display: block;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #d9e0f7;
+  border-left: 4px solid #2f54eb;
+  border-radius: 10px;
+  background: #fff;
+  cursor: grab;
+  transition: border-color 0.15s, opacity 0.15s;
+}
+.pl-carte:hover {
+  border-color: #b9c6fb;
+}
+.pl-carte.depannage {
+  border-left-color: #d92d20;
+}
+.pl-carte.entretien {
+  border-left-color: #12b76a;
+}
+.pl-carte.chantier {
+  border-left-color: #2f54eb;
+}
+
+/* ---------- Mois : une ligne par chantier ---------- */
+.pl-gantt {
+  display: grid;
+  min-width: 940px;
+  overflow: hidden;
+  border: 1px solid #d9e0f7;
+  border-radius: 12px;
+  background: #fff;
+}
+.pl-gantt .h {
+  padding: 6px 0;
+  border-bottom: 1px solid #d9e0f7;
+  background: #f4f6ff;
+  color: #5b6480;
+  text-align: center;
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+.pl-gantt .h.we {
+  background: #e9eeff;
+}
+.pl-gantt .h.auj {
+  box-shadow: inset 0 -2px 0 #2f54eb;
+  color: #2f54eb;
+  font-weight: 800;
+}
+.pl-gantt .nom {
+  min-width: 0;
+  padding: 8px 10px;
+  border-right: 1px solid #d9e0f7;
+  border-bottom: 1px solid #d9e0f7;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.pl-gantt .piste {
+  grid-column: 2 / -1;
+  display: grid;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #d9e0f7;
+}
+.pl-barre {
+  display: block;
+  min-width: 0;
+  margin: 0 2px;
+  padding: 4px 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background-image: var(--degrade);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: box-shadow 0.15s;
+}
+.pl-barre:hover {
+  box-shadow: 0 6px 14px -8px rgb(16 26 61 / 0.45);
+}
+.pl-barre.fini {
+  background: #e9eeff;
+  color: #2f54eb;
+}
+.pl-barre.option {
+  border: 1px dashed #5925dc;
+  background: #ece9fe;
+  color: #5925dc;
+}
+.pl-nbc {
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: 2px auto 0;
+  border-radius: 50%;
+  background: #fee4e2;
+  color: #b42318;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 16px;
+}
+.pl-legende .pl-nbc {
+  display: inline-block;
+  margin: 0;
+}

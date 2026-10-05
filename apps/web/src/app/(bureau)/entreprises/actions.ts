@@ -3,16 +3,37 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Formule, RoleMembre } from '@chantio/shared';
+import type { Formule, ReglagesFacturation, RoleMembre } from '@chantio/shared';
 import { ficheSiren, figureParmiDirigeants } from '@/lib/registre';
 import { numeroValide } from '@/lib/siret';
 import { supabaseServeur } from '@/lib/supabase/server';
 import { serviceActif, supabaseService } from '@/lib/supabase/service';
+import { ORDRE_CHAMPS, TAILLES, TRANCHES_CA } from './nouvelle/listes';
 
 const texte = (d: FormData, cle: string) => String(d.get(cle) ?? '').trim();
 const chiffres = (d: FormData, cle: string) => texte(d, cle).replace(/\s/g, '');
 
-export type EtatAjout = { erreur?: string; dejaInscrite?: { siren: string; nom: string } } | undefined;
+export type EtatAjout = { erreur?: string; champs?: Record<string, string>; dejaInscrite?: { siren: string; nom: string } } | undefined;
+
+/** Contrôles de la fiche « Créer une entreprise », mêmes messages que creerEntreprise() du bac (un par champ). */
+function controlerFiche(d: FormData): Record<string, string> {
+  const e: Record<string, string> = {};
+  if (!texte(d, 'nom')) e.nom = 'Indiquez la raison sociale.';
+  if (!texte(d, 'adresse')) e.adresse = 'Indiquez l’adresse du siège.';
+  if (!d.get('siret_attente')) {
+    const s = chiffres(d, 'siret');
+    if (!s) e.siret = 'Indiquez le SIRET, ou cochez « SIRET en cours d’attribution ».';
+    else if (!/^\d{14}$/.test(s)) e.siret = 'Le SIRET compte 14 chiffres.';
+    else if (!numeroValide(s)) e.siret = 'Ce SIRET n’existe pas : vérifiez les chiffres.';
+  }
+  if (!texte(d, 'forme_juridique')) e.forme_juridique = 'Choisissez la forme juridique.';
+  const capital = texte(d, 'capital');
+  if (capital && !/^[\d\s.,]+$/.test(capital)) e.capital = 'Le capital s’écrit en chiffres.';
+  if (!(TAILLES as readonly string[]).includes(texte(d, 'taille'))) e.taille = 'Choisissez le nombre de salariés.';
+  if (!(TRANCHES_CA as readonly string[]).includes(texte(d, 'ca'))) e.ca = 'Choisissez une tranche de chiffre d’affaires.';
+  if (!d.get('atteste')) e.atteste = 'Cochez cette case pour créer l’entreprise.';
+  return e;
+}
 
 /** Le compte connecté (les pages hors bureau, comme « Bienvenue », n'ont pas encore d'entreprise). */
 async function compte() {
@@ -57,8 +78,16 @@ async function controlerRegistre(
 /** Ajoute une entreprise (page « Bienvenue » ou « Ajouter une entreprise »). */
 export async function creerEntreprise(_: EtatAjout, d: FormData): Promise<EtatAjout> {
   const supabase = await compte();
-  const siren = chiffres(d, 'siren') || chiffres(d, 'siret').slice(0, 9);
-  const siret = chiffres(d, 'siret');
+  // « complet » : la fiche de « Créer une entreprise » (champs du bac) ; sinon la fiche courte de « Bienvenue ».
+  const complet = texte(d, 'formulaire') === 'complet';
+  if (complet) {
+    const champs = controlerFiche(d);
+    const premier = ORDRE_CHAMPS.find((k) => champs[k]);
+    if (premier) return { erreur: champs[premier], champs };
+  }
+  const attente = !!d.get('siret_attente');
+  const siret = attente ? '' : chiffres(d, 'siret');
+  const siren = (attente ? '' : chiffres(d, 'siren')) || siret.slice(0, 9);
   const prenom = texte(d, 'prenom');
   const nomFamille = texte(d, 'nom_famille');
   if (!texte(d, 'nom')) return { erreur: 'Le nom de l’entreprise est obligatoire.' };
@@ -72,24 +101,54 @@ export async function creerEntreprise(_: EtatAjout, d: FormData): Promise<EtatAj
     if (fiche?.fermee) return { erreur: 'Cette entreprise est fermée au registre : elle ne peut pas être inscrite.' };
   }
 
+  // Fiche complète : l'adresse tient sur une ligne (« 3 rue Gros, 75016 Paris ») ; code postal et ville en sont tirés,
+  // comme dans « Mon entreprise ». Le nom affiché est le nom commercial, sinon la raison sociale.
+  const raison = texte(d, 'nom');
+  const adresse = texte(d, 'adresse').replace(/\s+/g, ' ');
+  const lieu = complet ? adresse.match(/^(.*?)[,\s]+(\d{5})\s+(.+)$/) : null;
+  const naf = texte(d, 'naf');
   const { data: id, error } = await supabase.rpc('creer_entreprise', {
-    p_nom: texte(d, 'nom'),
+    p_nom: complet ? texte(d, 'nom_commercial') || raison : raison,
     p_prenom: prenom || null,
     p_nom_famille: nomFamille || null,
     p_siren: siren || null,
     p_siret: siret || null,
     p_forme_juridique: texte(d, 'forme_juridique') || null,
-    p_adresse: texte(d, 'adresse') || null,
-    p_code_postal: texte(d, 'code_postal') || null,
-    p_ville: texte(d, 'ville') || null,
-    p_tva_intracom: texte(d, 'tva_intracom') || null,
-    p_activite: texte(d, 'activite') || null,
+    p_adresse: adresse || null,
+    p_code_postal: complet ? (lieu?.[2] ?? null) : texte(d, 'code_postal') || null,
+    p_ville: complet ? (lieu?.[3].trim() ?? null) : texte(d, 'ville') || null,
+    p_tva_intracom: texte(d, 'tva_intracom').replace(/\s+/g, ' ').toUpperCase() || null,
+    p_activite: complet ? (naf ? `NAF ${naf}` : null) : texte(d, 'activite') || null,
     p_representant: [prenom, nomFamille].filter(Boolean).join(' ') || 'Dirigeant',
   });
   if (error) {
-    if (error.code === '23505') return { erreur: 'Cette entreprise est déjà inscrite sur Chantio.', dejaInscrite: { siren, nom: texte(d, 'nom') } };
+    if (error.code === '23505') {
+      const message = complet ? 'Cette entreprise utilise déjà Chantio : demandez l’accès à son dirigeant.' : 'Cette entreprise est déjà inscrite sur Chantio.';
+      return { erreur: message, champs: complet ? { siret: message } : undefined, dejaInscrite: { siren, nom: raison } };
+    }
     return { erreur: `La création a échoué : ${error.message}` };
   }
+
+  // Réglages de la nouvelle entreprise, rangés comme dans « Mon entreprise » : raison sociale, forme, capital, TVA,
+  // SIRET lisible, « SIRET en cours d'attribution » (la carte affiche « en cours d'attribution », la facturation
+  // électronique attend le SIRET), et la taille et la tranche de chiffre d'affaires demandées par la fiche du bac.
+  const reglages: Record<string, unknown> = {};
+  if (attente) reglages.siret_attente = true;
+  if (complet) {
+    const forme = texte(d, 'forme_juridique');
+    const capital = texte(d, 'capital').replace(/\s*€\s*$/, '');
+    const tva = texte(d, 'tva_intracom').replace(/\s+/g, ' ').toUpperCase();
+    Object.assign(reglages, {
+      raison,
+      ...(forme && forme !== 'Autre' ? { forme } : {}),
+      ...(capital ? { capital: `${capital} €` } : {}),
+      ...(tva ? { tva_intra: tva } : {}),
+      ...(siret ? { siret: `${siret.slice(0, 3)} ${siret.slice(3, 6)} ${siret.slice(6, 9)} ${siret.slice(9)}` } : {}),
+      taille: texte(d, 'taille'),
+      tranche_ca: texte(d, 'ca'),
+    });
+  }
+  if (Object.keys(reglages).length) await supabase.from('entreprises').update({ facturation: reglages }).eq('id', id as string);
 
   let identite: ResultatRegistre | 'sans_siren' = 'sans_siren';
   if (siren) {
@@ -98,7 +157,9 @@ export async function creerEntreprise(_: EtatAjout, d: FormData): Promise<EtatAj
     identite = await controlerRegistre(supabase, id as string, siren, moi?.prenom ?? prenom, moi?.nom ?? nomFamille);
   }
   revalidatePath('/', 'layout');
-  redirect(texte(d, 'retour') === 'bienvenue' ? '/' : `/entreprises?cree=1&identite=${identite}`);
+  if (texte(d, 'retour') === 'bienvenue') redirect('/');
+  // « Créer une entreprise » finit sur l'écran « … est prête » du bac.
+  redirect(complet ? `/entreprises/nouvelle?cree=1&identite=${identite}&annuaire=${d.get('annuaire') ? 1 : 0}` : `/entreprises?cree=1&identite=${identite}`);
 }
 
 /** Demande à rejoindre une entreprise déjà inscrite (même SIREN). */
@@ -142,7 +203,7 @@ export async function traiterDemande(demandeId: string, accepter: boolean, d?: F
   });
   if (error) redirect(`/entreprises?erreur=${encodeURIComponent(error.message)}`);
   revalidatePath('/entreprises');
-  revalidatePath('/equipe');
+  revalidatePath('/parametres');
 }
 
 /** Change la formule de l'entreprise active (dirigeant). */
@@ -205,4 +266,31 @@ export async function envoyerJustificatifs(chemins: string[]) {
   if (error) return { erreur: error.message };
   revalidatePath('/', 'layout');
   return { ok: true };
+}
+
+/**
+ * « Je me mets en conformité » : demande l'inscription de l'entreprise ouverte à l'annuaire de la facturation
+ * électronique. Aucune liaison avec la plateforme agréée n'existe encore : la demande est enregistrée
+ * dans les réglages de l'entreprise (facturation.pdp) et affichée « Inscription demandée ».
+ */
+export async function demanderFacturationElectronique(entrepriseId: string): Promise<{ erreur?: string; nom?: string }> {
+  const supabase = await compte();
+  const moi = await dirigeantActif(supabase);
+  if (moi.entreprise_id !== entrepriseId) return { erreur: 'Ouvrez d’abord cette entreprise.' };
+  const { data: e } = await supabase
+    .from('entreprises')
+    .select('nom, siren, siret, identite_statut, facturation')
+    .eq('id', entrepriseId)
+    .maybeSingle<{ nom: string; siren: string | null; siret: string | null; identite_statut: string; facturation: ReglagesFacturation | null }>();
+  if (!e) return { erreur: 'Entreprise introuvable.' };
+  const f = e.facturation ?? {};
+  if (e.identite_statut !== 'verifiee') return { erreur: 'Vérifiez d’abord votre identité de dirigeant.' };
+  if (!e.siren || !e.siret || f.siret_attente) return { erreur: 'Il faut le SIRET définitif de l’entreprise.' };
+  const { error } = await supabase
+    .from('entreprises')
+    .update({ facturation: { ...f, pdp: { statut: 'demandee', le: new Date().toISOString().slice(0, 10), par: moi.prenom } } })
+    .eq('id', entrepriseId);
+  if (error) return { erreur: 'La demande n’a pas pu être enregistrée. Réessayez.' };
+  revalidatePath('/entreprises');
+  return { nom: e.nom };
 }

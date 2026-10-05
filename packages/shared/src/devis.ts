@@ -81,7 +81,49 @@ export interface ConditionsDocument {
   aoLimite?: string;
   aoConsultation?: string;
   aoQuantites?: boolean;
+  /** Éditeur plein écran (rangés dans la colonne jsonb conditions, sans migration). */
+  parcours?: Parcours;
+  /** Texte imprimé sous l'objet ; null ou absent : pas de description. */
+  description?: string | null;
+  /** Dépannage : majoration des heures (soir après 19 h, week-end et jour férié). */
+  majoration?: 'normale' | 'soir' | 'we';
+  /** TVA choisie pour tout le document (5,5, 10 ou 20). */
+  tva?: number;
+  /** Délai de paiement en jours, ou « perso » quand une date d'échéance a été choisie. */
+  delaiJours?: number | 'perso';
+  /** Date de début des travaux (devis) ou d'exécution (facture) ; null ou absent : non imprimée. */
+  dateExec?: string | null;
+  /** N° de bon de commande ; null ou absent : non imprimé. */
+  bc?: string | null;
+  /** Client syndic ou bailleur : immeuble (sites.id), occupant (nom) et n° d'ordre de service. */
+  siteId?: string | null;
+  occupant?: string | null;
+  ordreService?: string | null;
+  /** Liens : intervention d'où vient le document, contrat d'entretien renouvelé. */
+  intervention_id?: string | null;
+  contrat_id?: string | null;
+  /** Lignes forfaitaires des dépannages, par position : déplacement ou heure (prix des réglages). */
+  forfaits?: Record<string, 'depl' | 'heure'>;
+  /**
+   * Facture préparée depuis un devis comme dans le bac : ses lignes portent déjà le montant facturé
+   * (« Acompte de 30 % sur le devis … », situation cumulée, solde avec la déduction du déjà facturé),
+   * sans pourcentage ni avancement à appliquer.
+   */
+  lignesAuMontant?: boolean;
 }
+
+/** Type de devis : dépannage, chantier ou contrat d'entretien (PARCOURS du bac). */
+export type Parcours = 'depannage' | 'chantier' | 'contrat';
+export const LIBELLE_PARCOURS: Record<Parcours, string> = {
+  depannage: 'Dépannage',
+  chantier: 'Chantier',
+  contrat: 'Contrat d’entretien',
+};
+export const DESCRIPTION_PARCOURS: Record<Parcours, string> = {
+  depannage: 'Forfaits déplacement et heure, majorations soir et week-end',
+  chantier: 'Lots, ouvrages, métrés en m² et ml, acompte puis situations, réponse aux appels d’offres',
+  contrat: 'Visites par an, dépannages inclus, renouvellement',
+};
 
 export interface LigneDocument {
   titre?: boolean;
@@ -105,6 +147,8 @@ export interface LigneDocument {
   metre?: Metre | null;
   /** N° de poste du cadre de réponse du client (DPGF, DQE). */
   reference?: string | null;
+  /** Ligne forfaitaire d'un dépannage (prix des réglages) ; gardée dans conditions.forfaits. */
+  forfait?: 'depl' | 'heure' | null;
 }
 
 /** Métré d'une ligne : longueur × largeur (× hauteur) × nombre, moins les ouvertures, plus la chute. */
@@ -128,7 +172,7 @@ export interface DocumentACalculer {
   /** Avancement, acompte ou situations déjà facturés sur le même devis (%). */
   avancement_precedent: number;
   client: Pick<ClientDocument, 'type'>;
-  conditions: Pick<ConditionsDocument, 'retenue' | 'caution' | 'autoliq' | 'aide' | 'aideMontant'>;
+  conditions: Pick<ConditionsDocument, 'retenue' | 'caution' | 'autoliq' | 'aide' | 'aideMontant' | 'lignesAuMontant'>;
   lignes: LigneDocument[];
 }
 
@@ -167,6 +211,30 @@ export interface ReglagesFacturation {
   mail_devis_texte?: string;
   mail_facture_objet?: string;
   mail_facture_texte?: string;
+  /** Paramètres › Mon entreprise : raison sociale, SIRET pas encore attribué. */
+  raison?: string;
+  siret_attente?: boolean;
+  /** Paramètres › E-mails : recevoir une copie cachée de chaque envoi (à l'adresse de l'entreprise). */
+  mail_copie?: boolean;
+  /** Paramètres › Personnalisation : couleur des documents (voir COULEURS_DOCUMENT) et texte du bas de page. */
+  couleur_doc?: 'marine' | 'cobalt' | 'violet' | 'vert' | 'ardoise';
+  pied_page?: string;
+  /** Paramètres › Conditions générales : texte affiché en bas de chaque devis. */
+  conditions_particulieres?: string;
+  /** Paramètres › Tenue comptable. */
+  comptable?: string;
+  comptable_email?: string;
+  logiciel_compta?: string;
+  tva_regime?: 'encaissements' | 'debits';
+  /** Paramètres › Prix et coefficients, dépannage (voir REGLAGES_DEPANNAGE_DEFAUT) : € HT / h, € HT, %, %. */
+  taux_depannage?: number;
+  deplacement?: number;
+  maj_soir?: number;
+  maj_we?: number;
+  /** Métier de chaque membre (id du membre → « Plombier chauffagiste »), faute de colonne dans membres. */
+  metiers_membres?: Record<string, string>;
+  /** Facturation électronique : inscription à l'annuaire demandée (aucune liaison réelle pour l'instant). */
+  pdp?: { statut: 'demandee' | 'inscrite'; le: string; par?: string };
 }
 
 /** Textes d'envoi par défaut ; {titre}, {numero}, {client}, {objet}, {montant} et {entreprise} sont remplacés. */
@@ -230,6 +298,7 @@ export function pourcent(n: number): string {
 /** Part du marché facturée par une ligne, selon le type de facture. */
 function partFacturee(doc: DocumentACalculer, l: LigneDocument): number {
   if (doc.genre !== 'facture') return 1;
+  if (doc.conditions.lignesAuMontant && doc.type_facture !== 'avoir') return 1;
   switch (doc.type_facture) {
     case 'acompte':
       return doc.pourcentage / 100;
@@ -272,9 +341,11 @@ export function calculer(doc: DocumentACalculer): TotauxDocument {
     facture && doc.conditions.retenue && !doc.conditions.caution && ['situation', 'avancement', 'solde', 'totale'].includes(tf ?? '');
   const retenue = avecRetenue ? arrondi(ttc * 0.05) : 0;
   const aide = !facture && doc.conditions.aide ? arrondi(nombre(doc.conditions.aideMontant)) : 0;
+  const auMontant = facture && !!doc.conditions.lignesAuMontant;
   const cumulSituation = arrondi(ouvrages.reduce((s, l) => s + (l.quantite * l.prix_unitaire * r * (l.avancement ?? 0)) / 100, 0));
-  const dejaFacture =
-    tf === 'situation'
+  const dejaFacture = auMontant
+    ? 0
+    : tf === 'situation'
       ? arrondi(ouvrages.reduce((s, l) => s + (l.quantite * l.prix_unitaire * r * (l.avancement_precedent ?? 0)) / 100, 0))
       : arrondi((marcheHT * (tf === 'avancement' || tf === 'solde' ? doc.avancement_precedent : 0)) / 100);
 

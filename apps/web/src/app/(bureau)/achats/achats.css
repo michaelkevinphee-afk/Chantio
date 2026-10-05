@@ -1,42 +1,119 @@
-/* Module « Achats » : compléments aux styles du module « Devis et factures » (classe .df). */
-.df .documents.survol { outline: 2px dashed var(--cobalt); outline-offset: 4px; }
-.df .champ-ocr select,
-.df .champ-ocr textarea { border: 1px solid var(--trait); border-radius: 11px; padding: 8px 11px; width: 100%; background: var(--blanc); }
-.df .champ-ocr select:focus,
-.df .champ-ocr textarea:focus { outline: none; border-color: var(--cobalt); box-shadow: 0 0 0 4px rgb(47 84 235 / .15); }
-.df .champ-ocr input:disabled,
-.df .champ-ocr select:disabled { background: var(--fond); color: var(--encre); opacity: 1; }
-.df .champ-ocr .avec-bouton { display: flex; gap: 8px; align-items: center; min-width: 0; }
-.df .champ-ocr .avec-bouton select { flex: 1; min-width: 0; }
-.df .champ-ocr .ttc { font-family: var(--f-chiffres); font-weight: 700; font-size: 17px; }
-.df .info.rouge { color: var(--rouge); background: var(--rouge-doux); }
-.df .info.violet { color: var(--violet); background: var(--violet-doux); }
-.df .info a, .df .info button { color: inherit; font-weight: 700; text-decoration: underline; background: none; border: 0; padding: 0; }
-.df .bandeaux { display: grid; gap: 8px; margin-bottom: 16px; }
-.df .bandeaux .info { margin-top: 0; }
-.df .resume-ocr .jauge b { font-size: 18px; }
-.df .panneau-achat { display: grid; gap: 12px; padding: 18px 20px; margin-bottom: 18px; }
-.df .panneau-achat h2 { font-size: 18px; font-weight: 800; }
-.df .panneau-achat .champs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.df .panneau-achat .pied { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
-.df .paiement, .df .piece, .df .commentaire { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 20px; border-top: 1px solid var(--trait); }
-.df .paiement b, .df .piece b { font-family: var(--f-chiffres); }
-.df .paiement span:not(.pastille), .df .piece span, .df .commentaire span:not(.rond) { display: block; font-size: 13px; color: var(--gris); }
-.df .commentaire { grid-template-columns: 36px minmax(0, 1fr); align-items: start; }
-.df .commentaire .rond { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--doux); color: var(--cobalt); font-weight: 800; font-size: 13px; }
-.df .commentaire p { margin: 2px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.df .reste { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 20px 16px; border-top: 1px solid var(--trait); font-weight: 700; }
-.df .reste b { font-family: var(--f-chiffres); font-size: 18px; }
-.df .ajout-commentaire { display: flex; gap: 8px; padding: 12px 20px 16px; border-top: 1px solid var(--trait); align-items: flex-end; }
-.df .ajout-commentaire textarea { flex: 1; min-width: 0; resize: vertical; min-height: 44px; }
-.df .lignes-lues { width: 100%; border-collapse: collapse; font-size: 14px; }
-.df .lignes-lues td, .df .lignes-lues th { padding: 7px 20px; border-top: 1px solid var(--trait); text-align: left; }
-.df .lignes-lues th { font-size: 12.5px; color: var(--gris); font-weight: 700; }
-.df .lignes-lues .droite { text-align: right; font-family: var(--f-chiffres); white-space: nowrap; }
-.df .vide-doc { display: grid; place-items: center; gap: 8px; text-align: center; color: var(--gris); padding: 40px 20px; aspect-ratio: 1 / 1.3; }
-/* « Prendre en photo » : sur téléphone et tablette (écran tactile ou étroit). */
-@media (hover: hover) and (pointer: fine) and (min-width: 861px) { .df .seulement-tactile { display: none; } }
-@media (max-width: 620px) {
-  .df .panneau-achat .champs { grid-template-columns: minmax(0, 1fr); }
-  .df .lignes-lues td, .df .lignes-lues th { padding: 7px 12px; }
+/* Achats : compléments aux classes Tailwind de la charte (fiche plein écran, facture redessinée, panneau d'import). */
+
+/* Panneau d'importation : rond qui tourne ; masqué sur la fiche plein écran, comme le bac. */
+.im-rond {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: 3px solid var(--color-doux);
+  border-top-color: var(--color-cobalt);
+  border-radius: 50%;
+  animation: im-tourne 0.9s linear infinite;
+}
+@keyframes im-tourne { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .im-rond { animation: none; } }
+body:has(.ed-plein) .imports-achats { display: none; }
+
+/* ---------- Fiche d'une facture : le document à gauche (fond gris clair), la fiche à droite ---------- */
+.af-corps { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+.af-doc {
+  position: sticky;
+  top: 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: calc(100dvh - 64px);
+  overflow-y: auto;
+  padding: 24px 28px;
+  background: #EEF1F7;
+  border-right: 1px solid var(--color-trait);
+}
+.af-p { display: flex; flex-direction: column; min-height: calc(100dvh - 64px); background: var(--color-fond); }
+.af-p-in { flex: 1; display: flex; flex-direction: column; gap: 18px; padding: 0 28px 28px; }
+.af-onglets { display: flex; gap: 24px; margin: 0 -28px; padding: 0 28px; background: #fff; border-bottom: 1px solid var(--color-trait); }
+.af-onglets button { position: relative; display: flex; align-items: center; gap: 8px; padding: 16px 2px 14px; font-size: 15.5px; font-weight: 800; color: var(--color-gris); }
+.af-onglets button[aria-selected="true"] { color: var(--color-encre); }
+.af-onglets button[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 3px; background: var(--color-cobalt); }
+.af-carte { display: flex; flex-direction: column; gap: 12px; padding: 22px 24px; background: #fff; border: 1px solid var(--color-trait); border-radius: 20px; box-shadow: 0 18px 30px -26px var(--halo); }
+.af-carte h2 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 19px; font-weight: 800; }
+.af-g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+.af-champ { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 13.5px; font-weight: 700; color: var(--color-encre); }
+.af-champ input, .af-champ select, .af-champ textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-trait);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--color-encre);
+  font-size: 15px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.af-champ input:focus, .af-champ select:focus, .af-champ textarea:focus { border-color: var(--color-cobalt); box-shadow: 0 0 0 4px rgb(47 84 235 / 0.15); }
+.af-champ .aide { font-size: 12.5px; font-weight: 500; color: var(--color-gris); }
+.af-suf { position: relative; display: block; }
+.af-suf input { padding-right: 58px; }
+.af-suf > span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--color-gris); font-size: 13.5px; font-weight: 700; pointer-events: none; }
+.af-ban { display: flex; flex-direction: column; gap: 8px; border-radius: 14px; padding: 12px 14px; font-size: 14px; }
+.af-ban > b:first-child { font-weight: 800; }
+.af-ban.violet { background: var(--color-violet-doux); } .af-ban.violet > b:first-child { color: var(--color-violet); }
+.af-ban.rouge { background: var(--color-rouge-doux); } .af-ban.rouge > b:first-child { color: #B42318; }
+.af-ban.vert { background: var(--color-vert-doux); } .af-ban.vert > b:first-child { color: var(--color-vert); }
+.af-ban.gris { background: var(--color-gris-doux); color: var(--color-gris); } .af-ban.gris > b:first-child { color: var(--color-encre); }
+.af-lien { align-self: flex-start; font-weight: 800; color: var(--color-cobalt); }
+.af-lien:hover { text-decoration: underline; }
+.af-dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; margin: 4px 0 0; }
+.af-dl dt { color: var(--color-gris); font-size: 14px; }
+.af-dl dd { margin: 2px 0 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.af-barre { display: block; height: 6px; border-radius: 6px; background: #E4E8F2; overflow: hidden; }
+.af-barre i { display: block; height: 100%; background: var(--color-vert); }
+.af-bas {
+  position: sticky;
+  bottom: 0;
+  z-index: 15;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 28px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: #fff;
+  border-top: 1px solid var(--color-trait);
+}
+.af-bas .af-etat { margin-right: auto; color: var(--color-gris); font-size: 14px; }
+
+/* La facture redessinée (quand il n'y a pas de fichier à montrer). */
+.af-papier { padding: 30px 32px; background: #fff; border-radius: 4px; box-shadow: 0 12px 30px -18px rgb(16 26 61 / 0.5); color: #1D2433; font-size: 12.5px; line-height: 1.45; }
+.ap-tete { display: flex; justify-content: space-between; gap: 18px; }
+.ap-cadre { flex: none; align-self: flex-start; padding: 8px 12px; border: 1px solid #C9CFDC; text-align: right; }
+.ap-dest { width: 52%; margin: 18px 0 16px auto; padding: 10px 12px; border: 1px solid #C9CFDC; }
+.ap-l { width: 100%; border-collapse: collapse; }
+.ap-l th { padding: 6px; border-bottom: 1.5px solid #1D2433; background: var(--color-fond); text-align: left; font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; }
+.ap-l td { padding: 6px; border-bottom: 1px solid #E3E6EE; }
+.ap-l .d, .ap-tot .d { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ap-tot { display: flex; justify-content: flex-end; margin-top: 12px; }
+.ap-tot table { border-collapse: collapse; min-width: 60%; }
+.ap-tot td { padding: 3px 8px; border-bottom: 1px solid #E3E6EE; }
+.ap-tot .fort td { border-top: 1.5px solid #1D2433; font-weight: 800; }
+
+/* Écran plus étroit : une seule colonne, la fiche d'abord, le document dessous. */
+@media (max-width: 1100px) {
+  .af-corps { grid-template-columns: minmax(0, 1fr); }
+  .af-doc { position: static; order: 2; height: auto; border-right: 0; border-top: 1px solid var(--color-trait); padding: 16px; }
+  .af-p { min-height: 0; }
+}
+@media (max-width: 700px) {
+  .af-p-in { padding: 0 14px 20px; gap: 14px; }
+  .af-onglets { margin: 0 -14px; padding: 0 14px; }
+  .af-carte { padding: 18px 16px; }
+  .af-g2, .af-dl { grid-template-columns: minmax(0, 1fr); }
+  .af-bas { padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); gap: 8px; }
+  .af-bas .af-etat { flex-basis: 100%; font-size: 12.5px; }
+  .af-bas > button { min-height: 46px; }
+  .af-bas > button:last-child { flex: 1; justify-content: center; }
+  .af-papier { padding: 20px 16px; font-size: 11.5px; }
+  .ap-tete { flex-direction: column; }
+  .ap-dest { width: auto; }
 }

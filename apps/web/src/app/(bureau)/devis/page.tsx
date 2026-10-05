@@ -1,16 +1,20 @@
-import type { ReglagesFacturation } from '@chantio/shared';
-import { lireTableauDeBord } from '@/lib/devis';
-import { contexteBureau } from '@/lib/session';
-import { TableauDevis } from './tableau';
+import { redirect } from 'next/navigation';
+import { chaine, EcranDocuments } from './liste-ecran';
 
-export const metadata = { title: 'Devis et factures · Chantio' };
+export const metadata = { title: 'Mes devis · Chantio' };
 
+/**
+ * « Mes devis » : ?filtre=tous|brouillon|attente|signe|refuse (|ao = appels d'offres), ?type=, ?periode=, ?q=,
+ * ?client=<id>, ?nouveau=1 (fenêtre « Nouveau devis »). Les anciennes adresses ?onglet=factures… mènent à /factures.
+ */
 export default async function PageDevis({ searchParams }: PageProps<'/devis'>) {
-  const { supabase, entreprise } = await contexteBureau();
-  const { onglet, filtre } = await searchParams;
-  const reglages: ReglagesFacturation = entreprise.facturation ?? {};
-  const donnees = await lireTableauDeBord(supabase, entreprise.nom, reglages);
-  const ongletInitial = onglet === 'factures' || onglet === 'importes' ? onglet : 'devis';
-  const filtres: Record<string, string> = { ao: 'Appels d’offres', envoye: 'Envoyé', a_encaisser: 'À encaisser', retard: 'En retard' };
-  return <TableauDevis donnees={donnees} ongletInitial={ongletInitial} filtreInitial={typeof filtre === 'string' ? filtres[filtre] : undefined} />;
+  const sp = await searchParams;
+  const onglet = chaine(sp.onglet);
+  if (onglet === 'factures' || onglet === 'importes') {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(sp)) if (k !== 'onglet' && typeof v === 'string') p.set(k, v);
+    const s = p.toString();
+    redirect(onglet === 'importes' ? '/devis/import' : `/factures${s ? `?${s}` : ''}`);
+  }
+  return <EcranDocuments genre="devis" sp={sp} />;
 }

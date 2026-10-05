@@ -1,0 +1,106 @@
+/* Liste des interventions, comme le bac à sable (.li-tete / .li de 21-ajouts.css) :
+   six colonnes sur ordinateur, une petite carte par intervention sous 980 px. */
+.iv-tete,
+.iv-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.3fr) 128px 120px 150px 118px;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 8px;
+  border-bottom: 1px solid #d9e0f7;
+}
+.iv-tete {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  border-radius: 8px 8px 0 0;
+  background: #f4f6ff;
+  color: #5b6480;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.iv-ligne {
+  color: inherit;
+  font-size: 15px;
+  line-height: 1.45;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+.iv-ligne:hover {
+  background: #f9faff;
+}
+.iv-ligne:focus-visible {
+  outline-offset: -3px;
+  border-radius: 8px;
+}
+.iv-ligne small {
+  display: block;
+  color: #5b6480;
+  font-size: 12px;
+  font-weight: 500;
+}
+.iv-motif,
+.iv-lieu {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.iv-motif b {
+  font-weight: 700;
+}
+.iv-quand,
+.iv-tech {
+  font-size: 13px;
+}
+.iv-quand .iv-gris {
+  color: #5b6480;
+}
+.iv-etat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.iv-num {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.iv-num small {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 11.5px;
+}
+.iv-vide {
+  padding: 10px;
+  color: #5b6480;
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  .iv-tete {
+    display: none;
+  }
+  .iv-ligne {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'motif motif' 'lieu quand' 'tech etat' 'num num';
+    gap: 6px 10px;
+    padding: 12px 4px;
+  }
+  .iv-motif { grid-area: motif; }
+  .iv-lieu { grid-area: lieu; font-size: 13px; }
+  .iv-quand { grid-area: quand; text-align: right; }
+  .iv-tech { grid-area: tech; color: #5b6480; font-size: 12.5px; }
+  .iv-etat { grid-area: etat; justify-content: flex-end; }
+  .iv-num {
+    grid-area: num;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+  }
+}
+
+/* Fenêtre « Nouvelle intervention » : le motif propose une liste en tapant, sans la flèche de Chrome (comme le bac). */
+.iv-sans-fleche::-webkit-calendar-picker-indicator {
+  display: none !important;
+}

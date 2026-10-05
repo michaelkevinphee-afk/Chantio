@@ -1,29 +1,32 @@
-import Link from 'next/link';
-import { initiales, LIBELLE_ROLE } from '@chantio/shared';
-import { BoutonDeconnexion } from '@/components/deconnexion';
-import { Icone } from '@/components/icones';
-import { Navigation } from '@/components/navigation';
-import { ZoneAnnonces } from '@/components/retour';
-import { SelecteurEntreprise } from '@/components/selecteur-entreprise';
-import { Avatar, LienBouton, Logo } from '@/components/ui';
+import { cookies } from 'next/headers';
+import { CadreBureau } from '@/components/cadre-bureau';
+import type { Pastilles } from '@/components/navigation';
+import { chargerAFaire } from '@/lib/a-faire';
+import { COOKIE_MENU, lireEtatMenu } from '@/lib/menu';
 import { liensProfils } from '@/lib/profils';
 import { contexteBureau, mesEntreprises } from '@/lib/session';
 
 export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
-  const { supabase, membre, entreprise } = await contexteBureau();
+  const { supabase, user, membre, entreprise } = await contexteBureau();
   const compter = (table: string, statut: string) => supabase.from(table).select('id', { count: 'exact', head: true }).eq('statut', statut);
-  const [entreprises, liens, { count: aPlanifier }, { count: aValider }, { count: recues }] = await Promise.all([
+  const [entreprises, liens, { data: invitations }, { count: aPlanifier }, { count: aValider }, { count: recues }, magasin, aFaire] = await Promise.all([
     mesEntreprises(),
-    liensProfils(supabase, [membre.photo_chemin, entreprise.logo_chemin]),
+    liensProfils(supabase, [entreprise.logo_chemin]),
+    supabase.rpc('invitations_recues'),
     compter('interventions', 'a_planifier'),
     compter('interventions', 'terminee'),
     compter('achats', 'recu'),
+    cookies(),
+    // Même calcul (mis en cache pour la requête) que la liste « À faire » de l'Accueil.
+    chargerAFaire(),
   ]);
-  const logo = entreprise.logo_chemin ? liens.get(entreprise.logo_chemin) : null;
-  const photo = membre.photo_chemin ? liens.get(membre.photo_chemin) : null;
+  const logo = entreprise.logo_chemin ? (liens.get(entreprise.logo_chemin) ?? null) : null;
   const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
-  // Ce qui attend le bureau, affiché en pastille dans le menu.
-  const pastilles = {
+
+  // Ce qui attend le bureau, affiché en pastille dans le menu (et la barre du bas du téléphone).
+  const pastilles: Pastilles = {
+    // Accueil : « 15 choses à faire, dont 2 urgentes », rouge s'il y a de l'urgent.
+    '/': { n: aFaire.resume.n, titre: aFaire.resume.texte, urgent: aFaire.resume.u > 0 },
     '/interventions': {
       n: (aPlanifier ?? 0) + (aValider ?? 0),
       titre: [aPlanifier ? `${aPlanifier} à planifier` : '', aValider ? pluriel(aValider, 'fiche') + ' à valider' : ''].filter(Boolean).join(', '),
@@ -32,31 +35,19 @@ export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
   };
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[272px_1fr] lg:bg-[linear-gradient(to_right,rgb(255_255_255/0.8)_271px,var(--color-trait)_271px_272px,transparent_272px)]">
-      <aside className="flex flex-col gap-6 border-b border-trait bg-white/80 p-4 backdrop-blur-md lg:sticky lg:top-0 lg:h-screen lg:border-r lg:border-b-0 lg:p-5">
-        <SelecteurEntreprise nom={entreprise.nom} logo={logo ?? null} entreprises={entreprises} />
-        <LienBouton href="/interventions/nouvelle" className="w-full whitespace-nowrap !px-4">
-          <Icone nom="plus" taille={18} /> Nouvelle intervention
-        </LienBouton>
-        <Navigation pastilles={pastilles} />
-        <div className="mt-auto hidden space-y-4 lg:block">
-          <Link href="/equipe#profil" className="flex items-center gap-3 rounded-2xl p-2 transition hover:bg-doux">
-            <Avatar url={photo} initiales={initiales(membre.prenom, membre.nom)} taille={40} className="ring-2 ring-cobalt ring-offset-2 ring-offset-white" />
-            <span className="min-w-0">
-              <span className="block truncate font-bold">
-                {membre.prenom} {membre.nom}
-              </span>
-              <span className="block text-xs text-gris">{LIBELLE_ROLE[membre.role]}</span>
-            </span>
-          </Link>
-          <BoutonDeconnexion className="px-2 text-sm text-gris hover:text-encre" />
-          <div className="border-t border-trait px-2 pt-4 text-xs text-gris">
-            Propulsé par <Logo taille={18} />
-          </div>
-        </div>
-      </aside>
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">{children}</main>
-      <ZoneAnnonces />
-    </div>
+    <CadreBureau
+      selecteur={{
+        nom: entreprise.nom,
+        logo,
+        entreprises: entreprises.map(({ id, nom, role, active }) => ({ id, nom, role, active })),
+        email: user.email ?? membre.email,
+        prenomNom: [membre.prenom, membre.nom].filter(Boolean).join(' '),
+        invitations: invitations?.length ?? 0,
+      }}
+      pastilles={pastilles}
+      menu={lireEtatMenu(magasin.get(COOKIE_MENU)?.value)}
+    >
+      {children}
+    </CadreBureau>
   );
 }

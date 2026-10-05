@@ -1,42 +1,96 @@
+'use client';
+
 import Link from 'next/link';
-import type { StatutIntervention } from '@chantio/shared';
+import { useSearchParams } from 'next/navigation';
+import type { ReactNode } from 'react';
+import { ajouterJours, lundiDe } from '@chantio/shared';
+import { LienBouton } from '@/components/ui';
+import { adressePlanning } from './adresse';
 
-// Morceaux communs aux vues semaine et mois du planning.
+// Morceaux communs aux vues Semaine et Mois du planning. Les liens partent de l'adresse du moment
+// (elle porte aussi les familles cochées), pour qu'on les retrouve en changeant de semaine ou de vue.
 
-// Liseré de couleur à gauche de chaque rendez-vous, selon le statut.
-export const LISERE: Record<StatutIntervention, string> = {
-  a_planifier: 'border-l-gris/40',
-  planifiee: 'border-l-cobalt',
-  en_cours: 'border-l-menthe',
-  terminee: 'border-l-violet',
-  a_reprendre: 'border-l-rouge',
-  validee: 'border-l-vert',
-  facturee: 'border-l-gris/40',
-};
+const BASCULE = 'inline-flex items-center rounded-lg px-3 py-1.5 font-bold transition max-menu:min-h-11';
+const FLECHE =
+  'grid h-8 min-w-8 place-items-center rounded-md px-2 text-xl leading-none text-gris transition hover:bg-doux hover:text-cobalt max-menu:min-h-11 max-menu:min-w-11';
 
-export const jourCourt = (iso: string) => {
-  const [a, m, j] = iso.split('-').map(Number);
-  const d = new Date(a, m - 1, j);
-  return {
-    nom: d.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', ''),
-    num: d.getDate(),
-    long: d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
-    mois: d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+/**
+ * Barre d'outils du bac, hors carte : [Semaine | Mois] [‹] [Cette semaine] [›], puis les cases à cocher
+ * de la semaine (children).
+ */
+export function BarreOutils({
+  vue,
+  lundi,
+  mois,
+  aujourdhui,
+  children,
+}: {
+  vue: 'semaine' | 'mois';
+  /** Lundi affiché (vue Semaine) ou semaine où revenir (vue Mois). */
+  lundi: string;
+  /** Mois affiché (vue Mois) ou mois où aller (vue Semaine), AAAA-MM. */
+  mois: string;
+  aujourdhui: string;
+  children?: ReactNode;
+}) {
+  const params = useSearchParams();
+  const lien = (changements: Record<string, string | null>) => adressePlanning(params, changements);
+  const semaineCourante = lundiDe(aujourdhui);
+  const versSemaine = (l: string) => lien({ mois: null, semaine: l === semaineCourante ? null : l });
+  const versMois = (m: string) => lien({ semaine: null, mois: m });
+  const decale = (n: number) => {
+    const [a, m] = mois.split('-').map(Number);
+    const d = new Date(Date.UTC(a, m - 1 + n, 1));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
   };
-};
+  const semaine = vue === 'semaine';
 
-/** Semaine ou mois. */
-export function Bascule({ vue, lundi, mois }: { vue: 'semaine' | 'mois'; lundi?: string; mois?: string }) {
-  const lien = (actif: boolean) =>
-    `rounded-[10px] px-3 py-1 text-sm font-bold transition ${actif ? 'bg-doux text-cobalt' : 'text-gris hover:text-encre'}`;
   return (
-    <div className="inline-flex rounded-xl border border-trait bg-white p-0.5" role="group" aria-label="Affichage">
-      <Link href={lundi ? `/planning?semaine=${lundi}` : '/planning'} aria-current={vue === 'semaine' ? 'page' : undefined} className={lien(vue === 'semaine')}>
-        Semaine
-      </Link>
-      <Link href={`/planning?mois=${mois ?? (lundi ?? '').slice(0, 7)}`} aria-current={vue === 'mois' ? 'page' : undefined} className={lien(vue === 'mois')}>
-        Mois
-      </Link>
+    <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
+      <div className="inline-flex rounded-[10px] border border-trait bg-white p-[3px]" role="group" aria-label="Affichage">
+        <Link
+          href={versSemaine(lundi)}
+          scroll={false}
+          aria-current={semaine ? 'page' : undefined}
+          className={`${BASCULE} ${semaine ? 'bg-doux text-cobalt' : 'text-gris hover:text-encre'}`}
+        >
+          Semaine
+        </Link>
+        <Link
+          href={versMois(mois)}
+          scroll={false}
+          aria-current={semaine ? undefined : 'page'}
+          className={`${BASCULE} ${semaine ? 'text-gris hover:text-encre' : 'bg-doux text-cobalt'}`}
+        >
+          Mois
+        </Link>
+      </div>
+      <div className="inline-flex items-center gap-1">
+        <Link href={semaine ? versSemaine(ajouterJours(lundi, -7)) : versMois(decale(-1))} scroll={false} aria-label="Précédent" className={FLECHE}>
+          <span aria-hidden="true">‹</span>
+        </Link>
+        <Link
+          href={semaine ? versSemaine(semaineCourante) : versMois(aujourdhui.slice(0, 7))}
+          scroll={false}
+          className="rounded-[10px] border border-trait bg-white px-2.5 py-1.5 text-[13px] font-bold text-cobalt transition hover:border-cobalt max-menu:min-h-11 max-menu:content-center"
+        >
+          {semaine ? 'Cette semaine' : 'Ce mois-ci'}
+        </Link>
+        <Link href={semaine ? versSemaine(ajouterJours(lundi, 7)) : versMois(decale(1))} scroll={false} aria-label="Suivant" className={FLECHE}>
+          <span aria-hidden="true">›</span>
+        </Link>
+      </div>
+      {children}
     </div>
+  );
+}
+
+/** « Nouvelle intervention » : la fenêtre de création s'ouvre par-dessus le planning (?nouvelle=1). */
+export function BoutonNouvelle() {
+  const params = useSearchParams();
+  return (
+    <LienBouton href={adressePlanning(params, { nouvelle: '1' })} scroll={false} prefetch={false}>
+      Nouvelle intervention
+    </LienBouton>
   );
 }

@@ -1,4 +1,4 @@
-import type { Fournisseur, StatutAchat } from '@chantio/shared';
+import { aujourdhui, type Fournisseur, type StatutAchat } from '@chantio/shared';
 import { contexteBureau } from '@/lib/session';
 import { ListeFournisseurs, type FactureFournisseur } from './liste-fournisseurs';
 
@@ -25,6 +25,7 @@ export default async function PageFournisseurs() {
         montant_ttc: Number(a.montant_ttc),
         paye: (paiements ?? []).reduce((s, p) => s + Number(p.montant), 0),
       }))}
+      jour={aujourdhui()}
     />
   );
 }

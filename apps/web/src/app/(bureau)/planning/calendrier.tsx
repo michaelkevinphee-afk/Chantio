@@ -1,34 +1,46 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Fragment, useMemo, useState, type CSSProperties } from 'react';
 import {
   ajouterJours,
+  aPlacer,
+  demiDebut,
   demiJournees,
   deplacer,
-  HEURE_DEMI,
   heuresSur,
   indexDemi,
+  jjmm,
+  jourCourt,
+  jourSemaine,
+  LIBELLE_FAMILLE,
   LIBELLE_STATUT,
+  LIBELLE_TYPE,
+  LIBELLE_URGENCE,
+  numeroSemaine,
   occupe,
-  surPlusieursJours,
   texteReserve,
+  TON_FAMILLE,
   type Demi,
+  type FamilleIntervention,
   type StatutIntervention,
   type TypeIntervention,
+  type Urgence,
 } from '@chantio/shared';
 import { planifier } from '../interventions/actions';
 import { reglerDisponibilite } from './actions';
-import { Icone } from '@/components/icones';
-import { annoncer, Roue } from '@/components/retour';
-import { Avatar, Panneau } from '@/components/ui';
-import { Bascule, jourCourt, LISERE } from './outils';
+import { annoncer } from '@/components/retour';
+import { Puce } from '@/components/ui';
+import { adressePlanning, ecrireFamilles, FAMILLES } from './adresse';
+import { BarreOutils } from './outils';
 
 export type CarteRdv = {
   id: string;
-  reference: string | null;
+  /** « DEP-2026-0143 » */
+  reference: string;
   type: TypeIntervention;
+  famille: FamilleIntervention;
   date: string | null;
   heure: string | null;
   /** Dernier jour d'un chantier sur plusieurs jours. */
@@ -37,63 +49,86 @@ export type CarteRdv = {
   duree: number | null;
   /** Date souhaitée d'une visite d'entretien pas encore placée. */
   souhaitee: string | null;
-  client: string;
   motif: string;
-  ville: string | null;
+  /** Le lieu en court (adresse de l'immeuble ou du client), comme lieu(i).titre du bac. */
+  lieu: string;
+  /** Le lieu complet, pour l'info-bulle. */
+  adresse: string;
+  /** Statut en base. */
   statut: StatutIntervention;
-  urgent: boolean;
+  /** État affiché (« À reprendre » pour une fiche renvoyée). */
+  etat: StatutIntervention;
+  urgence: Urgence;
   techniciens: string[];
 };
 
-type Membre = { id: string; prenom: string; nom: string | null; initiales: string; photo: string | null; heures: number; reserve: number[] };
+export type MembrePlanning = {
+  id: string;
+  prenom: string;
+  /** « Christophe R. » */
+  nom: string;
+  initiales: string;
+  photo: string | null;
+  /** Couleur propre au technicien (avatar). */
+  couleur: string;
+  heures: number;
+  reserve: number[];
+};
 
-const GROUPES: { cle: string; libelle: string; types: TypeIntervention[] }[] = [
-  { cle: 'depannage', libelle: 'Dépannages', types: ['depannage', 'sav'] },
-  { cle: 'entretien', libelle: 'Entretiens', types: ['entretien'] },
-  { cle: 'chantier', libelle: 'Chantiers', types: ['chantier', 'installation', 'mise_en_service'] },
-  { cle: 'visite', libelle: 'Visites', types: ['visite_technique'] },
-];
-const groupe = (t: TypeIntervention) => GROUPES.find((g) => g.types.includes(t))?.cle ?? 'depannage';
-
-const DEPLACABLE: StatutIntervention[] = ['a_planifier', 'planifiee'];
-const SANS = '—'; // ligne « Sans technicien »
+const SANS = ''; // ligne « Sans technicien »
+const PLANIFIABLE: StatutIntervention[] = ['a_planifier', 'planifiee'];
 
 const creneau = (c: CarteRdv) => ({ date_prevue: c.date, heure_prevue: c.heure, date_fin: c.date_fin, fin_midi: c.fin_midi, duree_prevue: c.duree });
 const nombre = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
 
 type Tire = { id: string; ligne: string | null; attrape: { jour: string; demi: Demi } | null };
 
+/** Avatar rond de 20 px : la photo, sinon les initiales sur la couleur du technicien. */
+function AvatarTech({ m }: { m: MembrePlanning }) {
+  return m.photo ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={m.photo} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />
+  ) : (
+    <span aria-hidden="true" style={{ background: m.couleur }} className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-[9px] font-extrabold text-white">
+      {m.initiales}
+    </span>
+  );
+}
+
 /**
- * Semaine par technicien et par demi-journée : un dépannage occupe le matin ou
- * l'après-midi, un chantier s'étend sur ses jours. On glisse une intervention
- * d'une case à l'autre (ou depuis « À planifier ») : l'écran change tout de
- * suite, l'enregistrement et l'invitation d'agenda suivent.
+ * Vue Semaine du bac : une ligne par technicien, deux demi-journées par jour. Un dépannage occupe
+ * le matin ou l'après-midi, un chantier s'étend sur ses jours. On glisse un bloc (ou une carte
+ * « À placer ») sur une demi-journée : l'écran change tout de suite, l'enregistrement suit.
+ * Un clic sur un bloc ouvre son volet par-dessus le planning ; un clic sur une case vide, la
+ * fenêtre de création déjà remplie (jour, moment, technicien).
  */
 export function Calendrier({
   lundi,
   aujourdhui,
   equipe: equipeInitiale,
   cartes: initiales,
-  invitations,
+  familles,
   dirigeant,
 }: {
   lundi: string;
   aujourdhui: string;
-  equipe: Membre[];
+  equipe: MembrePlanning[];
   cartes: CarteRdv[];
-  invitations: boolean;
+  /** Familles cochées au chargement (?familles=). */
+  familles: FamilleIntervention[];
   dirigeant: boolean;
 }) {
   const router = useRouter();
+  const params = useSearchParams();
   const [cartes, setCartes] = useState(initiales);
   const [equipe, setEquipe] = useState(equipeInitiale);
   const [enCours, setEnCours] = useState<Set<string>>(new Set());
   const [survol, setSurvol] = useState<{ ligne: string; col: number } | 'bac' | null>(null);
   const [tire, setTire] = useState<Tire | null>(null);
-  const [masques, setMasques] = useState<Set<string>>(new Set());
+  const [montrees, setMontrees] = useState<Set<FamilleIntervention>>(() => new Set(familles));
   const [reglage, setReglage] = useState<string | null>(null);
 
-  // Nouvelles données du serveur (changement de semaine, enregistrement) : on repart d'elles.
+  // Nouvelles données du serveur (changement de semaine, enregistrement, volet) : on repart d'elles.
   const [source, setSource] = useState({ initiales, equipeInitiale });
   if (source.initiales !== initiales || source.equipeInitiale !== equipeInitiale) {
     setSource({ initiales, equipeInitiale });
@@ -102,19 +137,22 @@ export function Calendrier({
   }
 
   const semaine = useMemo(() => Array.from({ length: 7 }, (_, n) => ajouterJours(lundi, n)), [lundi]);
-  // Le dimanche n'apparaît que s'il y a quelque chose ce jour-là.
-  const jours = cartes.some((c) => occupe(creneau(c), semaine[6])) ? semaine : semaine.slice(0, 6);
+  // Le dimanche n'apparaît que s'il y a quelque chose ce jour-là, ou si c'est aujourd'hui.
+  const dimanche = semaine[6];
+  const jours = dimanche === aujourdhui || cartes.some((c) => c.date === dimanche || c.date_fin === dimanche) ? semaine : semaine.slice(0, 6);
   const n = jours.length * 2;
 
-  const lignes = [...equipe.map((m) => m.id), ...(cartes.some((c) => !c.techniciens.length && jours.some((j) => occupe(creneau(c), j))) ? [SANS] : [])];
-  const aPlanifier = cartes.filter((c) => !c.date);
+  const sansTechnicien = cartes.some((c) => c.date && !c.techniciens.length && jours.some((j) => occupe(creneau(c), j)));
+  const lignes = [...equipe.map((m) => m.id), ...(sansTechnicien ? [SANS] : [])];
+  const attente = cartes.filter((c) => aPlacer({ statut: c.etat, date_prevue: c.date }));
   const dansLaSemaine = cartes.filter((c) => jours.some((j) => occupe(creneau(c), j)));
+  const avecReserve = equipe.some((m) => m.reserve.length > 0);
 
   /** Les blocs d'une ligne : une suite de demi-journées occupées, d'un seul tenant. */
   function blocs(ligne: string) {
     const out: { c: CarteRdv; de: number; a: number }[] = [];
     for (const c of dansLaSemaine) {
-      if (masques.has(groupe(c.type))) continue;
+      if (!montrees.has(c.famille)) continue;
       if (ligne === SANS ? c.techniciens.length : !c.techniciens.includes(ligne)) continue;
       const cols = jours.flatMap((j, k) => {
         const [m, a] = demiJournees(creneau(c), j);
@@ -131,8 +169,8 @@ export function Calendrier({
     return out.sort((p, q) => p.de - q.de || (p.c.heure ?? '99').localeCompare(q.c.heure ?? '99'));
   }
 
-  /** Demi-journées gardées pour les urgences, regroupées quand elles se suivent. */
-  function reserves(m: Membre) {
+  /** Demi-journées gardées pour les urgences (réglage du dirigeant), regroupées quand elles se suivent. */
+  function reserves(m: MembrePlanning) {
     const cols = jours.flatMap((j, k) => ([0, 1] as Demi[]).filter((d) => m.reserve.includes(indexDemi(j, d))).map((d) => k * 2 + d));
     const out: { de: number; a: number }[] = [];
     for (const c of cols) {
@@ -143,6 +181,15 @@ export function Calendrier({
     return out;
   }
 
+  function basculer(f: FamilleIntervention) {
+    const suite = new Set(montrees);
+    if (suite.has(f)) suite.delete(f);
+    else suite.add(f);
+    setMontrees(suite);
+    // L'adresse garde les cases cochées (volet, changement de semaine) sans recharger la page.
+    window.history.replaceState(null, '', adressePlanning(params, { familles: ecrireFamilles(suite) }));
+  }
+
   async function deposer(id: string, ligne: string | null, col: number | null) {
     const c = cartes.find((x) => x.id === id);
     if (!c) return;
@@ -151,7 +198,7 @@ export function Calendrier({
     if (ligne && ligne !== SANS) {
       if (depuis && depuis !== SANS && depuis !== ligne) techniciens = techniciens.filter((t) => t !== depuis);
       if (!techniciens.includes(ligne)) techniciens.push(ligne);
-    } else if (ligne === SANS && depuis && depuis !== SANS) techniciens = techniciens.filter((t) => t !== depuis);
+    } else if (ligne === SANS && depuis) techniciens = techniciens.filter((t) => t !== depuis);
 
     const place =
       col === null
@@ -159,6 +206,9 @@ export function Calendrier({
         : deplacer(creneau(c), { jour: jours[col >> 1], demi: (col & 1) as Demi }, tire?.id === id ? tire.attrape : null);
     if (place.date_prevue === c.date && place.heure_prevue === c.heure && place.date_fin === (c.date_fin ?? null) && techniciens.join() === c.techniciens.join()) return;
 
+    // À planifier ↔ planifiée selon la date et le technicien ; les autres états ne bougent pas.
+    const recalcule = (s: StatutIntervention): StatutIntervention =>
+      PLANIFIABLE.includes(s) ? (place.date_prevue && techniciens.length ? 'planifiee' : 'a_planifier') : s;
     const avant = cartes;
     setCartes((t) =>
       t.map((x) =>
@@ -170,7 +220,8 @@ export function Calendrier({
               date_fin: place.date_fin ?? null,
               fin_midi: place.fin_midi,
               techniciens,
-              statut: place.date_prevue && techniciens.length ? 'planifiee' : 'a_planifier',
+              statut: recalcule(x.statut),
+              etat: recalcule(x.etat),
             }
           : x,
       ),
@@ -182,7 +233,7 @@ export function Calendrier({
       date_fin: place.date_fin ?? null,
       fin_midi: place.fin_midi,
       techniciens,
-    }).catch(() => ({ erreur: 'Pas de réseau : réessaie.', invites: [] as string[] }));
+    }).catch(() => ({ erreur: 'Pas de réseau : réessayez.', invites: [] as string[] }));
     setEnCours((s) => {
       const suite = new Set(s);
       suite.delete(id);
@@ -193,301 +244,355 @@ export function Calendrier({
       annoncer(r.erreur, 'erreur');
       return;
     }
-    const noms = techniciens.map((t) => equipe.find((m) => m.id === t)?.prenom).filter(Boolean);
-    const quand = place.date_prevue
-      ? place.date_fin && place.date_fin > place.date_prevue
-        ? `du ${jourCourt(place.date_prevue).long} au ${jourCourt(place.date_fin).long}`
-        : `${jourCourt(place.date_prevue).long} ${(col ?? 0) & 1 ? 'après-midi' : 'matin'}`
-      : null;
-    annoncer(quand ? `${c.client} : ${quand}${noms.length ? ` avec ${noms.join(' et ')}` : ', sans technicien'}` : `${c.client} remis à planifier`);
+    const noms = techniciens.map((t) => equipe.find((m) => m.id === t)?.nom).filter(Boolean);
+    annoncer(
+      place.date_prevue
+        ? `${c.reference} : ${jourCourt(place.date_prevue)} ${demiDebut(place) ? 'après-midi' : 'matin'}, ${noms.length ? noms.join(', ') : 'sans technicien'}`
+        : `${c.reference} : sans date, à placer au planning`,
+    );
     if (r.invites?.length) annoncer(`Invitation agenda envoyée à ${r.invites.join(', ')}`);
   }
 
-  /** La demi-journée sous la souris, dans la zone d'une ligne (marge intérieure de 6 px). */
+  /** La demi-journée sous la souris, dans la piste d'une ligne. */
   const colonne = (e: React.MouseEvent<HTMLElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
-    return Math.max(0, Math.min(n - 1, Math.floor(((e.clientX - r.left - 6) / Math.max(1, r.width - 12)) * n)));
+    return Math.max(0, Math.min(n - 1, Math.floor(((e.clientX - r.left) / Math.max(1, r.width)) * n)));
   };
 
-  async function enregistrerReglage(m: Membre, heures: number, reserve: number[]) {
+  async function enregistrerReglage(m: MembrePlanning, heures: number, reserve: number[]) {
     const avant = equipe;
     setEquipe((t) => t.map((x) => (x.id === m.id ? { ...x, heures, reserve } : x)));
     setReglage(null);
-    const r = await reglerDisponibilite(m.id, heures, reserve).catch(() => ({ erreur: 'Pas de réseau : réessaie.' }));
+    const r = await reglerDisponibilite(m.id, heures, reserve).catch(() => ({ erreur: 'Pas de réseau : réessayez.' }));
     if (r.erreur) {
       setEquipe(avant);
       annoncer(r.erreur, 'erreur');
-    } else annoncer(`Disponibilités de ${m.prenom} enregistrées`);
+    } else annoncer(`Disponibilités de ${m.nom} enregistrées`);
   }
 
-  const semaineAvant = ajouterJours(lundi, -7);
-  const semaineApres = ajouterJours(lundi, 7);
-  const debut = jourCourt(jours[0]);
-  const fin = jourCourt(jours[jours.length - 1]);
-  const colonnes = { '--jours': jours.length } as CSSProperties;
-  const grille = { gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` } as CSSProperties;
+  const tirer = (id: string | null, ligne: string | null, de: number | null) =>
+    setTire(id ? { id, ligne, attrape: de === null ? null : { jour: jours[de >> 1], demi: (de & 1) as Demi } } : null);
+  const ouvrir = (id: string) => adressePlanning(params, { fiche: id });
+  const reglageOuvert = equipe.find((x) => x.id === reglage);
+
+  const barre = (
+    <BarreOutils vue="semaine" lundi={lundi} mois={ajouterJours(lundi, 3).slice(0, 7)} aujourdhui={aujourdhui}>
+      {FAMILLES.map((f) => (
+        <label
+          key={f}
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-trait bg-white px-[11px] py-[5px] text-[13px] font-semibold transition hover:border-pervenche max-menu:min-h-11"
+        >
+          <input type="checkbox" checked={montrees.has(f)} onChange={() => basculer(f)} className="m-0 h-[15px] w-[15px] accent-cobalt" />
+          {LIBELLE_FAMILLE[f]}
+        </label>
+      ))}
+    </BarreOutils>
+  );
+
+  // Sans technicien du tout : une carte à la place de la grille, comme le bac.
+  if (!lignes.length) {
+    return (
+      <div className="grid gap-2.5">
+        {barre}
+        <div className="carte px-4 py-6 text-center text-[13px] text-gris">Ajoutez des techniciens dans « Paramètres », puis « Membres », pour voir le planning.</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 min-[1800px]:grid-cols-[minmax(0,1fr)_300px]">
-      <section className="carte overflow-hidden">
-        <header className="flex flex-wrap items-center gap-3 border-b border-trait px-5 py-3">
-          <h2 className="text-[17px] font-extrabold">
-            Semaine du {debut.mois} au {fin.mois}
-          </h2>
-          <Bascule vue="semaine" lundi={lundi} mois={ajouterJours(lundi, 3).slice(0, 7)} />
-          <div className="ml-auto flex items-center gap-1.5">
-            <Link
-              href={`/planning?semaine=${semaineAvant}`}
-              aria-label="Semaine précédente"
-              className="grid h-9 w-9 place-items-center rounded-xl border border-trait bg-white transition hover:border-cobalt"
-            >
-              <Icone nom="gauche" taille={18} />
-            </Link>
-            <Link
-              href="/planning"
-              className="h-9 rounded-xl border border-trait bg-white px-3 text-sm leading-9 font-bold transition hover:border-cobalt"
-            >
-              Cette semaine
-            </Link>
-            <Link
-              href={`/planning?semaine=${semaineApres}`}
-              aria-label="Semaine suivante"
-              className="grid h-9 w-9 place-items-center rounded-xl border border-trait bg-white transition hover:border-cobalt"
-            >
-              <Icone nom="chevron" taille={18} />
-            </Link>
-          </div>
-        </header>
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-2.5">
+      {barre}
 
-        <div className="flex flex-wrap items-center gap-1.5 border-b border-trait px-5 py-2.5">
-          {GROUPES.map((g) => {
-            const actif = !masques.has(g.cle);
-            const combien = dansLaSemaine.filter((c) => groupe(c.type) === g.cle).length;
+      {reglageOuvert && <Reglage key={reglageOuvert.id} membre={reglageOuvert} fermer={() => setReglage(null)} enregistrer={(h, r) => enregistrerReglage(reglageOuvert, h, r)} />}
+
+      <div className="overflow-x-auto">
+        <div className="pl-plan" style={{ gridTemplateColumns: `170px repeat(${n}, minmax(62px, 1fr))`, minWidth: 170 + n * 70 }}>
+          <div className="pl-coin">
+            <span className="pl-etiq">Semaine {numeroSemaine(lundi)}</span>
+          </div>
+          {jours.map((j) => {
+            const [nom, ...date] = jourCourt(j).split(' ');
             return (
-              <button
-                key={g.cle}
-                type="button"
-                aria-pressed={actif}
-                onClick={() =>
-                  setMasques((s) => {
-                    const suite = new Set(s);
-                    if (actif) suite.add(g.cle);
-                    else suite.delete(g.cle);
-                    return suite;
-                  })
-                }
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-bold transition-transform active:scale-[0.96] ${
-                  actif ? 'border-cobalt bg-doux text-bleu' : 'border-trait bg-white text-gris line-through decoration-gris/50'
-                }`}
-              >
-                {g.libelle}
-                <span className={`min-w-5 rounded-full px-1.5 text-center text-xs ${actif ? 'bg-white text-cobalt' : 'bg-doux text-gris'}`}>{combien}</span>
-              </button>
+              <div key={j} className={`pl-jour ${j === aujourdhui ? 'auj' : ''} ${jourSemaine(j) >= 5 ? 'we' : ''}`}>
+                {nom}
+                <small>{date.join(' ')}</small>
+              </div>
             );
           })}
-        </div>
+          <div className="pl-coin" />
+          {jours.map((j) => (
+            <Fragment key={j}>
+              <div className="pl-ampm">matin</div>
+              <div className="pl-ampm pm">après-midi</div>
+            </Fragment>
+          ))}
 
-        {(() => {
-          const m = equipe.find((x) => x.id === reglage);
-          return m ? <Reglage key={m.id} membre={m} fermer={() => setReglage(null)} enregistrer={(h, r) => enregistrerReglage(m, h, r)} /> : null;
-        })()}
-
-        <div className="overflow-x-auto">
-          <div className="grille-planning min-w-[1040px]" style={colonnes}>
-            {/* En-tête des jours, puis matin et après-midi */}
-            <div className="border-b border-trait bg-fond/60" />
-            {jours.map((j) => {
-              const d = jourCourt(j);
-              const auj = j === aujourdhui;
-              return (
-                <div key={j} className={`border-b border-l border-trait pt-2.5 text-center ${auj ? 'bg-doux' : 'bg-fond/60'}`}>
-                  <span className="block text-xs font-bold text-gris uppercase">{d.nom}</span>
-                  <span className={`mt-0.5 inline-grid h-8 w-8 place-items-center rounded-full text-[15px] font-extrabold ${auj ? 'bg-cobalt text-white' : ''}`}>
-                    {d.num}
-                  </span>
-                  <span className="mt-1 grid grid-cols-2 border-t border-trait/70 text-[11px] font-semibold text-gris">
-                    <span className="py-1">matin</span>
-                    <span className="border-l border-dashed border-trait py-1">après-midi</span>
-                  </span>
-                </div>
-              );
-            })}
-
-            {lignes.map((ligne) => {
-              const m = equipe.find((x) => x.id === ligne);
-              const charge = m ? cartes.filter((c) => c.techniciens.includes(m.id)).reduce((t, c) => t + heuresSur(creneau(c), semaine), 0) : 0;
-              const taux = m && m.heures ? Math.round((charge / m.heures) * 100) : 0;
-              return (
-                <div key={ligne} className="contents">
-                  <div className={`border-b border-trait px-4 py-3 ${reglage === ligne ? 'bg-doux' : ''}`}>
-                    {m ? (
-                      <>
-                        <span className="flex items-center gap-2.5">
-                          <Avatar url={m.photo} initiales={m.initiales} taille={30} />
-                          <span className="min-w-0 truncate text-sm font-extrabold">{m.prenom}</span>
-                        </span>
+          {lignes.map((ligne) => {
+            const m = equipe.find((x) => x.id === ligne);
+            const charge = m ? cartes.filter((c) => c.techniciens.includes(m.id)).reduce((t, c) => t + heuresSur(creneau(c), semaine), 0) : 0;
+            const taux = m && m.heures ? Math.round((charge / m.heures) * 100) : 0;
+            const aujK = jours.indexOf(aujourdhui);
+            return (
+              <Fragment key={ligne || 'sans'}>
+                <div className={`pl-tech ${reglage && reglage === ligne ? 'bg-doux!' : ''}`}>
+                  {m ? (
+                    <>
+                      <b className="flex min-w-0 items-center gap-1.5 text-[13px] font-extrabold">
+                        <AvatarTech m={m} />
+                        <span className="truncate">{m.nom}</span>
+                      </b>
+                      {dirigeant ? (
                         <button
                           type="button"
-                          disabled={!dirigeant}
                           onClick={() => setReglage((r) => (r === m.id ? null : m.id))}
-                          title={dirigeant ? 'Heures par semaine et réserve d’urgences' : undefined}
-                          className={`mt-1.5 block text-left text-xs whitespace-nowrap text-gris tabular-nums ${dirigeant ? 'hover:text-cobalt hover:underline' : ''}`}
+                          title="Heures par semaine et réserve d’urgences"
+                          aria-expanded={reglage === m.id}
+                          className="w-fit text-left text-[12.5px] whitespace-nowrap text-gris tabular-nums hover:text-cobalt hover:underline"
                         >
                           {nombre(charge)} h / {nombre(m.heures)} h · {taux} %
                         </button>
-                        <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-doux" aria-hidden="true">
-                          <span className={`block h-full rounded-full ${taux > 100 ? 'bg-rouge' : taux > 90 ? 'bg-violet' : 'bg-cobalt'}`} style={{ width: `${Math.min(100, taux)}%` }} />
+                      ) : (
+                        <span className="text-[12.5px] whitespace-nowrap text-gris tabular-nums">
+                          {nombre(charge)} h / {nombre(m.heures)} h · {taux} %
                         </span>
-                        {m.reserve.length > 0 && <span className="mt-1 block truncate text-[11px] text-rouge">Urgences : {texteReserve(m.reserve)}</span>}
-                      </>
-                    ) : (
-                      <span className="text-sm font-bold text-gris">
-                        Sans technicien
-                        <span className="block text-xs font-normal">à attribuer</span>
-                      </span>
-                    )}
-                  </div>
-                  <div
-                    style={{ ...grille, gridColumn: '2 / -1', gridAutoFlow: 'row dense' }}
-                    className="relative grid min-h-[96px] content-start gap-1 border-b border-trait p-1.5"
-                    onDragOver={(e) => {
-                      if (!tire) return;
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = 'move';
-                      const col = colonne(e);
-                      if (survol === 'bac' || survol?.ligne !== ligne || survol.col !== col) setSurvol({ ligne, col });
-                    }}
-                    onDragLeave={(e) => {
-                      if (!e.currentTarget.contains(e.relatedTarget as Node)) setSurvol((s) => (s !== 'bac' && s?.ligne === ligne ? null : s));
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setSurvol(null);
-                      const id = e.dataTransfer.getData('text/plain');
-                      if (id) deposer(id, ligne, colonne(e));
-                      setTire(null);
-                    }}
-                    onClick={(e) => {
-                      if (e.target !== e.currentTarget && !(e.target as HTMLElement).dataset.fond) return;
-                      const col = colonne(e);
-                      const q = new URLSearchParams({ date: jours[col >> 1], heure: HEURE_DEMI[(col & 1) as Demi] });
-                      if (m) q.set('technicien', m.id);
-                      router.push(`/interventions/nouvelle?${q}`);
-                    }}
-                    title="Cliquez une demi-journée libre pour créer une intervention"
-                  >
-                    {/* Fond : séparations des jours et du midi, aujourd'hui, case visée */}
-                    {jours.map((j, k) => (
-                      <span
-                        key={j}
-                        data-fond="1"
-                        aria-hidden="true"
-                        style={{ gridColumn: `${k * 2 + 1} / span 2` }}
-                        className={`absolute inset-y-0 w-full ${k ? 'border-l border-trait' : ''} ${j === aujourdhui ? 'bg-doux/40' : ''}`}
-                      >
-                        <span data-fond="1" className="absolute inset-y-0 left-1/2 border-l border-dashed border-trait/70" />
-                      </span>
-                    ))}
-                    {survol !== 'bac' && survol?.ligne === ligne && (
-                      <span
-                        aria-hidden="true"
-                        style={{ gridColumn: `${survol.col + 1} / span 1` }}
-                        className="pointer-events-none absolute inset-y-1 w-full rounded-[10px] bg-bleu-doux ring-2 ring-cobalt ring-inset"
-                      />
-                    )}
-                    {m &&
-                      reserves(m).map((r) => (
-                        <span
-                          key={`r${r.de}`}
-                          style={{ gridColumn: `${r.de + 1} / ${r.a + 2}` }}
-                          className="relative truncate rounded-[10px] border border-dashed border-rouge/50 bg-rouge-doux/50 px-2 py-1 text-[11px] font-bold text-rouge"
-                          title="Demi-journée gardée pour les urgences"
-                        >
-                          {r.a > r.de ? 'Réserve urgences' : 'Urgences'}
-                        </span>
-                      ))}
-                    {blocs(ligne).map((b) => (
-                      <Rdv
-                        key={`${b.c.id}-${b.de}`}
-                        c={b.c}
-                        style={{ gridColumn: `${b.de + 1} / ${b.a + 2}` }}
-                        court={b.a === b.de}
-                        enCours={enCours.has(b.c.id)}
-                        onTire={(id) => setTire(id ? { id, ligne, attrape: { jour: jours[b.de >> 1], demi: (b.de & 1) as Demi } } : null)}
-                      />
-                    ))}
-                  </div>
+                      )}
+                      <div className={`pl-charge ${taux > 95 ? 'plein' : ''}`} aria-hidden="true">
+                        <i style={{ width: `${Math.min(100, taux)}%` }} />
+                      </div>
+                      {m.reserve.length > 0 && <span className="truncate text-[11px] text-rouge">Urgences : {texteReserve(m.reserve)}</span>}
+                    </>
+                  ) : (
+                    <>
+                      <b className="text-[13px] font-bold text-rouge">Sans technicien</b>
+                      <span className="text-[12.5px] text-gris">à attribuer</span>
+                    </>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+                <div
+                  data-zone={ligne}
+                  className="pl-zone"
+                  style={{ gridTemplateColumns: `repeat(${n}, minmax(62px, 1fr))`, backgroundSize: `calc(100% / ${jours.length}) 100%` } as CSSProperties}
+                  onDragOver={(e) => {
+                    if (!tire) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    const col = colonne(e);
+                    if (survol === 'bac' || survol?.ligne !== ligne || survol.col !== col) setSurvol({ ligne, col });
+                  }}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) setSurvol((s) => (s !== 'bac' && s?.ligne === ligne ? null : s));
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setSurvol(null);
+                    const id = e.dataTransfer.getData('text/plain');
+                    if (id) deposer(id, ligne, colonne(e));
+                    setTire(null);
+                  }}
+                  onClick={(e) => {
+                    if (e.target !== e.currentTarget && !(e.target as HTMLElement).dataset.fond) return;
+                    const col = colonne(e);
+                    router.push(
+                      adressePlanning(params, {
+                        nouvelle: '1',
+                        date: jours[col >> 1],
+                        moment: col & 1 ? 'apres-midi' : 'matin',
+                        technicien: m ? m.id : null,
+                      }),
+                      { scroll: false },
+                    );
+                  }}
+                >
+                  {aujK >= 0 && <span aria-hidden="true" className="pl-auj" style={{ gridColumn: `${aujK * 2 + 1} / span 2` }} />}
+                  {survol !== 'bac' && survol?.ligne === ligne && <span aria-hidden="true" className="pl-ombre" style={{ gridColumn: `${survol.col + 1} / span 1` }} />}
+                  {m &&
+                    reserves(m).map((r) => (
+                      <span key={`r${r.de}`} data-fond="1" style={{ gridColumn: `${r.de + 1} / ${r.a + 2}` }} className="pl-reserve" title="Demi-journée gardée pour les urgences">
+                        {r.a > r.de ? 'Réserve urgences' : 'Urgences'}
+                      </span>
+                    ))}
+                  {blocs(ligne).map((b) => (
+                    <Bloc
+                      key={`${b.c.id}-${b.de}`}
+                      c={b.c}
+                      de={b.de}
+                      a={b.a}
+                      href={ouvrir(b.c.id)}
+                      enCours={enCours.has(b.c.id)}
+                      tire={tire?.id === b.c.id}
+                      onTire={(id) => tirer(id, ligne, b.de)}
+                    />
+                  ))}
+                </div>
+              </Fragment>
+            );
+          })}
         </div>
-        {!equipe.length && <p className="px-5 py-8 text-center text-gris">Ajoutez un technicien dans Équipe pour planifier.</p>}
-        <p className="flex flex-wrap gap-x-4 gap-y-1 border-t border-trait px-5 py-2.5 text-xs text-gris">
-          <span>Un chantier s’étend sur ses demi-journées, week-end sauté.</span>
-          <span className="text-rouge">Hachuré rouge : demi-journée gardée pour les urgences.</span>
-          <span>Une case libre se clique pour créer une intervention.</span>
-        </p>
-      </section>
-
-      <div className="grid gap-6 min-[1800px]:sticky min-[1800px]:top-6">
-        <Panneau titre="À planifier" nombre={aPlanifier.length}>
-          <div
-            onDragOver={(e) => {
-              if (!tire) return;
-              e.preventDefault();
-              if (survol !== 'bac') setSurvol('bac');
-            }}
-            onDragLeave={() => setSurvol((s) => (s === 'bac' ? null : s))}
-            onDrop={(e) => {
-              e.preventDefault();
-              setSurvol(null);
-              const id = e.dataTransfer.getData('text/plain');
-              if (id) deposer(id, null, null);
-              setTire(null);
-            }}
-            className={`min-h-[120px] space-y-2 p-3 transition-colors ${survol === 'bac' ? 'bg-bleu-doux ring-2 ring-cobalt ring-inset' : ''}`}
-          >
-            {aPlanifier.length ? (
-              aPlanifier.map((c) => (
-                <Rdv key={c.id} c={c} enCours={enCours.has(c.id)} onTire={(id) => setTire(id ? { id, ligne: null, attrape: null } : null)} large />
-              ))
-            ) : (
-              <p className="px-2 py-6 text-center text-sm text-gris">Tout est planifié. Déposez ici une intervention pour retirer sa date.</p>
-            )}
-          </div>
-        </Panneau>
-        <p className="flex items-start gap-2 px-1 text-[13px] text-gris">
-          <Icone nom="calendrier" taille={16} className="mt-0.5 shrink-0 text-cobalt" />
-          {invitations
-            ? 'Chaque technicien reçoit une invitation dans l’agenda de son adresse e-mail, mise à jour si vous déplacez le rendez-vous.'
-            : 'Les invitations d’agenda par e-mail seront actives dès que la clé d’envoi sera réglée. En attendant, utilisez « Ajouter à mon agenda » sur chaque intervention.'}
-        </p>
       </div>
+
+      <p className="pl-legende">
+        <span>
+          <i style={{ backgroundImage: 'var(--degrade)' }} />
+          Chantier (plusieurs demi-journées)
+        </span>
+        <span>
+          <i className="border-l-[3px] border-l-rouge bg-rouge-doux" />
+          Dépannage
+        </span>
+        <span>
+          <i className="border-l-[3px] border-l-menthe bg-vert-doux" />
+          Entretien
+        </span>
+        <span>
+          <i className="bg-violet" />
+          Point violet : fiche à valider
+        </span>
+        {avecReserve && <span className="text-rouge">Hachuré rouge : demi-journée gardée pour les urgences.</span>}
+        <span>Cliquez une case vide pour créer une intervention</span>
+      </p>
+
+      <section
+        className={`carte flex flex-col gap-3 p-4 transition-colors ${survol === 'bac' ? 'bg-bleu-doux! ring-2 ring-cobalt' : ''}`}
+        aria-labelledby="titre-a-placer"
+        onDragOver={(e) => {
+          if (!tire) return;
+          e.preventDefault();
+          if (survol !== 'bac') setSurvol('bac');
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) setSurvol((s) => (s === 'bac' ? null : s));
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setSurvol(null);
+          const id = e.dataTransfer.getData('text/plain');
+          // En plus du bac : déposer ici une intervention datée lui retire sa date.
+          if (id && tire?.ligne !== null) deposer(id, null, null);
+          setTire(null);
+        }}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+          <h2 id="titre-a-placer" className="text-[17px] font-extrabold">
+            À placer au planning{' '}
+            <span className="ml-1 inline-block min-w-5 rounded-full bg-doux px-[7px] py-px text-center align-middle text-[11px] font-extrabold text-gris tabular-nums">
+              {attente.length}
+            </span>
+          </h2>
+          <span className="text-[12.5px] text-gris">Glissez une carte sur une demi-journée, ou ouvrez-la pour choisir date et technicien</span>
+        </div>
+        {attente.length ? (
+          <div className="pl-cartes">
+            {attente.map((c) => (
+              <Link
+                key={c.id}
+                href={ouvrir(c.id)}
+                scroll={false}
+                prefetch={false}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/plain', c.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                  tirer(c.id, null, null);
+                }}
+                onDragEnd={() => tirer(null, null, null)}
+                className={`pl-carte ${c.famille} ${tire?.id === c.id ? 'glisse' : ''} ${enCours.has(c.id) ? 'animate-pulse' : ''}`}
+              >
+                <span className="mb-1 flex flex-wrap gap-1">
+                  <Puce ton={TON_FAMILLE[c.famille]}>{LIBELLE_TYPE[c.type]}</Puce>
+                  {c.urgence !== 'normale' && <Puce ton="rouge">{LIBELLE_URGENCE[c.urgence]}</Puce>}
+                </span>
+                <b className="block font-semibold">{c.motif}</b>
+                <small className="block text-xs text-gris">
+                  <span className="font-mono">{c.reference}</span>
+                  {c.lieu ? ` · ${c.lieu}` : ''}
+                  {c.souhaitee ? ` · souhaitée le ${jjmm(c.souhaitee)}` : ''}
+                  {c.date ? ` · ${jjmm(c.date)}, sans technicien` : ''}
+                </small>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="p-2.5 text-center text-[13px] text-gris">Rien à placer. Les visites d’entretien arrivent ici quand vous les planifiez depuis un contrat.</p>
+        )}
+      </section>
     </div>
+  );
+}
+
+/** Un bloc de la grille, comme le bac : motif, puis « 09:00 · DEP-2026-0143 » (et le lieu s'il couvre deux demi-journées). */
+function Bloc({
+  c,
+  de,
+  a,
+  href,
+  enCours,
+  tire,
+  onTire,
+}: {
+  c: CarteRdv;
+  de: number;
+  a: number;
+  href: string;
+  enCours: boolean;
+  tire: boolean;
+  onTire: (id: string | null) => void;
+}) {
+  const court = a - de < 1;
+  const urgent = c.urgence !== 'normale';
+  return (
+    <Link
+      href={href}
+      scroll={false}
+      prefetch={false}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', c.id);
+        e.dataTransfer.effectAllowed = 'move';
+        onTire(c.id);
+      }}
+      onDragEnd={() => onTire(null)}
+      style={{ gridColumn: `${de + 1} / ${a + 2}` }}
+      title={`${c.reference} · ${c.motif}${c.adresse ? ` · ${c.adresse}` : ''} · ${LIBELLE_STATUT[c.etat]}`}
+      className={`pl-bloc ${c.famille} st-${c.etat} ${tire ? 'glisse' : ''} ${enCours ? 'animate-pulse' : ''}`}
+    >
+      <span className="pl-motif">
+        {urgent && (
+          <em className="pl-urg">
+            !<span className="sr-only"> {LIBELLE_URGENCE[c.urgence]} :</span>
+          </em>
+        )}
+        {c.motif}
+      </span>
+      <small>
+        {c.famille !== 'chantier' && c.heure ? `${c.heure} · ` : ''}
+        {c.reference}
+        {court || !c.lieu ? '' : ` · ${c.lieu}`}
+      </small>
+      <span className="pl-pt" aria-hidden="true" />
+    </Link>
   );
 }
 
 const JOURS_RESERVE = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
-/** Heures par semaine et demi-journées gardées pour les urgences d'un technicien (dirigeant). */
-function Reglage({ membre, fermer, enregistrer }: { membre: Membre; fermer: () => void; enregistrer: (heures: number, reserve: number[]) => void }) {
+/** Heures par semaine et demi-journées gardées pour les urgences d'un technicien (dirigeant, en plus du bac). */
+function Reglage({ membre, fermer, enregistrer }: { membre: MembrePlanning; fermer: () => void; enregistrer: (heures: number, reserve: number[]) => void }) {
   const [heures, setHeures] = useState(String(membre.heures).replace('.', ','));
   const [reserve, setReserve] = useState(new Set(membre.reserve));
   const h = Number(heures.replace(',', '.'));
   const valide = heures.trim() !== '' && Number.isFinite(h) && h >= 0 && h <= 80;
   return (
-    <div className="apparition flex flex-wrap items-end gap-x-8 gap-y-4 border-b border-trait bg-fond/60 px-5 py-4 text-sm">
+    <div className="carte apparition flex flex-wrap items-end gap-x-8 gap-y-4 px-5 py-4 text-sm">
       <div>
-        <p className="mb-2 font-extrabold">Disponibilités de {membre.prenom}</p>
+        <p className="mb-2 font-extrabold">Disponibilités de {membre.nom}</p>
         <label className="etiquette" htmlFor={`h-${membre.id}`}>
           Heures par semaine
         </label>
         <input id={`h-${membre.id}`} className="champ w-28 py-2" inputMode="decimal" value={heures} onChange={(e) => setHeures(e.target.value)} />
       </div>
-      <div>
+      <div className="max-w-full overflow-x-auto">
         <p className="etiquette">Gardé pour les urgences</p>
-        <div className="grid grid-cols-[auto_repeat(6,64px)] items-center gap-1 text-xs">
+        <div className="grid grid-cols-[auto_repeat(6,56px)] items-center gap-1 text-xs">
           <span />
           {JOURS_RESERVE.map((j) => (
             <span key={j} className="text-center font-bold text-gris">
@@ -495,7 +600,7 @@ function Reglage({ membre, fermer, enregistrer }: { membre: Membre; fermer: () =
             </span>
           ))}
           {([0, 1] as Demi[]).map((d) => (
-            <div key={d} className="contents">
+            <Fragment key={d}>
               <span className="pr-2 text-gris">{d ? 'après-midi' : 'matin'}</span>
               {JOURS_RESERVE.map((j, k) => {
                 const i = k * 2 + d;
@@ -522,7 +627,7 @@ function Reglage({ membre, fermer, enregistrer }: { membre: Membre; fermer: () =
                   </button>
                 );
               })}
-            </div>
+            </Fragment>
           ))}
         </div>
       </div>
@@ -541,62 +646,5 @@ function Reglage({ membre, fermer, enregistrer }: { membre: Membre; fermer: () =
       </div>
       <p className="w-full text-xs text-gris">Les demi-journées gardées restent visibles au planning, pour caser les dépannages urgents. La charge se compte sur les heures par semaine.</p>
     </div>
-  );
-}
-
-function Rdv({
-  c,
-  enCours,
-  onTire,
-  large = false,
-  court = false,
-  style,
-}: {
-  c: CarteRdv;
-  enCours: boolean;
-  onTire: (id: string | null) => void;
-  large?: boolean;
-  court?: boolean;
-  style?: CSSProperties;
-}) {
-  const deplacable = DEPLACABLE.includes(c.statut);
-  const plusieurs = surPlusieursJours(creneau(c));
-  const quand = plusieurs
-    ? `Jusqu’au ${jourCourt(c.date_fin!).nom} ${jourCourt(c.date_fin!).num}`
-    : c.heure
-      ? c.heure.replace(':', ' h ')
-      : !c.date && c.souhaitee
-        ? `Vers le ${jourCourt(c.souhaitee).mois}`
-        : 'Sans heure';
-  return (
-    <Link
-      href={`/interventions/${c.id}`}
-      draggable={deplacable}
-      onDragStart={(e) => {
-        e.dataTransfer.setData('text/plain', c.id);
-        e.dataTransfer.effectAllowed = 'move';
-        onTire(c.id);
-      }}
-      onDragEnd={() => onTire(null)}
-      style={style}
-      title={`${c.reference ? `${c.reference} · ` : ''}${c.client} · ${c.motif}${deplacable ? '' : ` (${LIBELLE_STATUT[c.statut]})`}`}
-      className={`relative block min-w-0 rounded-[10px] border border-l-4 border-trait px-2 py-1.5 text-left shadow-[0_4px_10px_-8px_rgb(16_26_61/0.4)] transition hover:border-pervenche ${LISERE[c.statut]} ${
-        plusieurs ? 'bg-doux' : 'bg-white'
-      } ${deplacable ? 'cursor-grab active:cursor-grabbing' : 'opacity-80'} ${enCours ? 'animate-pulse' : ''} ${large ? 'px-3 py-2' : ''}`}
-    >
-      <span className="flex items-center gap-1.5 text-xs font-extrabold tabular-nums">
-        <span className="truncate">{quand}</span>
-        {c.urgent && <span className="shrink-0 rounded-full bg-rouge-doux px-1.5 text-[10px] text-rouge">Urgent</span>}
-        {enCours && <Roue taille={12} />}
-      </span>
-      <span className="block truncate text-[13px] font-bold">{c.client}</span>
-      {!court && (
-        <span className="block truncate text-xs text-gris">
-          {c.motif}
-          {c.reference ? ` · ${c.reference}` : ''}
-          {large && c.ville ? ` · ${c.ville}` : ''}
-        </span>
-      )}
-    </Link>
   );
 }
