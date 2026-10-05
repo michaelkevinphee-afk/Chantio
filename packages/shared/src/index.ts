@@ -18,3 +18,5 @@ export * from './planning.ts';
 export * from './contrats.ts';
 export * from './devis-editeur.ts';
 export * from './chiffres.ts';
+export * from './pilotage.ts';
+export * from './pilotage-import.ts';

@@ -10,7 +10,6 @@ import {
   numeroIntervention,
   prevuRealise,
   reglagesPrix,
-  type DocumentChiffres,
   type InterventionCharge,
   type InterventionLiee,
   type InterventionPrevu,
@@ -24,13 +23,12 @@ import { listerEquipe } from '@/lib/requetes';
 import { contexteBureau } from '@/lib/session';
 import { VoletIntervention } from '../interventions/volet-intervention';
 import { CarteCharge, CartePrevu, CarteParType, Tuile, type LignePrevu } from './blocs';
+import { chargerMonAnnee } from './annee/donnees';
+import { MonAnnee } from './annee/mon-annee';
+import { SELECT_DOCUMENTS, versDocument, type DocumentLu } from './documents';
+import { OngletsChiffres } from './onglets';
 
 export const metadata = { title: 'Chiffres · Chantio' };
-
-// Documents : les colonnes utiles, et seulement les clés de conditions (jsonb) qui servent au classement par type.
-const SELECT_DOCUMENTS =
-  'id, genre, type_facture, numero, statut, objet, date_document, echeance, envoye_le, finalise_le, signe_le, paye_le, total_ht, net_a_payer, devis_id, facture_id, parcours:conditions->>parcours, intervention_id:conditions->>intervention_id, contrat_id:conditions->>contrat_id, ao:conditions->ao';
-type DocumentLu = Omit<DocumentChiffres, 'conditions'> & { parcours: string | null; intervention_id: string | null; contrat_id: string | null; ao: unknown };
 
 const SELECT_FINIES =
   'id, reference, numero, motif, statut, devis_id, contrat_id, fiches(envoyee_le, duree_minutes, resultat, fournitures(designation, reference, quantite)), contrat:contrats(reference, heures_visite, fournitures_visite, montant_ht, visites_par_an)';
@@ -46,25 +44,31 @@ const s = (n: number) => (n > 1 ? 's' : '');
 const eur0 = (n: number) => euroBac(n, 0);
 const chaine = (v: string | string[] | undefined) => (typeof v === 'string' && v ? v : undefined);
 
-function versDocument(d: DocumentLu): DocumentChiffres {
-  const { parcours, intervention_id, contrat_id, ao, ...reste } = d;
-  return {
-    ...reste,
-    total_ht: Number(d.total_ht) || 0,
-    net_a_payer: Number(d.net_a_payer) || 0,
-    conditions: { parcours, intervention_id: intervention_id ?? undefined, contrat_id: contrat_id ?? undefined, ao: ao === true },
-  };
-}
-
 /**
  * Chiffres, comme vChiffres() du bac à sable : pour faire le point sur ce qui a été facturé et encaissé,
  * la charge de l'équipe cette semaine et les marges des chantiers (prévu au devis contre réalisé).
  * Une ligne du tableau ouvre le volet de l'intervention par-dessus la page (?fiche=<id>).
  */
 export default async function Chiffres({ searchParams }: PageProps<'/chiffres'>) {
-  const { supabase, entreprise } = await contexteBureau();
+  const ctx = await contexteBureau();
+  const { supabase, entreprise } = ctx;
   const sp = await searchParams;
   const fiche = chaine(sp.fiche);
+  const dirigeant = ctx.membre.role === 'dirigeant';
+
+  // Mon année : le pilotage de l'année (réservé au dirigeant, comme son budget).
+  if (dirigeant && chaine(sp.vue) === 'annee') {
+    const donnees = await chargerMonAnnee(ctx);
+    return (
+      <>
+        <Titre retour={<LienVentes />} texte="Pour voir où va l’année : production, objectifs, prévision et résultat." actions={<OngletsChiffres actif="annee" />}>
+          Chiffres
+        </Titre>
+        <MonAnnee donnees={donnees} entreprise={entreprise.nom} />
+      </>
+    );
+  }
+
   const jour = aujourdhui();
   const debutAnnee = `${jour.slice(0, 4)}-01-01`;
   // La veille du 1er du mois : un paiement saisi juste avant minuit (UTC) peut tomber le 1er à Paris.
@@ -209,7 +213,11 @@ export default async function Chiffres({ searchParams }: PageProps<'/chiffres'>)
 
   return (
     <>
-      <Titre retour={<LienVentes />} texte="Pour faire le point : ce qui a été facturé et encaissé, la charge de l’équipe et les marges des chantiers.">
+      <Titre
+        retour={<LienVentes />}
+        texte="Pour faire le point : ce qui a été facturé et encaissé, la charge de l’équipe et les marges des chantiers."
+        actions={dirigeant ? <OngletsChiffres actif="point" /> : undefined}
+      >
         Chiffres
       </Titre>
 

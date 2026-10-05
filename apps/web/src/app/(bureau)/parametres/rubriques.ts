@@ -17,6 +17,8 @@ export type CleRubrique =
   | 'membres'
   | 'cgv'
   | 'prix'
+  | 'budget'
+  | 'production'
   | 'compta'
   | 'retours';
 
@@ -73,6 +75,25 @@ export const GROUPES: { titre: string; rubriques: Rubrique[] }[] = [
         libelle: 'Prix et coefficients',
         aide: 'Les valeurs par défaut de chaque nouveau devis. Elles restent modifiables sur chaque devis et sur chaque ligne.',
         icone: 'p_prix',
+      },
+    ],
+  },
+  {
+    titre: 'Pilotage',
+    rubriques: [
+      {
+        cle: 'budget',
+        libelle: 'Budget de l’année',
+        aide: 'Objectifs, achats, frais généraux et coefficients : ce que vous visez cette année. Chiffres › Mon année le compare à ce qui est facturé.',
+        icone: 'chiffres',
+        dirigeantSeul: true,
+      },
+      {
+        cle: 'production',
+        libelle: 'Production avant Chantio',
+        aide: 'Les mois facturés dans un autre logiciel, l’année précédente et le carnet de commandes. Dès que vous facturez dans Chantio, les mois suivants se remplissent seuls.',
+        icone: 'pilotage',
+        dirigeantSeul: true,
       },
     ],
   },
