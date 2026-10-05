@@ -48,6 +48,8 @@ export interface SourceDonnees {
   partagerPosition(p: PositionTelephone): Promise<boolean>;
   /** Note l'arrivée (Démarrer) ou le départ (Terminer), avec le lieu si on l'a. */
   pointer(interventionId: string, genre: 'arrivee' | 'depart', p: PositionTelephone | null, le: string): Promise<void>;
+  /** Envoie une idée d'amélioration (bulle des retours), avec l'écran où elle a été dite. */
+  envoyerRetour(r: { auteur: string; texte: string; page: string; titrePage: string; appareil: string }): Promise<void>;
 }
 
 export interface PositionTelephone {

@@ -178,4 +178,7 @@ export const sourceDemo: SourceDonnees = {
     return partageDemo;
   },
   async pointer() {},
+  async envoyerRetour() {
+    await attendre(300);
+  },
 };

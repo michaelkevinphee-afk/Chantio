@@ -51,6 +51,10 @@ const TRACES = {
   drapeau: 'M4 22V3M4 4h14l-2.5 4.5L18 13H4',
   telecharger: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
   droite: 'M5 12h14M13 6l6 6-6 6',
+  // Bulle des retours : bulle de discussion, micro (Dicter), flèche d'envoi.
+  bulle: 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.9L3 20.5l1.6-4.7A8.4 8.4 0 0 1 3 11.5 8.5 8.5 0 0 1 12 3a8.5 8.5 0 0 1 9 8.5zM8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01',
+  micro: 'M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0zM19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8',
+  envoyer: 'M12 19V5M5 12l7-7 7 7',
   // Rubriques de Paramètres (icônes IP du bac, cercles et rectangles réécrits en chemins).
   p_entreprise: 'M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4',
   p_numerotation: 'M5 9h15M4 15h15M10 3 8 21M16 3l-2 18',
@@ -66,6 +70,7 @@ const TRACES = {
   p_membres: 'M5.5 8a3.5 3.5 0 1 0 7 0 3.5 3.5 0 1 0-7 0M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c1.9.7 3.1 2.5 3.5 5.4',
   p_cgv: 'M6 2h9l5 5v15H6zM14 2v6h6M9 13h6M9 17h6',
   p_prix: 'M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 18h8',
+  p_retours: 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.9L3 20.5l1.6-4.7A8.4 8.4 0 0 1 3 11.5 8.5 8.5 0 0 1 12 3a8.5 8.5 0 0 1 9 8.5zM8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01',
   p_compta: 'M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5zM4 21.5A2.5 2.5 0 0 1 6.5 19H20v3H6.5M9 7h7M9 11h5',
   // Carte d'une entreprise (« Gérer vos entreprises »).
   p_immeuble: 'M5.5 3h8a1.5 1.5 0 0 1 1.5 1.5V21H4V4.5A1.5 1.5 0 0 1 5.5 3zM15 9h4.5a.5.5 0 0 1 .5.5V21h-5M8 7h3M8 11h3M8 15h3',

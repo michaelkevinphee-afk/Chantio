@@ -10,6 +10,7 @@ import { contexteBureau, mesEntreprises } from '@/lib/session';
 import { Note, Section } from './elements';
 import { RubriquePrix } from './formulaire';
 import { RubriqueMembres } from './membres';
+import { RubriqueRetours } from './retours';
 import { CasesNotifications } from './notifications';
 import { ChampsProfil, ChangerMotDePasse } from './profil';
 import { RubriqueEntreprise } from './rubrique-entreprise';
@@ -21,7 +22,7 @@ import { adresseComplete, capitalDe, nafDe, NOTIFICATIONS_DEFAUT, type Notificat
 export const metadata = { title: 'Paramètres · Chantio' };
 
 /** Rubriques que tout le bureau peut modifier (les autres sont réservées au dirigeant). */
-const POUR_TOUS: CleRubrique[] = ['profil', 'notifications'];
+const POUR_TOUS: CleRubrique[] = ['profil', 'notifications', 'retours'];
 
 const NUMEROS: [string, string][] = [
   ['DEP', 'Dépannages'],
@@ -218,6 +219,8 @@ export default async function Parametres({ searchParams }: PageProps<'/parametre
     contenu = <RubriqueMembres ctx={ctx} sp={sp} />;
   } else if (cle === 'cgv') {
     contenu = <RubriqueCgv r={r} />;
+  } else if (cle === 'retours') {
+    contenu = <RubriqueRetours ctx={ctx} />;
   } else if (cle === 'prix') {
     contenu = <RubriquePrix r={r} />;
   } else {

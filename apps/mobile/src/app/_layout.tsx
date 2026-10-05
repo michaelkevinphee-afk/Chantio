@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { BulleRetours } from '@/components/BulleRetours';
 import { Bouton } from '@/components/Bouton';
 import { Texte, Titre } from '@/components/Texte';
 import { SessionProvider, useSession } from '@/lib/session';
@@ -64,6 +65,7 @@ function Navigation() {
   }
 
   return (
+    <>
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.fond }, animation: 'slide_from_right' }}>
       <Stack.Protected guard={etat === 'pret'}>
         <Stack.Screen name="index" />
@@ -82,5 +84,8 @@ function Navigation() {
         <Stack.Screen name="entreprise" />
       </Stack.Protected>
     </Stack>
+    {/* Bulle des retours (idées d'amélioration), sur tous les écrans de l'appli connectée. */}
+    {etat === 'pret' && <BulleRetours />}
+    </>
   );
 }
