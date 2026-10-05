@@ -9,6 +9,11 @@ const mono = JetBrains_Mono({ variable: '--font-jetbrains', subsets: ['latin'], 
 export const metadata: Metadata = {
   title: 'Chantio',
   description: "Fiches d'intervention pour les artisans du bâtiment",
+  // Logo « C en blocs » dans l'onglet, les favoris et l'écran d'accueil de l'iPhone.
+  icons: {
+    icon: { url: '/icon.svg', type: 'image/svg+xml' },
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
