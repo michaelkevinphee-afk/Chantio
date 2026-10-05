@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
-import { lireDocument, lireHistoriqueDevis } from '@/lib/devis';
+import { lireDocument } from '@/lib/devis';
 import { contexteBureau } from '@/lib/session';
-import { chargerContexteEditeur } from '../../(bureau)/devis/charger';
+import { chargerLiens, entreprisePapier } from '../../(bureau)/devis/charger';
 import { Papier } from '../../(bureau)/devis/papier';
 import { BoutonImprimer } from './imprimer';
 import '../../(bureau)/devis/devis.css';
@@ -14,11 +14,7 @@ export default async function Impression({ params }: PageProps<'/impression/[id]
   const lu = await lireDocument(supabase, id, entreprise.facturation ?? {});
   if (!lu) notFound();
   const { document: d, lignes } = lu;
-  const [ctx, historique, factureCorrigee] = await Promise.all([
-    chargerContexteEditeur(supabase, entreprise),
-    d.genre === 'facture' && d.devis_id ? lireHistoriqueDevis(supabase, d.devis_id, d.id) : null,
-    d.facture_id ? supabase.from('documents').select('numero').eq('id', d.facture_id).maybeSingle() : null,
-  ]);
+  const [papier, liens] = await Promise.all([entreprisePapier(supabase, entreprise), chargerLiens(supabase, d)]);
   const nom = `${d.numero ?? 'Brouillon'} ${d.objet}`.trim();
 
   return (
@@ -35,10 +31,13 @@ export default async function Impression({ params }: PageProps<'/impression/[id]
           d={{
             ...d,
             lignes,
-            refDevis: historique?.numero ?? null,
-            refFacture: (factureCorrigee?.data?.numero as string | undefined) ?? null,
+            refDevis: liens.refDevis,
+            refFacture: liens.refFacture,
+            refIntervention: liens.intervention?.reference ?? null,
+            refContrat: liens.contrat?.reference ?? null,
+            lieu: liens.lieu,
           }}
-          entreprise={ctx.entreprise}
+          entreprise={papier}
         />
       </div>
     </div>

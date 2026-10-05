@@ -1,11 +1,6 @@
-import { lireArticles } from '@/lib/devis';
-import { contexteBureau } from '@/lib/session';
-import { Catalogue } from './catalogue';
+import { redirect } from 'next/navigation';
 
-export const metadata = { title: 'Catalogue · Chantio' };
-
-export default async function PageCatalogue() {
-  const { supabase, entreprise } = await contexteBureau();
-  const articles = await lireArticles(supabase);
-  return <Catalogue articles={articles} reglages={entreprise.facturation ?? {}} />;
+/** L'ancien « Catalogue » est devenu Ventes › Produits et services. */
+export default function PageCatalogue() {
+  redirect('/produits-services');
 }

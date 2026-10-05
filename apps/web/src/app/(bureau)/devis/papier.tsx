@@ -1,9 +1,11 @@
 // Le document tel qu'il part chez le client (A4) : aperçu en direct dans
 // l'éditeur et page à imprimer en PDF. Sans état : utilisable côté serveur.
 
+import type { CSSProperties } from 'react';
 import {
   calculer,
   clauses,
+  couleurDocument,
   euro,
   nomClient,
   pourcent,
@@ -45,6 +47,10 @@ export interface DonneesPapier {
   lignes: LigneDocument[];
   refDevis?: string | null;
   refFacture?: string | null;
+  /** Références imprimées comme dans le bac : intervention, contrat, lieu d'intervention. */
+  refIntervention?: string | null;
+  refContrat?: string | null;
+  lieu?: string | null;
 }
 
 const dateFr = (iso: string) => (iso ? iso.slice(0, 10).split('-').reverse().join('/') : '');
@@ -71,18 +77,20 @@ export function Papier({ d, entreprise, flash }: { d: DonneesPapier; entreprise:
   const T = calculer(d);
   const facture = d.genre === 'facture';
   const tf = d.type_facture;
-  const situation = facture && tf === 'situation';
+  const c = d.conditions;
+  // Facture préparée depuis un devis (comme le bac) : ses lignes portent déjà le montant facturé.
+  const auMontant = facture && tf !== 'avoir' && !!c.lignesAuMontant;
+  const situation = facture && tf === 'situation' && !auMontant;
   const signe = facture && tf === 'avoir' ? -1 : 1;
   const cl = d.client;
   const pro = cl.type === 'pro';
-  const c = d.conditions;
   const f = entreprise.facturation;
   const titre = titreDocument(d.genre, tf, d.situation_numero);
   const L = clauses({ genre: d.genre, date: dateFr(d.date_document), client: cl, conditions: c }, T);
   const slogan = f.slogan || entreprise.metiers.map((m) => METIERS[m] ?? m).join(' · ');
 
   let bandeau: React.ReactNode = null;
-  if (facture) {
+  if (facture && !auMontant) {
     const avGlob = T.marcheHT ? (T.cumulSituation / T.marcheHT) * 100 : 0;
     bandeau = {
       acompte: (
@@ -143,9 +151,20 @@ export function Papier({ d, entreprise, flash }: { d: DonneesPapier; entreprise:
     }[tf ?? 'totale'];
   }
 
+  // Références du bac : intervention, ordre de service, contrat, lieu, date d'exécution, bon de commande, consultation.
+  const refs: [string, string, boolean][] = [];
+  if (d.refIntervention) refs.push(['Intervention', d.refIntervention, true]);
+  if (c.ordreService) refs.push(['Ordre de service', c.ordreService, true]);
+  if (d.refContrat) refs.push(['Contrat', d.refContrat, true]);
+  // Le lieu quand l'adresse du chantier n'est pas déjà imprimée (même adresse que le client) mais qu'il y a un occupant.
+  if (d.lieu && cl.identique && (c.occupant || d.lieu !== cl.adresse)) refs.push(['Lieu :', d.lieu + (c.occupant ? `, ${c.occupant}` : ''), false]);
+  if (c.dateExec) refs.push([facture ? 'Travaux exécutés le' : 'Début des travaux', dateFr(c.dateExec), true]);
+  if (c.bc) refs.push(['Bon de commande', c.bc, true]);
+  if (!facture && c.ao && c.aoConsultation) refs.push(['Consultation', c.aoConsultation, true]);
+
   return (
     <>
-      <div className="papier">
+      <div className="papier" style={f.couleur_doc ? ({ '--doc': couleurDocument(f) } as CSSProperties) : undefined}>
         <div className="haut">
           <div className="logo">
             {entreprise.logo ? (
@@ -241,17 +260,35 @@ export function Papier({ d, entreprise, flash }: { d: DonneesPapier; entreprise:
             )}
           </div>
         </div>
+        {refs.length > 0 && (
+          <div className="refs">
+            {refs.map(([t, v, b]) => (
+              <span key={t}>
+                {t} {b ? <b>{v}</b> : v}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="objet">
           <b>Objet :</b> {d.objet || 'à préciser'}
+          {c.majoration && c.majoration !== 'normale' && (
+            <>
+              {' · '}
+              <i>{c.majoration === 'soir' ? 'Intervention en soirée' : 'Intervention le week-end'}</i>
+            </>
+          )}
+          {c.description && <div className="desc-p">{c.description}</div>}
         </div>
         {!cl.identique && (
           <div className="objet">
             <b>Adresse du chantier :</b> {cl.adresseChantier || 'à renseigner'}
+            {c.occupant && `, ${c.occupant}`}
           </div>
         )}
-        {!facture && c.ao && (
+        {!facture && c.ao && (!c.aoConsultation || c.aoQuantites) && (
           <div className="objet">
-            <b>Réponse à l’appel d’offres :</b> {c.aoConsultation || 'consultation à préciser'}
+            <b>Réponse à l’appel d’offres</b>
+            {!c.aoConsultation && ' : consultation à préciser'}
             {c.aoQuantites && ' · quantités du cadre de réponse du client'}
           </div>
         )}
@@ -323,7 +360,7 @@ export function Papier({ d, entreprise, flash }: { d: DonneesPapier; entreprise:
           </tbody>
         </table>
         <div className="totaux">
-          {facture && (tf === 'acompte' || tf === 'avancement' || tf === 'solde') ? (
+          {facture && !auMontant && (tf === 'acompte' || tf === 'avancement' || tf === 'solde') ? (
             <>
               <div>
                 <span>Montant du marché HT</span>
@@ -439,6 +476,12 @@ export function Papier({ d, entreprise, flash }: { d: DonneesPapier; entreprise:
             Conditions particulières en page 2.
             {T.autoliq && ' Autoliquidation, art. 283-2 nonies du CGI.'}
             {facture && f.iban && f.iban_factures !== 'non' && ` IBAN ${f.iban}${f.bic ? ` · BIC ${f.bic}` : ''}.`}
+            {!facture && f.conditions_particulieres && (
+              <>
+                <br />
+                {f.conditions_particulieres}
+              </>
+            )}
           </div>
           {facture ? (
             <div className="signature" style={{ borderStyle: 'solid', borderColor: 'var(--trait)' }}>
@@ -455,6 +498,7 @@ export function Papier({ d, entreprise, flash }: { d: DonneesPapier; entreprise:
         <div className="pied">
           {entreprise.nom}
           {entreprise.adresse ? ` · ${entreprise.adresse}` : ''} · Document créé avec Chantio
+          {f.pied_page && <div className="pied-perso">{f.pied_page}</div>}
         </div>
         <div className="num-page">Page 1 sur 2</div>
       </div>

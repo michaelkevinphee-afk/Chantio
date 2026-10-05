@@ -1,22 +1,18 @@
-import type { CSSProperties } from 'react';
-import {
-  LIBELLE_FORMULE,
-  LIBELLE_IDENTITE,
-  LIBELLE_ROLE,
-  PRIX_FORMULE,
-  TON_IDENTITE,
-  type Formule,
-  type MonEntreprise,
-  type RoleMembre,
-} from '@chantio/shared';
+import type { ReactNode } from 'react';
+import Link from 'next/link';
+import { libelleAcces, LIBELLE_FORMULE, type MonEntreprise, type ReglagesFacturation, type RoleMembre } from '@chantio/shared';
+import { BarrePleine } from '@/components/barre-pleine';
 import { Icone } from '@/components/icones';
-import { BoutonEnvoi, LienEnvoi } from '@/components/retour';
-import { LienBouton, Panneau, Puce, Titre } from '@/components/ui';
+import { PleinEcran } from '@/components/plein-ecran';
+import { BoutonEnvoi } from '@/components/retour';
+import { LienBouton, Puce } from '@/components/ui';
 import { contexteBureau, mesEntreprises } from '@/lib/session';
 import { formaterNumero } from '@/lib/siret';
-import { changerFormule, choisirEntreprise, rejoindre, traiterDemande } from './actions';
+import { adresseComplete } from '../parametres/valeurs';
+import { choisirEntreprise, rejoindre } from './actions';
+import { BandeauPdp, ReponseDemande } from './fenetres';
 
-export const metadata = { title: 'Vos entreprises · Chantio' };
+export const metadata = { title: 'Gérer vos entreprises · Chantio' };
 
 const MESSAGES_IDENTITE: Record<string, string> = {
   verifiee: 'Votre nom figure au registre : votre identité est vérifiée.',
@@ -26,228 +22,241 @@ const MESSAGES_IDENTITE: Record<string, string> = {
   sans_siren: 'Pensez à vérifier votre identité dès que votre SIRET est attribué.',
 };
 
-const ROLES_PROPOSES: RoleMembre[] = ['technicien', 'assistant', 'chef_chantier', 'apprenti', 'sous_traitant', 'dirigeant'];
-
 type Demande = { id: string; entreprise_id: string; user_id: string; email: string; prenom: string; nom: string | null; message: string | null; statut: string; cree_le: string };
-type Invitation = { membre_id: string; entreprise: string; role: RoleMembre };
+type Invitation = { membre_id: string; entreprise: string; role: RoleMembre; cree_le: string };
 
+const date = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+const BANDEAU = 'apparition mb-6 rounded-[14px] px-4 py-3 text-sm font-semibold';
+// Petits boutons des lignes (Rejoindre, Accepter, Refuser), comme « bouton petit » du bac.
+const PETIT = '!rounded-[10px] !px-3 !py-1.5 !text-[13px]';
+
+/**
+ * Gérer vos entreprises, en pleine page comme le bac : une carte par entreprise (avec ses demandes d'accès
+ * et le bandeau de la facturation électronique), les invitations reçues au-dessus, ✕ pour revenir.
+ */
 export default async function Entreprises({ searchParams }: PageProps<'/entreprises'>) {
-  const { supabase, user } = await contexteBureau();
-  const { cree, identite, demande, erreur } = await searchParams;
+  const { supabase, user, entreprise: active } = await contexteBureau();
+  const { cree, identite, demande, erreur, depuis } = await searchParams;
   const [entreprises, { data: demandesBrutes }, { data: invitationsBrutes }] = await Promise.all([
     mesEntreprises(),
     supabase.from('demandes_acces').select('*').eq('statut', 'en_attente').order('cree_le'),
     supabase.rpc('invitations_recues'),
   ]);
   const demandes = (demandesBrutes ?? []) as Demande[];
-  const aTraiter = demandes.filter((d) => d.user_id !== user.id);
   const envoyees = demandes.filter((d) => d.user_id === user.id);
   const invitations = (invitationsBrutes ?? []) as Invitation[];
-  const nomDe = (id: string) => entreprises.find((e) => e.id === id)?.nom ?? '';
-  const aVerifier = entreprises.filter((e) => e.role === 'dirigeant' && e.identite_statut !== 'verifiee');
+  // Seuls les réglages de l'entreprise ouverte sont lisibles (SIRET en cours d'attribution, facturation électronique).
+  const reglages = (active.facturation ?? {}) as ReglagesFacturation;
+  const retour = depuis === 'profil' ? '/parametres?rubrique=profil' : '/';
 
   return (
-    <>
-      <Titre
-        sous="Passez de l’une à l’autre depuis le menu, en haut à gauche"
-        actions={
-          <LienBouton href="/entreprises/nouvelle">
-            <Icone nom="plus" taille={18} /> Ajouter une entreprise
-          </LienBouton>
-        }
-      >
-        Vos entreprises
-      </Titre>
-
-      {cree && (
-        <p className="apparition mb-6 rounded-[14px] bg-vert-doux px-4 py-3 text-sm font-semibold text-vert">
-          ✓ Entreprise créée, c’est celle qui est ouverte. {MESSAGES_IDENTITE[String(identite)] ?? ''}
+    <PleinEcran className="bg-white">
+      <BarrePleine titre="Gérer vos entreprises" retour={retour} libelleRetour="Fermer et revenir à l’écran d’avant" />
+      <div className="mx-auto max-w-[1000px] px-5 pt-10 pb-16 max-[760px]:px-4 max-[760px]:pt-6 max-[760px]:pb-12">
+        <h2 className="text-[32px] leading-tight font-extrabold max-[760px]:text-2xl">Votre espace multi-entreprises Chantio</h2>
+        <p className="mt-2.5 mb-[30px] max-w-[72ch] text-base text-gris max-[760px]:mb-[22px] max-[760px]:text-[14.5px]">
+          Chaque entreprise a ses propres clients, interventions, devis, factures, achats et sa propre équipe. Vous passez de l’une à l’autre en haut du
+          menu, sans vous reconnecter.
         </p>
-      )}
-      {demande && (
-        <p className="apparition mb-6 rounded-[14px] bg-vert-doux px-4 py-3 text-sm font-semibold text-vert">
-          ✓ Demande envoyée à {demande}. Son dirigeant va l’accepter et choisir votre rôle.
-        </p>
-      )}
-      {erreur && <p className="apparition mb-6 rounded-[14px] bg-rouge-doux px-4 py-3 text-sm font-semibold text-rouge">{erreur}</p>}
 
-      {aVerifier.length > 0 && (
-        <div className="apparition carte mb-6 flex flex-wrap items-center gap-4 border-lavande bg-doux p-5">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white text-cobalt">
-            <Icone nom="bouclier" taille={22} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-extrabold">Facturation électronique : je me mets en conformité</p>
-            <p className="text-sm text-gris">
-              Toutes les entreprises doivent pouvoir recevoir des factures électroniques dès septembre 2026, et les émettre en 2027
-              pour les TPE et PME. Il faut d’abord vérifier l’identité du dirigeant.
-            </p>
-          </div>
-          {aVerifier.some((e) => e.active && (e.identite_statut === 'a_verifier' || e.identite_statut === 'refusee')) && (
-            <LienBouton href="/entreprises/identite" variante="secondaire">
-              Vérifier mon identité
-            </LienBouton>
-          )}
-        </div>
-      )}
+        {cree && (
+          <p className={`${BANDEAU} bg-vert-doux text-vert`}>
+            ✓ Entreprise créée, c’est celle qui est ouverte. {MESSAGES_IDENTITE[String(identite)] ?? ''}
+          </p>
+        )}
+        {demande && (
+          <p className={`${BANDEAU} bg-vert-doux text-vert`}>✓ Demande envoyée à {demande}. Son dirigeant va l’accepter et choisir votre rôle.</p>
+        )}
+        {erreur && <p className={`${BANDEAU} bg-rouge-doux text-rouge`}>{erreur}</p>}
 
-      {invitations.length > 0 && (
-        <Panneau titre="Invitations reçues" nombre={invitations.length} className="apparition mb-6">
-          <ul className="divide-y divide-trait">
+        {invitations.length > 0 && (
+          <section aria-labelledby="ge-inv" className="mb-[26px] flex flex-col gap-2">
+            <h3 id="ge-inv" className="text-lg font-extrabold">
+              Invitations en attente
+            </h3>
             {invitations.map((i) => (
-              <li key={i.membre_id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
-                <span className="min-w-0 flex-1">
-                  <span className="block font-extrabold">{i.entreprise}</span>
-                  <span className="text-sm text-gris">Vous invite comme {LIBELLE_ROLE[i.role].toLowerCase()}</span>
-                </span>
+              <Ligne
+                key={i.membre_id}
+                titre={
+                  <>
+                    <b className="font-extrabold">{i.entreprise}</b> vous invite comme {libelleAcces(i.role).toLowerCase()}
+                  </>
+                }
+                detail={`Invitation de son dirigeant le ${date(i.cree_le)}`}
+              >
                 <form action={rejoindre.bind(null, i.membre_id)}>
-                  <BoutonEnvoi className="!px-4 !py-2 text-sm" enCours="…">
+                  <BoutonEnvoi className={PETIT} enCours="…">
                     Rejoindre
                   </BoutonEnvoi>
                 </form>
-              </li>
+              </Ligne>
             ))}
-          </ul>
-        </Panneau>
-      )}
+          </section>
+        )}
 
-      {aTraiter.length > 0 && (
-        <Panneau titre="Demandes d’accès" nombre={aTraiter.length} className="apparition mb-6">
-          <ul className="divide-y divide-trait">
-            {aTraiter.map((d) => (
-              <li key={d.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
-                <span className="min-w-0 flex-1">
-                  <span className="block font-extrabold">
-                    {d.prenom} {d.nom}
-                    <span className="font-semibold text-gris"> · {d.email}</span>
-                  </span>
-                  <span className="block text-sm text-gris">
-                    Veut rejoindre <b className="text-encre">{nomDe(d.entreprise_id)}</b>
-                    {d.message && ` · « ${d.message} »`}
-                  </span>
-                </span>
-                <form action={traiterDemande.bind(null, d.id, true)} className="flex items-center gap-2">
-                  <select name="role" defaultValue="technicien" className="champ !w-auto !py-2 text-sm" aria-label="Rôle">
-                    {ROLES_PROPOSES.map((r) => (
-                      <option key={r} value={r}>
-                        {LIBELLE_ROLE[r]}
-                      </option>
-                    ))}
-                  </select>
-                  <BoutonEnvoi className="!px-4 !py-2 text-sm" enCours="…">
-                    Accepter
-                  </BoutonEnvoi>
-                </form>
-                <form action={traiterDemande.bind(null, d.id, false)}>
-                  <LienEnvoi className="text-sm font-bold text-gris hover:text-rouge">Refuser</LienEnvoi>
-                </form>
-              </li>
-            ))}
-          </ul>
-        </Panneau>
-      )}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-[22px] font-extrabold">Vos entreprises ({entreprises.length})</h3>
+          <LienBouton href="/entreprises/nouvelle">
+            <span aria-hidden="true">+</span> Ajouter une entreprise
+          </LienBouton>
+        </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {entreprises.map((e, n) => (
-          <CarteEntreprise key={e.id} e={e} n={n} />
+        {/* L'entreprise ouverte en premier, comme le bac. */}
+        {[...entreprises].sort((a, b) => Number(b.active) - Number(a.active)).map((e) => (
+          <CarteEntreprise
+            key={e.id}
+            e={e}
+            reglages={e.active ? reglages : null}
+            demandes={e.role === 'dirigeant' ? demandes.filter((d) => d.entreprise_id === e.id && d.user_id !== user.id) : []}
+          />
         ))}
-      </div>
 
-      {envoyees.length > 0 && (
-        <Panneau titre="Vos demandes en attente" nombre={envoyees.length} className="apparition mt-6">
-          <ul className="divide-y divide-trait">
+        {envoyees.length > 0 && (
+          <section aria-labelledby="ge-env" className="mt-[26px] flex flex-col gap-2">
+            <h3 id="ge-env" className="text-lg font-extrabold">
+              Vos demandes en attente
+            </h3>
             {envoyees.map((d) => (
-              <li key={d.id} className="flex items-center gap-3 px-5 py-3.5 text-sm">
-                <span className="flex-1">Demande envoyée le {new Date(d.cree_le).toLocaleDateString('fr-FR')}</span>
+              <Ligne key={d.id} titre={`Demande envoyée le ${date(d.cree_le)}`}>
                 <Puce ton="violet">En attente du dirigeant</Puce>
-              </li>
+              </Ligne>
             ))}
-          </ul>
-        </Panneau>
-      )}
-    </>
+          </section>
+        )}
+
+        <p className="mt-2.5 text-sm text-gris">Chaque entreprise a sa propre formule (Solo, Équipe ou Entreprise).</p>
+      </div>
+    </PleinEcran>
   );
 }
 
-function CarteEntreprise({ e, n }: { e: MonEntreprise; n: number }) {
-  const dirigeant = e.role === 'dirigeant';
-  const lieu = [e.adresse, [e.code_postal, e.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+/** Ligne sur fond gris (invitation, demande d'accès) : texte à gauche, boutons à droite, qui passent dessous si la place manque. */
+function Ligne({ titre, detail, children }: { titre: ReactNode; detail?: ReactNode; children: ReactNode }) {
   return (
-    <section style={{ '--i': n } as CSSProperties} className={`apparition carte flex flex-col p-5 ${e.active ? 'ring-2 ring-cobalt' : ''}`}>
-      <div className="flex items-start gap-3">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-bleu-doux text-xl font-extrabold text-bleu">
-          {e.nom.slice(0, 1).toUpperCase()}
+    <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-[12px] bg-fond px-3 py-2.5">
+      <span className="flex min-w-0 flex-[1_1_260px] flex-col [overflow-wrap:anywhere]">
+        <span>{titre}</span>
+        {detail && <small className="text-[13px] text-gris">{detail}</small>}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+function EtatIdentite({ e }: { e: MonEntreprise }) {
+  switch (e.identite_statut) {
+    case 'verifiee':
+      return <Puce ton="vert">{e.identite_mode === 'registre' ? 'Vérifiée au registre' : 'Vérifiée'}</Puce>;
+    case 'en_attente':
+      return <Puce ton="cobalt">Vérification en cours</Puce>;
+    case 'refusee':
+      return <Puce ton="rouge">Vérification refusée</Puce>;
+    default:
+      return <Puce ton="violet">À vérifier</Puce>;
+  }
+}
+
+function CarteEntreprise({ e, reglages, demandes }: { e: MonEntreprise; reglages: ReglagesFacturation | null; demandes: Demande[] }) {
+  const dirigeant = e.role === 'dirigeant';
+  const attente = !!reglages?.siret_attente;
+  const pdp = reglages?.pdp;
+  const aVerifier = e.identite_statut === 'a_verifier' || e.identite_statut === 'refusee';
+  const lien = 'font-bold text-cobalt hover:underline';
+
+  return (
+    <article aria-labelledby={`ge-${e.id}`} className="mb-[18px] overflow-hidden rounded-[18px] border border-trait bg-white">
+      <div className="flex gap-4 px-[22px] py-5 max-[760px]:flex-wrap max-[760px]:p-4">
+        <span className="grid h-10 w-10 flex-none place-items-center rounded-[10px] bg-doux text-cobalt" aria-hidden="true">
+          <Icone nom="p_immeuble" taille={22} />
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-extrabold">{e.nom}</p>
-          <p className="text-sm text-gris">
-            {[e.forme_juridique, e.siret ? `SIRET ${formaterNumero(e.siret)}` : e.siren ? `SIREN ${formaterNumero(e.siren)}` : 'SIRET à renseigner']
-              .filter(Boolean)
-              .join(' · ')}
+        <div className="flex min-w-0 flex-1 flex-col gap-2 text-gris [overflow-wrap:anywhere] [&_b]:text-encre">
+          <h3 id={`ge-${e.id}`} className="flex flex-wrap items-center gap-2 text-lg font-extrabold text-encre">
+            {e.nom}
+            {e.active && <Puce ton="cobalt">Ouverte</Puce>}
+          </h3>
+          <p>
+            <b>Siret :</b> {attente ? 'en cours d’attribution' : e.siret ? formaterNumero(e.siret) : '—'}
           </p>
-        </div>
-        {e.active && <Puce ton="cobalt">Ouverte</Puce>}
-      </div>
-
-      <dl className="mt-4 grid grid-cols-[110px_minmax(0,1fr)] sm:grid-cols-[180px_minmax(0,1fr)] gap-x-3 gap-y-2.5 text-sm">
-        {lieu && (
-          <>
-            <dt className="text-gris">Adresse</dt>
-            <dd className="font-semibold">{lieu}</dd>
-          </>
-        )}
-        <dt className="text-gris">Votre rôle</dt>
-        <dd>
-          <Puce ton={dirigeant ? 'bleu' : 'gris'}>{LIBELLE_ROLE[e.role]}</Puce>
-        </dd>
-        <dt className="text-gris">Formule</dt>
-        <dd className="font-semibold">
-          {dirigeant && e.active ? (
-            <span className="inline-flex flex-wrap gap-1 rounded-[12px] border border-trait bg-white p-0.5">
-              {(Object.keys(LIBELLE_FORMULE) as Formule[]).map((f) => (
-                <form key={f} action={changerFormule.bind(null, e.id, f)}>
-                  <button
-                    title={PRIX_FORMULE[f]}
-                    className={`rounded-[10px] px-2.5 py-1 text-xs font-extrabold transition ${e.formule === f ? 'degrade text-white' : 'text-gris hover:text-encre'}`}
-                  >
-                    {LIBELLE_FORMULE[f]}
-                  </button>
-                </form>
-              ))}
-            </span>
-          ) : (
-            `${LIBELLE_FORMULE[e.formule]} · ${PRIX_FORMULE[e.formule]}`
+          <p>
+            <b>Adresse :</b> {adresseComplete(e) || '—'}
+          </p>
+          <p>
+            <b>Votre rôle :</b> {libelleAcces(e.role)} · formule {LIBELLE_FORMULE[e.formule]}
+          </p>
+          {dirigeant && (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+              <b>Identité du dirigeant :</b> <EtatIdentite e={e} />
+              {aVerifier &&
+                (e.active ? (
+                  <Link href="/entreprises/identite" className={lien}>
+                    Vérifier mon identité
+                  </Link>
+                ) : (
+                  <form action={choisirEntreprise.bind(null, e.id, '/entreprises/identite')} className="contents">
+                    <button className={lien}>Vérifier mon identité</button>
+                  </form>
+                ))}
+              {e.identite_statut === 'refusee' && e.identite_motif && <span className="w-full text-[13px] text-rouge">{e.identite_motif}</span>}
+            </div>
           )}
-        </dd>
-        {dirigeant && (
-          <>
-            <dt className="text-gris">Identité du dirigeant</dt>
-            <dd>
-              <Puce ton={TON_IDENTITE[e.identite_statut]}>{LIBELLE_IDENTITE[e.identite_statut]}</Puce>
-              {e.identite_statut === 'refusee' && e.identite_motif && <span className="mt-1 block text-xs text-rouge">{e.identite_motif}</span>}
-            </dd>
-            <dt className="text-gris">Facturation électronique</dt>
-            <dd className="text-gris">{e.identite_statut === 'verifiee' ? 'Bientôt disponible' : 'Après vérification de l’identité'}</dd>
-          </>
-        )}
-      </dl>
-
-      <div className="mt-auto flex flex-wrap gap-2 pt-5">
-        {e.active ? (
-          dirigeant &&
-          (e.identite_statut === 'a_verifier' || e.identite_statut === 'refusee') && (
-            <LienBouton href="/entreprises/identite" className="!px-4 !py-2 text-sm">
-              <Icone nom="bouclier" taille={16} /> Vérifier mon identité
-            </LienBouton>
-          )
-        ) : (
-          <form action={choisirEntreprise.bind(null, e.id, '/entreprises')}>
-            <BoutonEnvoi variante="secondaire" className="!px-4 !py-2 text-sm" enCours="Ouverture…">
-              Ouvrir cette entreprise
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <b>Adresse de facturation électronique :</b>{' '}
+            {!reglages ? (
+              <span className="text-[13px]">visible une fois l’entreprise ouverte</span>
+            ) : pdp?.statut === 'inscrite' ? (
+              <>
+                <Puce ton="vert">Inscrite</Puce> <span className="font-mono text-[13px]">{e.siren ? formaterNumero(e.siren) : ''}</span>
+              </>
+            ) : pdp?.statut === 'demandee' ? (
+              <Puce ton="bleu">Inscription demandée le {date(pdp.le)}</Puce>
+            ) : (
+              <Puce ton="gris">Non inscrit</Puce>
+            )}
+          </div>
+          {demandes.length > 0 && (
+            <div className="mt-1 flex flex-col gap-2 border-t border-trait pt-3 text-encre">
+              <b className="font-extrabold">
+                {demandes.length} {demandes.length > 1 ? 'demandes d’accès' : 'demande d’accès'}
+              </b>
+              {demandes.map((d) => {
+                const nom = [d.prenom, d.nom].filter(Boolean).join(' ');
+                return (
+                  <Ligne
+                    key={d.id}
+                    titre={
+                      <>
+                        <b className="font-extrabold">{nom}</b> · {d.email}
+                      </>
+                    }
+                    detail={`Demande l’accès le ${date(d.cree_le)}${d.message ? ` : « ${d.message} »` : ''}`}
+                  >
+                    <ReponseDemande id={d.id} nom={nom} email={d.email} entreprise={e.nom} />
+                  </Ligne>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {!e.active && (
+          <form action={choisirEntreprise.bind(null, e.id, '/')} className="flex-none max-[760px]:w-full">
+            <BoutonEnvoi variante="secondaire" className="max-[760px]:w-full" enCours="Ouverture…">
+              Ouvrir
             </BoutonEnvoi>
           </form>
         )}
       </div>
-    </section>
+      {dirigeant && pdp?.statut !== 'inscrite' && pdp?.statut !== 'demandee' && (
+        <BandeauPdp
+          e={{
+            id: e.id,
+            nom: e.nom,
+            siren: e.siren ? formaterNumero(e.siren) : '',
+            active: e.active,
+            identite: e.identite_statut,
+            siret: !!e.siret && !attente,
+          }}
+        />
+      )}
+    </article>
   );
 }

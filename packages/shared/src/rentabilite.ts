@@ -44,6 +44,41 @@ export function coefficientPlancher(rp: ReglagesPrix): number {
   return Math.ceil(((1 + rp.frais_generaux / 100) / (1 - rp.marge_min / 100)) * 100) / 100;
 }
 
+/** Réglages des dépannages (Paramètres › Prix et coefficients), rangés dans entreprises.facturation. */
+export interface ReglagesDepannage {
+  /** Taux horaire de vente des dépannages (€ HT / h). */
+  taux_depannage: number;
+  /** Forfait déplacement (€ HT). */
+  deplacement: number;
+  /** Majoration du soir, après 19 h (%). */
+  maj_soir: number;
+  /** Majoration du samedi, du dimanche et des jours fériés (%). */
+  maj_we: number;
+}
+
+export const REGLAGES_DEPANNAGE_DEFAUT: ReglagesDepannage = { taux_depannage: 65, deplacement: 45, maj_soir: 50, maj_we: 75 };
+
+export const BORNES_DEPANNAGE: Record<keyof ReglagesDepannage, [number, number]> = {
+  taux_depannage: [0, 1000],
+  deplacement: [0, 1000],
+  maj_soir: [0, 300],
+  maj_we: [0, 300],
+};
+
+/** Bornes des réglages de prix (une valeur hors bornes est ignorée à la lecture). */
+export const BORNES_PRIX: Readonly<Record<keyof ReglagesPrix, readonly [number, number]>> = BORNES;
+
+/** Réglages de dépannage de l'entreprise, complétés par les valeurs par défaut. */
+export function reglagesDepannage(r?: ReglagesFacturation | null): ReglagesDepannage {
+  const out = { ...REGLAGES_DEPANNAGE_DEFAUT };
+  for (const k of Object.keys(BORNES_DEPANNAGE) as (keyof ReglagesDepannage)[]) {
+    const v = r?.[k];
+    const n = typeof v === 'number' ? v : Number.NaN;
+    if (Number.isFinite(n) && n >= BORNES_DEPANNAGE[k][0] && n <= BORNES_DEPANNAGE[k][1]) out[k] = n;
+  }
+  return out;
+}
+
 type LigneCout = Pick<LigneDocument, 'achat' | 'heures'>;
 
 /** La ligne a un coût connu (fourniture ou pose). */

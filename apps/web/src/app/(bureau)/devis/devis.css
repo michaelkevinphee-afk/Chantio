@@ -680,3 +680,295 @@
   .df .coefs button { grid-template-columns: minmax(0, 1fr) 60px 56px; }
   .df .coefs-barre { display: none; }
 }
+
+/* ---------- Éditeur plein écran (vEditeur du bac) : formulaire à gauche, document à droite, barre du bas ----------
+   Disposition et mesures du bac ; couleurs, polices et boutons de l'application. Tout est sous .df .ed. */
+.df .ed { --barre-h: 64px; font-size: 14px; line-height: 1.5; }
+.df .ed-corps { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+.df .ed-g { display: flex; flex-direction: column; min-width: 0; min-height: calc(100dvh - var(--barre-h)); border-right: 1px solid var(--trait); background: var(--blanc); }
+.df .ed-form { flex: 1; display: flex; flex-direction: column; gap: 30px; min-width: 0; padding: 28px 32px 36px; }
+.df .ed-sec { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.df .ed-sec > h2, .df .ed-sec > summary h2 { margin: 0; font-size: 21px; font-weight: 800; }
+.df .ed-carte { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; border: 1px solid var(--trait); border-radius: 16px; background: var(--fond); }
+.df .ed-client .ed-cl-tete { display: flex; align-items: center; gap: 8px; }
+.df .ed-client .ed-cl-tete b { font-size: 19px; }
+.df .ed-client .gris { font-size: 14.5px; line-height: 1.6; }
+.df .ed .ed-lu { margin: 0; font-size: 14.5px; }
+.df .ed .liens-doc { margin: 0; font-size: 13px; color: var(--gris); }
+.df .ed .ed-ajout { align-self: flex-start; padding: 6px 0; font-size: 15px; font-weight: 700; text-decoration: none; }
+.df .ed .ed-remise { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.df .ed .ed-ao { display: flex; flex-direction: column; gap: 10px; padding-left: 14px; border-left: 3px solid var(--doux); }
+
+/* Textes et petits éléments */
+.df .ed .gris { color: var(--gris); }
+.df .ed .petit-txt { font-size: 12.5px; }
+.df .ed .mono { font-family: var(--f-chiffres); font-variant-numeric: tabular-nums; }
+.df .ed .etiq { display: block; margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--gris); }
+.df .ed .aide { font-size: 12px; font-weight: 500; color: #8A93AE; }
+.df .ed .danger-t { color: var(--rouge) !important; }
+.df .ed .ecart-p { color: var(--vert); font-weight: 700; }
+.df .ed .ecart-n { color: var(--rouge); font-weight: 700; }
+.df .ed .vide { color: var(--gris); font-size: 13px; padding: 10px; text-align: center; }
+.df .ed .ban { display: flex; flex-direction: column; gap: 8px; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; }
+.df .ed .ban.gris { background: var(--fond); color: var(--gris); }
+.df .ed .payeur { background: var(--doux); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+.df .ed .payeur b { color: var(--cobalt); }
+.df .ed .numero-grand { align-self: flex-start; font-family: var(--f-chiffres); font-size: 22px; font-weight: 600; color: var(--cobalt); background: var(--doux); padding: 8px 14px; border-radius: 10px; }
+.df .ed mark { background: #DDE4FF; color: var(--cobalt); border-radius: 3px; padding: 0 1px; }
+
+/* Champs */
+.df .ed .ligne-champs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.df .ed .champ { display: flex; flex-direction: column; gap: 4px; width: auto; min-width: 0; border: 0; border-radius: 0; padding: 0; background: none; box-shadow: none; font-size: 12.5px; font-weight: 600; color: var(--gris); }
+.df .ed .champ:focus-within { box-shadow: none; }
+.df .ed .champ > input, .df .ed .champ > select, .df .ed .champ > textarea, .df .ed .champ .saisie-u input { color: var(--encre); font-weight: 500; font-size: 14px; }
+.df .ed :where(input[type=text], input[type=number], input[type=search], input[type=date], input[type=email], input[type=tel], select, textarea) {
+  min-width: 0; border: 1px solid var(--trait); border-radius: 10px; padding: 8px 10px; background: var(--blanc); color: var(--encre);
+}
+.df .ed :where(input, select, textarea):focus { border-color: var(--pervenche); outline: none; box-shadow: 0 0 0 3px var(--doux); }
+.df .ed textarea { width: 100%; resize: vertical; line-height: 1.45; }
+.df .ed input[readonly] { background: var(--fond); color: var(--gris); }
+.df .ed .case { display: flex; align-items: flex-start; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--encre); cursor: pointer; }
+.df .ed .case input { margin-top: 3px; accent-color: var(--cobalt); }
+.df .ed .saisie-u { display: flex; align-items: center; gap: 6px; }
+.df .ed .saisie-u input { width: 90px; font-variant-numeric: tabular-nums; }
+.df .ed .saisie-u i { font-style: normal; font-weight: 500; color: var(--gris); }
+
+/* Interrupteurs (« Ajouter une date de début des travaux », « Remise sur le total HT »…) */
+.df .ed .ed-sw { position: relative; display: flex; align-items: center; gap: 12px; min-height: 40px; font-size: 15px; color: var(--gris); cursor: pointer; }
+.df .ed .ed-sw input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; }
+.df .ed .ed-sw-c { position: relative; flex: 0 0 auto; width: 46px; height: 26px; border-radius: 99px; background: #E4E8F2; transition: background .15s; }
+.df .ed .ed-sw-c::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--blanc); box-shadow: 0 1px 3px rgb(16 26 61 / .25); transition: transform .15s; }
+.df .ed .ed-sw input:checked + .ed-sw-c { background: var(--cobalt); }
+.df .ed .ed-sw input:checked + .ed-sw-c::after { transform: translateX(20px); }
+.df .ed .ed-sw input:checked ~ span:last-child { color: var(--encre); }
+.df .ed .ed-sw input:focus-visible + .ed-sw-c { outline: 3px solid var(--lavande); outline-offset: 2px; }
+
+/* Boutons et cartes */
+.df .ed .icone { display: inline-grid; place-items: center; border: 0; border-radius: 8px; background: none; padding: 4px 6px; color: var(--gris); font-size: 13px; line-height: 1; cursor: pointer; }
+.df .ed .icone:hover { background: var(--doux); color: var(--cobalt); }
+.df .ed .bouton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 12px; padding: 9px 14px;
+  font-size: 14px; font-weight: 800; white-space: nowrap; color: var(--blanc); background-image: var(--degrade); box-shadow: 0 10px 20px -12px var(--halo); transition: transform .15s, box-shadow .15s;
+}
+.df .ed .bouton:active { transform: scale(.97); }
+.df .ed .bouton.second { background: var(--blanc); color: var(--cobalt); box-shadow: inset 0 0 0 1.5px var(--trait); }
+.df .ed .bouton.second:hover { box-shadow: inset 0 0 0 1.5px var(--cobalt); }
+.df .ed .bouton.petit { padding: 6px 10px; border-radius: 10px; font-size: 13px; }
+.df .ed .bouton:disabled { opacity: .5; cursor: default; }
+.df .ed .carte { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 16px; border: 1px solid var(--trait); border-radius: 16px; background: var(--blanc); box-shadow: none; }
+.df .ed .carte > h2, .df .ed .titre-carte h2 { margin: 0; font-size: 17px; font-weight: 800; }
+.df .ed .titre-carte { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.df .ed .barre-outils { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+.df .ed .ed-lignes > .carte { padding: 0; border: 0; background: none; box-shadow: none; }
+.df .ed .ed-lignes > .carte > .titre-carte h2 { display: none; }
+.df .ed .ed-lignes > .carte > .titre-carte { justify-content: flex-end; }
+
+/* Recherche rapide de produits et services */
+.df .ed .recherche { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--trait); border-radius: 14px; background: var(--fond); }
+.df .ed .recherche.ouverte { border-color: var(--pervenche); box-shadow: 0 0 0 4px var(--doux); }
+.df .ed .champ-r { display: flex; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid var(--trait); border-radius: 10px; background: var(--blanc); }
+.df .ed .champ-r svg { position: static; transform: none; flex: none; width: 18px; height: 18px; color: var(--cobalt); }
+.df .ed .champ-r input { flex: 1; width: auto; min-width: 0; border: 0; border-radius: 0; box-shadow: none; padding: 11px 0; background: transparent; font-size: 15px; }
+.df .ed .champ-r input:focus { box-shadow: none; }
+.df .ed .champ-r kbd { font-family: var(--f-texte); font-size: 12px; font-weight: 700; color: var(--gris); border: 1px solid var(--trait); border-bottom-width: 2px; border-radius: 6px; padding: 1px 7px; background: var(--fond); }
+.df .ed .r-pied { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.df .ed .r-filtres { display: flex; flex-wrap: wrap; gap: 6px; }
+.df .ed .r-filtres button { border: 1px solid var(--trait); border-radius: 99px; background: var(--blanc); padding: 4px 11px; font-size: 12.5px; font-weight: 600; color: var(--gris); }
+.df .ed .r-filtres button.actif { border-color: var(--cobalt); background: var(--cobalt); color: var(--blanc); }
+.df .ed .r-cible { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--gris); }
+.df .ed .r-cible select { padding: 4px 8px; font-size: 13px; font-weight: 700; color: var(--cobalt); max-width: 220px; }
+.df .ed .r-res { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30; display: flex; flex-direction: column; gap: 2px; max-height: 420px; overflow: auto; padding: 6px; border: 1px solid var(--trait); border-radius: 14px; background: var(--blanc); box-shadow: 0 24px 48px -20px rgb(16 26 61 / .35); }
+.df .ed .r-res[hidden] { display: none; }
+.df .ed .r-titre { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 6px 10px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--gris); }
+.df .ed .r-titre span { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.df .ed .r-item { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; border: 0; border-radius: 10px; background: none; padding: 9px 10px; text-align: left; }
+.df .ed .r-item.sel, .df .ed .r-item:hover { background: var(--doux); }
+.df .ed .r-txt { display: flex; flex-direction: column; min-width: 0; }
+.df .ed .r-txt b { font-size: 14.5px; font-weight: 600; }
+.df .ed .r-txt small, .df .ed .r-prix small { font-size: 12px; color: var(--gris); }
+.df .ed .r-prix { display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.df .ed .r-prix b { font-weight: 700; }
+.df .ed .r-ic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; font-size: 14px; font-weight: 800; }
+.df .ed .c-ouvrage { background: var(--doux); color: var(--cobalt); }
+.df .ed .c-fourniture { background: #E0F2FE; color: #026AA2; }
+.df .ed .c-mo { background: var(--vert-doux); color: var(--vert); }
+.df .ed .c-forfait { background: var(--violet-doux); color: var(--violet); }
+.df .ed .r-vide { padding: 14px; font-size: 13.5px; color: var(--gris); }
+
+/* Lots et lignes */
+.df .ed .ouvrages { display: flex; flex-direction: column; }
+.df .ed .lot-tete { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; padding: 14px 4px 8px; border-bottom: 2px solid var(--encre); }
+.df .ed .lot-tete.cible { border-bottom-color: var(--cobalt); }
+.df .ed .lot-tete.cible .lot-nom { color: var(--cobalt); }
+.df .ed .lot-nom { flex: 1; min-width: 160px; margin-left: -6px; padding: 3px 6px; border: 1px solid transparent; border-radius: 8px; background: transparent; font-size: 16px; font-weight: 800; }
+.df .ed .lot-nom:hover { border-color: var(--trait); }
+.df .ed .lot-info { font-size: 12.5px; color: var(--gris); }
+.df .ed .lot-total { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.df .ed .ouv { display: grid; grid-template-columns: minmax(0, 1fr) auto 100px 112px 26px; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--trait); }
+.df .ed .ouv:hover { background: #FAFBFF; }
+.df .ed .ouv.flash { animation: ed-flash 1.6s ease-out; }
+@keyframes ed-flash { from { background: #DDE4FF; } to { background: transparent; } }
+.df .ed .ouv-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.df .ed .ref { font-size: 11.5px; font-weight: 700; color: var(--gris); }
+.df .ed .ouv-titre { width: 100%; margin-left: -6px; padding: 3px 6px; border: 1px solid transparent; border-radius: 8px; background: transparent; font-size: 15px; font-weight: 600; text-overflow: ellipsis; }
+.df .ed .ouv-titre:hover { border-color: var(--trait); background: var(--blanc); }
+.df .ed .ouv-titre:focus, .df .ed .lot-nom:focus { border-color: var(--pervenche); background: var(--blanc); }
+.df .ed .ouv-sous { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; }
+.df .ed .chip { border-radius: 6px; padding: 2px 8px; background: var(--fond); color: var(--gris); font-variant-numeric: tabular-nums; }
+.df .ed .prive-chip { background: var(--violet-doux); color: var(--violet); }
+.df .ed .ouv-detail { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; padding: 10px 12px; border-radius: 10px; background: var(--fond); }
+.df .ed .ouv-detail label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--gris); }
+.df .ed .ouv-qte { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.df .ed .pas { display: flex; align-items: center; overflow: hidden; border: 1px solid var(--trait); border-radius: 10px; background: var(--blanc); }
+.df .ed .pas button { width: 30px; height: 34px; border: 0; background: none; font-size: 17px; font-weight: 700; color: var(--cobalt); }
+.df .ed .pas button:hover { background: var(--doux); }
+.df .ed .pas input { width: 64px; border: 0; border-radius: 0; box-shadow: none; padding: 6px 2px; text-align: center; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.df .ed .pas .unite { display: grid; place-items: center; align-self: stretch; min-width: 50px; padding: 0 10px; border-left: 1px solid var(--trait); background: var(--fond); font-size: 13px; font-weight: 700; color: var(--gris); }
+.df .ed .metre-btn { max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid var(--lavande); border-radius: 6px; background: var(--doux); padding: 2px 6px; font-size: 11px; font-weight: 700; color: var(--cobalt); }
+.df .ed .ouv-pu, .df .ed .ouv-tot { display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.df .ed .ouv-pu small, .df .ed .ouv-tot small { font-size: 11px; font-weight: 600; color: var(--gris); }
+.df .ed .ouv-pu span { font-size: 14px; }
+.df .ed .ouv-tot b { font-size: 16px; font-weight: 800; }
+.df .ed .pu-fixe { width: 96px; text-align: right; font-variant-numeric: tabular-nums; }
+.df .ed .coef-l { display: inline-flex; align-items: center; gap: 2px; margin-top: 3px; padding: 0 2px 0 7px; border: 1px solid var(--trait); border-radius: 7px; background: var(--fond); color: var(--gris); font-size: 12px; font-weight: 700; }
+.df .ed .coef-l input { width: 44px; border: 0; border-radius: 0; box-shadow: none; background: transparent; padding: 3px 2px; text-align: right; font-size: 12.5px; font-weight: 700; color: inherit; font-variant-numeric: tabular-nums; }
+.df .ed .coef-l:focus-within { border-color: var(--pervenche); background: var(--blanc); }
+.df .ed .coef-l.perso { border-color: var(--cobalt); background: var(--cobalt); color: var(--blanc); }
+.df .ed .coef-l button { border: 0; border-radius: 5px; background: none; padding: 2px 4px; font-size: 13px; color: inherit; }
+.df .ed .coef-l button:hover { background: rgb(255 255 255 / .2); }
+.df .ed .coef-fixe { margin-top: 3px; font-size: 11.5px; color: var(--gris); }
+@media (max-width: 760px) {
+  .df .ed .ouv { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "txt sup" "qte qte" "pu tot"; gap: 10px; }
+  .df .ed .ouv-txt { grid-area: txt; }
+  .df .ed .ouv-sup { grid-area: sup; align-self: start; }
+  .df .ed .ouv-qte { grid-area: qte; flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .df .ed .ouv-pu { grid-area: pu; align-items: flex-start; }
+  .df .ed .ouv-tot { grid-area: tot; }
+  .df .ed .r-item { grid-template-columns: 30px minmax(0, 1fr); }
+  .df .ed .r-prix { grid-column: 2; flex-direction: row; align-items: flex-start; gap: 6px; }
+  .df .ed .r-titre span { display: none; }
+  .df .ed .lot-nom { flex-basis: 100%; }
+  .df .ed .lot-total { margin-right: auto; }
+}
+/* Dans l'éditeur, la colonne est plus étroite : le nom de la ligne en entier, les chiffres dessous. */
+@media (min-width: 761px) {
+  .df .ed .ed-lignes .ouv { grid-template-columns: auto minmax(0, 1fr) auto 26px; grid-template-areas: "txt txt txt sup" "qte pu tot ."; gap: 8px 16px; }
+  .df .ed .ed-lignes .ouv-txt { grid-area: txt; }
+  .df .ed .ed-lignes .ouv-sup { grid-area: sup; align-self: start; }
+  .df .ed .ed-lignes .ouv-qte { grid-area: qte; }
+  .df .ed .ed-lignes .ouv-pu { grid-area: pu; }
+  .df .ed .ed-lignes .ouv-tot { grid-area: tot; }
+}
+
+/* Prix et marge */
+.df .ed .col-d { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.df .ed .coef { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 16px; background: var(--degrade); color: var(--blanc); }
+.df .ed .coef .val { display: flex; align-items: baseline; gap: 8px; }
+.df .ed .coef input[type=number] { width: 92px; padding: 4px 8px; border: 1px solid rgb(255 255 255 / .35); border-radius: 10px; background: rgb(255 255 255 / .16); color: var(--blanc); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.df .ed .coef input[type=number]:focus { box-shadow: 0 0 0 3px rgb(255 255 255 / .35); }
+.df .ed .coef input[type=range] { width: 100%; accent-color: var(--blanc); }
+.df .ed .coef small { color: #DCE3FF; }
+.df .ed .val-lecture { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.df .ed .coef-raz { border: 1px solid rgb(255 255 255 / .45); border-radius: 9px; background: rgb(255 255 255 / .14); padding: 7px 10px; text-align: left; font-size: 12.5px; font-weight: 700; color: var(--blanc); }
+.df .ed .coef-raz:hover { background: rgb(255 255 255 / .24); }
+.df .ed .renta { display: flex; flex-direction: column; gap: 6px; }
+.df .ed .renta .l { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.df .ed .renta .l b { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.df .ed .renta .l.sep { border-top: 1px solid var(--trait); padding-top: 6px; }
+.df .ed .renta .l.fort { font-size: 14px; font-weight: 800; }
+.df .ed .barre-renta { display: flex; height: 12px; overflow: hidden; border-radius: 6px; }
+.df .ed .barre-renta i { display: block; height: 100%; }
+.df .ed .alerte { border-radius: 10px; padding: 10px 12px; font-size: 13px; font-weight: 600; }
+.df .ed .alerte.ko { background: var(--rouge-doux); color: #B42318; }
+.df .ed .alerte.ok { background: var(--vert-doux); color: var(--vert); }
+.df .ed .prive { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: var(--violet); }
+.df .ed .legende { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; font-weight: 400; color: var(--gris); }
+.df .ed .legende span { display: inline-flex; align-items: center; gap: 6px; }
+.df .ed .legende i { display: inline-block; width: 14px; height: 10px; margin: 0; border-radius: 3px; }
+.df .ed .vc-resume { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--gris); }
+.df .ed .vc-resume b { color: var(--encre); font-variant-numeric: tabular-nums; }
+.df .ed .vc-liste { display: flex; flex-direction: column; gap: 2px; }
+.df .ed .vc-l { display: grid; grid-template-columns: minmax(0, 1fr) 46px 48px; align-items: center; gap: 4px 8px; border: 0; border-radius: 8px; background: none; padding: 6px; text-align: left; font-size: 12.5px; }
+.df .ed .vc-l:hover { background: var(--fond); }
+.df .ed .vc-nom { grid-column: 1 / -1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.df .ed .vc-barre { position: relative; height: 8px; border-radius: 4px; background: var(--doux); }
+.df .ed .vc-barre i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px; background: var(--lavande); }
+.df .ed .vc-l.perso .vc-barre i { background: var(--cobalt); }
+.df .ed .vc-barre em { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--encre); opacity: .35; }
+.df .ed .vc-val { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.df .ed .vc-l.perso .vc-val { color: var(--cobalt); }
+.df .ed .vc-m { text-align: right; font-weight: 600; color: var(--vert); font-variant-numeric: tabular-nums; }
+.df .ed .vc-l.bas .vc-m { color: var(--rouge); }
+.df .ed .vc-l.bas .vc-barre i { background: var(--rouge); }
+
+/* Conditions particulières (repliées) */
+.df .ed .ed-cond { gap: 0; }
+.df .ed .ed-cond > summary { display: flex; flex-direction: column; gap: 2px; list-style: none; cursor: pointer; }
+.df .ed .ed-cond > summary::-webkit-details-marker { display: none; }
+.df .ed .ed-cond > summary h2::after { content: " ▾"; font-size: 15px; color: var(--gris); }
+.df .ed .ed-cond[open] > summary h2::after { content: " ▴"; }
+.df .ed .ed-cond-corps { display: flex; flex-direction: column; gap: 12px; padding-top: 14px; }
+.df .ed .ed-cond-moyens { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.df .ed .ed-cond-moyens .etiq { flex-basis: 100%; }
+
+/* Fenêtres (Facturer le devis, Métré) */
+.df .ed .ed-fen { display: flex; flex-direction: column; gap: 14px; }
+.df .ed .choix-f { display: flex; flex-direction: column; gap: 8px; }
+.df .ed .choix { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--trait); border-radius: 12px; cursor: pointer; }
+.df .ed .choix input { margin-top: 4px; accent-color: var(--cobalt); }
+.df .ed .choix span { display: flex; flex-direction: column; }
+.df .ed .choix small { font-size: 12.5px; color: var(--gris); }
+.df .ed .choix.on { border-color: var(--cobalt); background: #F7F8FF; box-shadow: inset 0 0 0 1px var(--cobalt); }
+
+/* Barre du bas : état, Aperçu, ⋮, bouton principal */
+.df .ed-bas { position: sticky; bottom: 0; z-index: 15; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; padding: 14px 32px calc(14px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--trait); background: var(--blanc); }
+.df .ed-etat { margin-right: auto; font-size: 13.5px; color: var(--gris); }
+.df .ed-bas .ed-bascule { display: none; }
+.df .ed-plus { position: relative; }
+.df .ed-plus summary { list-style: none; min-width: 48px; font-size: 20px; line-height: 1; cursor: pointer; }
+.df .ed-plus summary::-webkit-details-marker { display: none; }
+.df .ed-menu { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 30; display: flex; flex-direction: column; min-width: 230px; padding: 6px; border: 1px solid var(--trait); border-radius: 14px; background: var(--blanc); box-shadow: 0 18px 40px -16px rgb(16 26 61 / .35); }
+.df .ed-menu button { min-height: 44px; padding: 8px 12px; border: 0; border-radius: 10px; background: none; text-align: left; font-weight: 600; white-space: nowrap; }
+.df .ed-menu button:hover, .df .ed-menu button:focus-visible { background: var(--fond); }
+.df .ed-menu button:disabled { opacity: .5; cursor: default; }
+
+/* Prévisualisation */
+.df .ed-d { position: sticky; top: var(--barre-h); display: flex; flex-direction: column; gap: 14px; min-width: 0; height: calc(100dvh - var(--barre-h)); overflow-y: auto; padding: 28px 36px; background: var(--fond); }
+.df .ed-d-tete { display: flex; flex-direction: column; gap: 2px; }
+.df .ed-d-tete h2 { margin: 0; font-size: 21px; font-weight: 800; }
+.df .ed-d .bureau-papier { width: 100%; max-width: 720px; margin: 0 auto; padding: 0; border: 0; border-radius: 0; background: none; }
+
+/* Le document : références du bac, description sous l'objet, couleur choisie dans les Paramètres */
+.df .papier .refs { display: flex; flex-wrap: wrap; gap: 3px 14px; margin-bottom: 10px; padding: 6px 10px; border-radius: 6px; background: var(--fond); font-size: 10px; }
+.df .papier .refs b { font-family: var(--f-chiffres); font-weight: 600; }
+.df .papier .desc-p { margin-top: 4px; white-space: pre-line; font-size: 10.5px; color: var(--gris); }
+.df .papier .logo b, .df .papier .titre-doc b { color: var(--doc, var(--encre)); }
+.df .papier th { border-bottom-color: var(--doc, var(--encre)); }
+.df .papier .totaux .ttc { background: var(--doc, var(--degrade)); }
+.df .papier .pied-perso { margin-top: 3px; }
+
+/* Écran plus étroit : un seul panneau, « Aperçu » pour voir le document */
+@media (max-width: 1180px) {
+  .df .ed-corps { grid-template-columns: minmax(0, 1fr); }
+  .df .ed-g { border-right: 0; }
+  .df .ed-d { display: none; }
+  .df .ed.voir-apercu .ed-d { display: flex; position: static; height: auto; overflow: visible; padding: 20px 16px 28px; }
+  .df .ed.voir-apercu .ed-form { display: none; }
+  .df .ed.voir-apercu .ed-g { min-height: 0; order: 2; }
+  .df .ed-bas .ed-bascule { display: inline-flex; }
+}
+@media (max-width: 700px) {
+  .df .ed-form { gap: 24px; padding: 20px 16px 28px; }
+  .df .ed-bas { gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .df .ed-etat { flex-basis: 100%; font-size: 12.5px; }
+  .df .ed-bas > button, .df .ed-plus summary { min-height: 46px; padding-top: 8px; padding-bottom: 8px; }
+  .df .ed-bas > .ed-principal { flex: 1; }
+  /* Le menu « ⋮ » prend la largeur de la barre (il ne sort pas de l'écran). */
+  .df .ed-plus { position: static; }
+  .df .ed-menu { left: 12px; right: 12px; min-width: 0; }
+}
+/* La bulle « Enregistré » passe au-dessus de la barre du bas. */
+body:has(.df .ed-bas) div[aria-live="polite"].fixed { bottom: 96px; }
+@media (max-width: 700px) {
+  body:has(.df .ed-bas) div[aria-live="polite"].fixed { bottom: calc(118px + env(safe-area-inset-bottom, 0px)); }
+}

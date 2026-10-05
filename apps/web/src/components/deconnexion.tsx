@@ -1,13 +1,6 @@
-import { redirect } from 'next/navigation';
-import { supabaseServeur } from '@/lib/supabase/server';
+import { deconnecter } from '@/app/actions-session';
 
-async function deconnecter() {
-  'use server';
-  const supabase = await supabaseServeur();
-  await supabase.auth.signOut();
-  redirect('/connexion');
-}
-
+/** Lien « Se déconnecter » (pages Bienvenue et Terrain, Paramètres › Mon profil). */
 export function BoutonDeconnexion({ className = '' }: { className?: string }) {
   return (
     <form action={deconnecter}>

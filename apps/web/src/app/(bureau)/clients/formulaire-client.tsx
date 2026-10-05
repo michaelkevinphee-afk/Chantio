@@ -1,213 +1,249 @@
 'use client';
 
-import { Fragment, useActionState, useRef, useState } from 'react';
-import { LIBELLE_TYPE_CLIENT } from '@chantio/shared';
+import Link from 'next/link';
+import { useRef, useState } from 'react';
+import { LIBELLE_TYPE_CLIENT, type FacturationClient, type TypeClient } from '@chantio/shared';
 import { Icone } from '@/components/icones';
-import { BoutonEnvoi } from '@/components/retour';
 import type { EntrepriseTrouvee } from '@/app/api/entreprises/route';
-import { ajouterClient } from './actions';
+import { enregistrerClient } from './actions';
+import { Champ, Erreur, LigneChamps, Pied, SAISIE, useEnvoi } from './fenetres';
+
+/** Fiche telle que la fenêtre « Modifier » la reçoit. `adresse` : celle du cabinet (syndic, bailleur) ou la première adresse. */
+export type ClientAModifier = {
+  id: string;
+  nom: string;
+  type: TypeClient;
+  contact: string | null;
+  telephone: string | null;
+  mobile: string | null;
+  email: string | null;
+  adresse: string;
+  site_id: string | null;
+  siren: string | null;
+  siret: string | null;
+  forme_juridique: string | null;
+  tva_intracom: string | null;
+  site_web: string | null;
+  notes: string | null;
+  facturation: FacturationClient;
+  contacts: Contact[];
+};
 
 type Contact = { nom: string; fonction: string; telephone: string; email: string };
 const CONTACT_VIDE: Contact = { nom: '', fonction: '', telephone: '', email: '' };
+const TYPES = Object.keys(LIBELLE_TYPE_CLIENT) as TypeClient[];
 
-const TYPES_PRO = (['entreprise', 'syndic', 'bailleur', 'collectivite'] as const).map((t) => [t, LIBELLE_TYPE_CLIENT[t]]);
-
-/** Fiche « Nouveau client » : particulier ou professionnel, avec recherche dans l'annuaire des entreprises. */
-export function FormulaireClient() {
-  const [etat, envoyer] = useActionState(ajouterClient, undefined);
-  const [genre, setGenre] = useState<'particulier' | 'pro'>('particulier');
-  const [pro, setPro] = useState<Partial<EntrepriseTrouvee>>({});
-  const [contacts, setContacts] = useState<Contact[]>([CONTACT_VIDE]);
-  const [factureAilleurs, setFactureAilleurs] = useState(false);
-  const [typePro, setTypePro] = useState('entreprise');
-
-  const choisir = (e: EntrepriseTrouvee) => {
-    setPro(e);
-    // Le premier dirigeant devient le premier contact, si rien n'est encore saisi.
-    if (e.dirigeants[0] && contacts.every((c) => !c.nom)) {
-      setContacts([{ ...CONTACT_VIDE, nom: e.dirigeants[0].nom, fonction: e.dirigeants[0].fonction ?? '' }]);
-    }
-  };
-  const champPro = (cle: keyof EntrepriseTrouvee) => ({
-    name: cle,
-    value: (pro[cle] as string | null | undefined) ?? '',
-    onChange: (ev: React.ChangeEvent<HTMLInputElement>) => setPro((p) => ({ ...p, [cle]: ev.target.value })),
+/**
+ * Fenêtre « Nouveau client » / « Modifier <nom> » (fenetreClient du bac) : type en puces, recherche de l'entreprise
+ * dans l'annuaire officiel, nom, contact, téléphone, e-mail, adresse, SIREN, facturation des syndics et bailleurs.
+ * Les informations en plus de la production (SIRET, TVA, autres contacts, notes…) sont dans « Plus d’informations ».
+ */
+export function FormulaireClient({
+  client,
+  fermer,
+  peutSupprimer = false,
+  focus,
+}: {
+  client?: ClientAModifier;
+  fermer: string;
+  peutSupprimer?: boolean;
+  focus?: 'tel';
+}) {
+  const nouveau = !client;
+  const { etat, envoyer } = useEnvoi(enregistrerClient.bind(null, client?.id ?? null, fermer), fermer);
+  const [type, setType] = useState<TypeClient>(client?.type ?? 'particulier');
+  const [champs, setChamps] = useState({
+    nom: client?.nom ?? '',
+    adresse: client?.adresse ?? '',
+    siren: client?.siren ?? '',
+    siret: client?.siret ?? '',
+    forme_juridique: client?.forme_juridique ?? '',
+    tva_intracom: client?.tva_intracom ?? '',
   });
-  const majContact = (k: number, cle: keyof Contact, v: string) =>
-    setContacts((cs) => cs.map((c, n) => (n === k ? { ...c, [cle]: v } : c)));
+  const [annuaire, setAnnuaire] = useState<Partial<EntrepriseTrouvee> | null>(null);
+  const [contacts, setContacts] = useState<Contact[]>(client?.contacts.length ? client.contacts : [CONTACT_VIDE]);
+  const pro = type !== 'particulier';
+  const imms = type === 'syndic' || type === 'bailleur';
+  // Le téléphone principal est le portable s'il y en a un, sinon le fixe (comme la liste).
+  const colonne = client?.mobile ? 'mobile' : 'telephone';
+  const principal = client ? (client.mobile ?? client.telephone ?? '') : '';
+  const secondaire = client ? ((colonne === 'mobile' ? client.telephone : client.mobile) ?? '') : '';
+
+  const saisie = (cle: keyof typeof champs) => ({
+    name: cle,
+    value: champs[cle],
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setChamps((c) => ({ ...c, [cle]: e.target.value })),
+  });
+  const choisir = (e: EntrepriseTrouvee) => {
+    setAnnuaire(e);
+    setChamps((c) => ({
+      ...c,
+      nom: e.nom,
+      siren: e.siren,
+      siret: e.siret ?? c.siret,
+      forme_juridique: e.forme_juridique ?? c.forme_juridique,
+      tva_intracom: e.tva_intracom ?? c.tva_intracom,
+      adresse: [e.adresse, [e.code_postal, e.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ') || c.adresse,
+    }));
+    // Le premier dirigeant devient le premier contact, si rien n'est encore saisi.
+    if (e.dirigeants[0] && contacts.every((k) => !k.nom)) setContacts([{ ...CONTACT_VIDE, nom: e.dirigeants[0].nom, fonction: e.dirigeants[0].fonction ?? '' }]);
+  };
+  const majContact = (k: number, cle: keyof Contact, v: string) => setContacts((cs) => cs.map((c, n) => (n === k ? { ...c, [cle]: v } : c)));
 
   return (
-    <form action={envoyer} className="space-y-5">
-      <input type="hidden" name="genre" value={genre} />
-
-      <div className="grid grid-cols-2 gap-1 rounded-[16px] border border-trait bg-white p-1">
-        {(['particulier', 'pro'] as const).map((g) => (
-          <button
-            key={g}
-            type="button"
-            onClick={() => setGenre(g)}
-            className={`rounded-[12px] py-2.5 text-sm font-extrabold transition ${genre === g ? 'degrade text-white' : 'text-gris hover:text-encre'}`}
-          >
-            {g === 'particulier' ? 'Particulier' : 'Professionnel'}
-          </button>
-        ))}
-      </div>
-
-      {genre === 'pro' ? (
-        <Fragment key="pro">
-          <RechercheEntreprise onChoix={choisir} />
-          <Groupe titre="Identité">
-            <div className="grid grid-cols-[minmax(0,1fr)_170px] gap-2">
-              <Champ libelle="Raison sociale">
-                <input {...champPro('nom')} className="champ" required />
-              </Champ>
-              <Champ libelle="Type">
-                <select name="type" className="champ" value={typePro} onChange={(e) => setTypePro(e.target.value)}>
-                  {TYPES_PRO.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
-              </Champ>
-            </div>
-            {(typePro === 'syndic' || typePro === 'bailleur') && (
-              <Champ libelle="Facturation">
-                <select name="facturation" className="champ" defaultValue="intervention">
-                  <option value="intervention">Une facture par intervention</option>
-                  <option value="mensuel">Un relevé par mois pour chaque immeuble</option>
-                </select>
-              </Champ>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <Champ libelle="SIREN">
-                <input {...champPro('siren')} className="champ" inputMode="numeric" pattern="\s*(\d\s*){9}" title="9 chiffres" />
-              </Champ>
-              <Champ libelle="SIRET">
-                <input {...champPro('siret')} className="champ" inputMode="numeric" pattern="\s*(\d\s*){14}" title="14 chiffres" />
-              </Champ>
-              <Champ libelle="Forme juridique">
-                <input {...champPro('forme_juridique')} className="champ" />
-              </Champ>
-              <Champ libelle="TVA intracom.">
-                <input {...champPro('tva_intracom')} className="champ" />
-              </Champ>
-            </div>
-            <input type="hidden" name="activite" value={pro.activite ?? ''} />
-          </Groupe>
-
-          <Groupe titre="Coordonnées">
-            <div className="grid grid-cols-2 gap-2">
-              <Champ libelle="Téléphone (standard)">
-                <input name="telephone" type="tel" className="champ" />
-              </Champ>
-              <Champ libelle="E-mail">
-                <input name="email" type="email" className="champ" />
-              </Champ>
-            </div>
-            <Champ libelle="Site internet">
-              <input name="site_web" className="champ" placeholder="www.exemple.fr" />
-            </Champ>
-          </Groupe>
-
-          <Groupe titre="Contacts">
-            {contacts.map((c, k) => (
-              <div key={k} className="space-y-2 rounded-[16px] bg-fond p-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <input name="contact_nom" value={c.nom} onChange={(e) => majContact(k, 'nom', e.target.value)} className="champ" placeholder="Nom et prénom" aria-label="Nom du contact" />
-                  <input name="contact_fonction" value={c.fonction} onChange={(e) => majContact(k, 'fonction', e.target.value)} className="champ" placeholder="Fonction (gestionnaire…)" aria-label="Fonction" />
-                  <input name="contact_telephone" type="tel" value={c.telephone} onChange={(e) => majContact(k, 'telephone', e.target.value)} className="champ" placeholder="Téléphone" aria-label="Téléphone du contact" />
-                  <input name="contact_email" type="email" value={c.email} onChange={(e) => majContact(k, 'email', e.target.value)} className="champ" placeholder="E-mail" aria-label="E-mail du contact" />
-                </div>
-                {contacts.length > 1 && (
-                  <button type="button" onClick={() => setContacts((cs) => cs.filter((_, n) => n !== k))} className="text-sm font-semibold text-gris underline">
-                    Retirer ce contact
-                  </button>
-                )}
-              </div>
-            ))}
-            <button type="button" onClick={() => setContacts((cs) => [...cs, CONTACT_VIDE])} className="inline-flex items-center gap-1.5 text-sm font-bold text-cobalt">
-              <Icone nom="plus" taille={16} /> Ajouter un contact
-            </button>
-          </Groupe>
-        </Fragment>
-      ) : (
-        <Fragment key="particulier">
-          <Groupe titre="Identité">
-            <div className="grid grid-cols-[110px_minmax(0,1fr)_minmax(0,1fr)] gap-2">
-              <Champ libelle="Civilité">
-                <select name="civilite" className="champ" defaultValue="">
-                  <option value="">—</option>
-                  <option>Mme</option>
-                  <option>M.</option>
-                </select>
-              </Champ>
-              <Champ libelle="Prénom">
-                <input name="prenom" className="champ" />
-              </Champ>
-              <Champ libelle="Nom">
-                <input name="nom" className="champ" required />
-              </Champ>
-            </div>
-          </Groupe>
-          <Groupe titre="Coordonnées">
-            <div className="grid grid-cols-2 gap-2">
-              <Champ libelle="Portable">
-                <input name="mobile" type="tel" className="champ" />
-              </Champ>
-              <Champ libelle="Téléphone fixe">
-                <input name="telephone" type="tel" className="champ" />
-              </Champ>
-            </div>
-            <Champ libelle="E-mail (pour le rapport)">
-              <input name="email" type="email" className="champ" />
-            </Champ>
-          </Groupe>
-        </Fragment>
+    <form action={envoyer} className="flex flex-col gap-3.5">
+      <input type="hidden" name="type" value={type} />
+      <input type="hidden" name="tel_colonne" value={colonne} />
+      {client?.site_id && <input type="hidden" name="site_id" value={client.site_id} />}
+      {annuaire && (
+        <>
+          <input type="hidden" name="activite" value={annuaire.activite ?? ''} />
+          <input type="hidden" name="latitude" value={annuaire.latitude ?? ''} />
+          <input type="hidden" name="longitude" value={annuaire.longitude ?? ''} />
+        </>
       )}
 
-      <Groupe key={`adresse-${genre}`} titre={genre === 'pro' ? 'Adresse d’intervention ou du siège' : 'Adresse d’intervention'}>
-        <Champ libelle="Adresse">
-          <input {...(genre === 'pro' ? champPro('adresse') : { name: 'adresse' })} className="champ" />
-        </Champ>
-        <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-2">
-          <Champ libelle="Code postal">
-            <input {...(genre === 'pro' ? champPro('code_postal') : { name: 'code_postal' })} className="champ" inputMode="numeric" />
-          </Champ>
-          <Champ libelle="Ville">
-            <input {...(genre === 'pro' ? champPro('ville') : { name: 'ville' })} className="champ" />
-          </Champ>
+      <div className="flex flex-col gap-1 text-[13px] font-bold text-gris">
+        <span id="type-client">Type de client</span>
+        <div role="radiogroup" aria-labelledby="type-client" className="flex flex-wrap gap-1.5">
+          {TYPES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              role="radio"
+              aria-checked={type === t}
+              onClick={() => setType(t)}
+              className={`rounded-full border px-3 py-1.5 text-[13px] font-bold transition max-sm:py-2 ${
+                type === t ? 'border-cobalt bg-cobalt text-white' : 'border-trait bg-white text-gris hover:border-cobalt hover:text-encre'
+              }`}
+            >
+              {LIBELLE_TYPE_CLIENT[t]}
+            </button>
+          ))}
         </div>
-        {genre === 'pro' && (
-          <>
-            <input type="hidden" name="latitude" value={pro.latitude ?? ''} />
-            <input type="hidden" name="longitude" value={pro.longitude ?? ''} />
-          </>
-        )}
-        <div className="grid grid-cols-2 gap-2">
-          <Champ libelle="Accès">
-            <input name="acces" className="champ" placeholder="Code, étage, bâtiment" />
-          </Champ>
-          <Champ libelle="Consignes">
-            <input name="consignes" className="champ" placeholder="Chien, horaires…" />
-          </Champ>
-        </div>
-        <label className="flex items-center gap-2 pt-1 text-sm font-semibold">
-          <input type="checkbox" checked={factureAilleurs} onChange={(e) => setFactureAilleurs(e.target.checked)} className="h-4 w-4 accent-cobalt" />
-          Adresse de facturation différente
-        </label>
-        {factureAilleurs && <textarea name="adresse_facturation" rows={2} className="champ" placeholder="Adresse de facturation" aria-label="Adresse de facturation" />}
-      </Groupe>
-
-      <Groupe titre="Notes">
-        <textarea name="notes" rows={3} className="champ" placeholder="Infos utiles : bailleur, gardien, habitudes…" aria-label="Notes" />
-      </Groupe>
-
-      {etat?.erreur && <p className="rounded-xl bg-rouge-doux px-4 py-3 text-sm font-semibold text-rouge">{etat.erreur}</p>}
-      <div className="sticky -bottom-6 -mx-6 -mb-6 border-t border-trait bg-fond/90 px-6 py-4 backdrop-blur">
-        <BoutonEnvoi className="w-full" enCours="Enregistrement…">Créer le client</BoutonEnvoi>
       </div>
+
+      {pro && <RechercheEntreprise onChoix={choisir} />}
+
+      <LigneChamps>
+        <Champ libelle={pro ? 'Raison sociale' : 'Nom'}>
+          <input {...saisie('nom')} className={SAISIE} placeholder={pro ? 'ex. Cabinet Dupré Gestion' : 'ex. M. et Mme Lambert'} required autoFocus={!focus} />
+        </Champ>
+        <Champ libelle="Contact">
+          <input name="contact" defaultValue={client?.contact ?? ''} className={SAISIE} placeholder={pro ? 'ex. M. Leroy, gestionnaire' : 'ex. Mme Lambert'} />
+        </Champ>
+      </LigneChamps>
+      <LigneChamps>
+        <Champ libelle="Téléphone">
+          <input name="telephone" type="tel" defaultValue={principal} className={SAISIE} autoFocus={focus === 'tel'} />
+        </Champ>
+        <Champ libelle="E-mail">
+          <input name="email" type="email" defaultValue={client?.email ?? ''} className={SAISIE} />
+        </Champ>
+      </LigneChamps>
+      <LigneChamps>
+        <Champ libelle="Adresse">
+          <input {...saisie('adresse')} className={SAISIE} placeholder="Numéro, rue, code postal, ville" />
+        </Champ>
+        {pro && (
+          <Champ libelle="SIREN">
+            <input {...saisie('siren')} className={SAISIE} inputMode="numeric" />
+          </Champ>
+        )}
+      </LigneChamps>
+      {imms && (
+        <Champ libelle="Facturation">
+          <select name="facturation" defaultValue={client?.facturation ?? 'intervention'} className={SAISIE}>
+            <option value="intervention">Une facture par intervention</option>
+            <option value="mensuel">Un relevé par mois pour chaque immeuble</option>
+          </select>
+        </Champ>
+      )}
+      {imms && nouveau && (
+        <p className="text-[13px] text-gris">Après l’enregistrement, ajoutez ses immeubles et leurs occupants depuis sa fiche, section «&nbsp;Ses immeubles&nbsp;».</p>
+      )}
+
+      <details className="group rounded-[14px] border border-trait px-3.5 py-2.5">
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-bold text-cobalt">
+          <Icone nom="chevron" taille={16} className="transition group-open:rotate-90" /> Plus d’informations
+        </summary>
+        <div className="mt-3 flex flex-col gap-3">
+          <LigneChamps>
+            <Champ libelle="Autre téléphone">
+              <input name="autre_telephone" type="tel" defaultValue={secondaire} className={SAISIE} />
+            </Champ>
+            {pro && (
+              <Champ libelle="Site internet">
+                <input name="site_web" defaultValue={client?.site_web ?? ''} className={SAISIE} placeholder="www.exemple.fr" />
+              </Champ>
+            )}
+          </LigneChamps>
+          {pro && (
+            <LigneChamps>
+              <Champ libelle="SIRET">
+                <input {...saisie('siret')} className={SAISIE} inputMode="numeric" pattern="\s*(\d\s*){14}" title="14 chiffres" />
+              </Champ>
+              <Champ libelle="Forme juridique">
+                <input {...saisie('forme_juridique')} className={SAISIE} />
+              </Champ>
+              <Champ libelle="TVA intracom.">
+                <input {...saisie('tva_intracom')} className={SAISIE} />
+              </Champ>
+            </LigneChamps>
+          )}
+          {pro && (
+            <div className="flex flex-col gap-2">
+              <input type="hidden" name="contacts_envoyes" value="1" />
+              <span className="text-[13px] font-bold text-gris">Autres contacts</span>
+              {contacts.map((c, k) => (
+                <div key={k} className="flex flex-col gap-2 rounded-[14px] bg-fond p-3">
+                  <LigneChamps>
+                    <input name="contact_nom" value={c.nom} onChange={(e) => majContact(k, 'nom', e.target.value)} className={SAISIE} placeholder="Nom et prénom" aria-label="Nom du contact" />
+                    <input name="contact_fonction" value={c.fonction} onChange={(e) => majContact(k, 'fonction', e.target.value)} className={SAISIE} placeholder="Fonction (gestionnaire…)" aria-label="Fonction" />
+                  </LigneChamps>
+                  <LigneChamps>
+                    <input name="contact_telephone" type="tel" value={c.telephone} onChange={(e) => majContact(k, 'telephone', e.target.value)} className={SAISIE} placeholder="Téléphone" aria-label="Téléphone du contact" />
+                    <input name="contact_email" type="email" value={c.email} onChange={(e) => majContact(k, 'email', e.target.value)} className={SAISIE} placeholder="E-mail" aria-label="E-mail du contact" />
+                  </LigneChamps>
+                  {(contacts.length > 1 || c.nom) && (
+                    <button
+                      type="button"
+                      onClick={() => setContacts((cs) => (cs.length > 1 ? cs.filter((_, n) => n !== k) : [CONTACT_VIDE]))}
+                      className="self-start text-sm font-semibold text-gris underline"
+                    >
+                      Retirer ce contact
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={() => setContacts((cs) => [...cs, CONTACT_VIDE])} className="inline-flex items-center gap-1.5 self-start text-sm font-bold text-cobalt">
+                <Icone nom="plus" taille={16} /> Ajouter un contact
+              </button>
+            </div>
+          )}
+          <Champ libelle="Notes">
+            <textarea name="notes" rows={2} defaultValue={client?.notes ?? ''} className={SAISIE} placeholder="Infos utiles : habitudes, horaires…" />
+          </Champ>
+        </div>
+      </details>
+
+      <Erreur etat={etat} />
+      <Pied
+        valider={nouveau ? 'Créer le client' : 'Enregistrer'}
+        gauche={
+          peutSupprimer && client ? (
+            // Sur la page de la fiche (fermer), avec son ?depuis : on y revient si l'on annule.
+            <Link href={`${fermer}${fermer.includes('?') ? '&' : '?'}supprimer=1`} scroll={false} className="text-sm font-bold text-rouge hover:underline">
+              Supprimer ce client
+            </Link>
+          ) : undefined
+        }
+      />
     </form>
   );
 }
 
-/** Recherche par nom ou SIREN dans l'annuaire public des entreprises. */
+/** Recherche par nom ou SIREN dans l'annuaire officiel des entreprises : la fiche se remplit toute seule. */
 function RechercheEntreprise({ onChoix }: { onChoix: (e: EntrepriseTrouvee) => void }) {
   const [q, setQ] = useState('');
   const [resultats, setResultats] = useState<EntrepriseTrouvee[]>([]);
@@ -248,29 +284,27 @@ function RechercheEntreprise({ onChoix }: { onChoix: (e: EntrepriseTrouvee) => v
   };
 
   return (
-    <div className="carte p-4">
-      <label className="etiquette" htmlFor="recherche-entreprise">Retrouver l’entreprise</label>
-      <div className="relative">
-        <Icone nom="recherche" taille={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gris" />
-        <input
-          id="recherche-entreprise"
-          value={q}
-          onChange={(e) => chercher(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-          className="champ pl-11"
-          placeholder="Nom, SIREN ou SIRET"
-          autoComplete="off"
-        />
-        {etat === 'recherche' && (
-          <span className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-trait border-t-cobalt" />
-        )}
-      </div>
-      <p className="mt-1.5 text-xs text-gris">Annuaire officiel des entreprises (gratuit) : la fiche se remplit toute seule.</p>
-
-      {etat === 'vide' && <p className="mt-3 text-sm text-gris">Aucune entreprise trouvée.</p>}
-      {etat === 'erreur' && <p className="mt-3 text-sm font-semibold text-rouge">{message}</p>}
+    <div className="flex flex-col gap-1.5">
+      <Champ libelle="Rechercher l’entreprise par nom ou SIREN" aide="Annuaire officiel des entreprises : la fiche se remplit toute seule.">
+        <span className="relative block">
+          <input
+            type="search"
+            value={q}
+            onChange={(e) => chercher(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+            className={`${SAISIE} pr-10`}
+            placeholder="Nom, SIREN ou SIRET"
+            autoComplete="off"
+          />
+          {etat === 'recherche' && (
+            <span className="absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-trait border-t-cobalt" />
+          )}
+        </span>
+      </Champ>
+      {etat === 'vide' && <p className="text-[13px] text-gris">Rien dans l’annuaire. Remplissez la fiche à la main.</p>}
+      {etat === 'erreur' && <p className="text-[13px] font-semibold text-rouge">{message}</p>}
       {resultats.length > 0 && (
-        <ul className="mt-3 divide-y divide-trait overflow-hidden rounded-[14px] border border-trait">
+        <ul className="divide-y divide-trait overflow-hidden rounded-[14px] border border-trait">
           {resultats.map((r) => (
             <li key={r.siren}>
               <button
@@ -282,12 +316,11 @@ function RechercheEntreprise({ onChoix }: { onChoix: (e: EntrepriseTrouvee) => v
                 className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition hover:bg-fond ${choisi === r.siren ? 'bg-doux' : 'bg-white'}`}
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-bold">{r.nom}</span>
-                  <span className="block truncate text-xs text-gris">
+                  <b className="block truncate">{r.nom}</b>
+                  <small className="block truncate text-xs text-gris">
                     SIREN {r.siren.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')}
-                    {r.ville && ` · ${r.code_postal ?? ''} ${r.ville}`}
-                    {r.forme_juridique && ` · ${r.forme_juridique}`}
-                  </span>
+                    {(r.adresse || r.ville) && ` · ${[r.adresse, [r.code_postal, r.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ')}`}
+                  </small>
                 </span>
                 {r.fermee && <span className="rounded-full bg-rouge-doux px-2 py-0.5 text-xs font-bold text-rouge">Fermée</span>}
                 {choisi === r.siren && <span className="text-xs font-bold text-vert">✓ Repris</span>}
@@ -297,23 +330,5 @@ function RechercheEntreprise({ onChoix }: { onChoix: (e: EntrepriseTrouvee) => v
         </ul>
       )}
     </div>
-  );
-}
-
-export function Groupe({ titre, children }: { titre: string; children: React.ReactNode }) {
-  return (
-    <div className="carte space-y-3 p-4">
-      <p className="text-xs font-bold uppercase tracking-[0.08em] text-gris">{titre}</p>
-      {children}
-    </div>
-  );
-}
-
-export function Champ({ libelle, children }: { libelle: string; children: React.ReactNode }) {
-  return (
-    <label className="block min-w-0">
-      <span className="mb-1 block text-xs font-bold text-gris">{libelle}</span>
-      {children}
-    </label>
   );
 }

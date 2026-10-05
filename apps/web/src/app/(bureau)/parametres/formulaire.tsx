@@ -1,87 +1,90 @@
 'use client';
 
-import { useActionState, useEffect, useState, type ReactNode } from 'react';
-import { coefficientPlancher, euro, pourcent, REGLAGES_PRIX_DEFAUT, reglagesPrix, type ReglagesPrix } from '@chantio/shared';
-import { annoncer, BoutonEnvoi } from '@/components/retour';
-import { enregistrerParametres, type Rubrique } from './actions';
+import { useState } from 'react';
+import { euro, pourcent, reglagesDepannage, reglagesPrix, type ReglagesFacturation } from '@chantio/shared';
+import { ChampAuto } from './champ-auto';
+import { Section } from './elements';
+import { nombreAffiche } from './valeurs';
 
-/** Une rubrique des paramètres : ses champs, puis « Enregistrer » (dirigeant seulement). */
-export function FormulaireParametres({ rubrique, modifiable, children }: { rubrique: Rubrique; modifiable: boolean; children: ReactNode }) {
-  const [etat, envoyer] = useActionState(enregistrerParametres.bind(null, rubrique), undefined);
-  useEffect(() => {
-    if (etat?.ok) annoncer('Paramètres enregistrés');
-  }, [etat]);
-  return (
-    <form action={envoyer}>
-      <fieldset disabled={!modifiable} className="space-y-6 disabled:opacity-80">
-        {children}
-      </fieldset>
-      {etat?.erreur && <p className="mt-5 rounded-xl bg-rouge-doux px-4 py-3 text-sm font-semibold text-rouge">{etat.erreur}</p>}
-      {modifiable && (
-        <div className="mt-6 flex justify-end border-t border-trait pt-5">
-          <BoutonEnvoi enCours="Enregistrement…">Enregistrer</BoutonEnvoi>
-        </div>
-      )}
-    </form>
-  );
-}
+const lire = (s: string) => Number(s.replace(/\s/g, '').replace(',', '.'));
 
-const PRIX: { k: keyof ReglagesPrix; lib: string; unite: string; aide: string }[] = [
-  { k: 'cout_horaire', lib: 'Coût horaire chargé', unite: '€ HT / h', aide: 'Salaires et charges, divisés par les heures facturables.' },
-  { k: 'frais_generaux', lib: 'Frais généraux', unite: '% du déboursé', aide: 'Loyer, véhicules, assurances, bureau, comptable.' },
-  { k: 'coefficient', lib: 'Coefficient global par défaut', unite: '×', aide: 'Proposé à chaque nouveau devis, modifiable devis par devis.' },
-  { k: 'marge_min', lib: 'Marge nette minimale', unite: '%', aide: 'En dessous, le devis vous alerte.' },
-  { k: 'chute', lib: 'Chute des métrés en m²', unite: '%', aide: 'Ajoutée par défaut aux surfaces (carrelage, faïence).' },
-];
-const texte = (n: number | undefined) => (n == null ? '' : String(n).replace('.', ','));
+/**
+ * Paramètres › Prix et coefficients : coûts de l'entreprise, prix de vente (avec les réglages de dépannage),
+ * ce que donne le coefficient (recalculé à chaque enregistrement), puis l'objectif du mois.
+ */
+export function RubriquePrix({ r }: { r: ReglagesFacturation }) {
+  const rp = reglagesPrix(r);
+  const rd = reglagesDepannage(r);
+  const [calcul, setCalcul] = useState({ fg: rp.frais_generaux, coef: rp.coefficient, marge: rp.marge_min });
+  const suivre = (k: keyof typeof calcul) => (s: string) => Number.isFinite(lire(s)) && setCalcul((c) => ({ ...c, [k]: lire(s) }));
 
-/** Prix et coefficients, avec ce que donne le coefficient sur 100 € de déboursé. */
-export function ChampsPrix({ valeurs }: { valeurs: Partial<ReglagesPrix> }) {
-  const [saisie, setSaisie] = useState(() => Object.fromEntries(PRIX.map(({ k }) => [k, texte(valeurs[k])])) as Record<keyof ReglagesPrix, string>);
-  const essai = reglagesPrix(
-    Object.fromEntries(PRIX.flatMap(({ k }) => (saisie[k].trim() ? [[k, Number(saisie[k].replace(/\s/g, '').replace(',', '.'))]] : []))),
-  );
-  const vente = 100 * essai.coefficient;
-  const revient = 100 * (1 + essai.frais_generaux / 100);
-  const marge = vente ? ((vente - revient) / vente) * 100 : 0;
+  const pv = 100 * calcul.coef;
+  const pr = 100 * (1 + calcul.fg / 100);
+  const margeNette = pv ? ((pv - pr) / pv) * 100 : 0;
+  const plancher = Math.ceil(((1 + calcul.fg / 100) / (1 - calcul.marge / 100)) * 100) / 100;
+
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {PRIX.map(({ k, lib, unite, aide }) => (
-          <label key={k} className="block">
-            <span className="etiquette">
-              {lib} <span className="font-semibold text-gris">· {unite}</span>
-            </span>
-            <input
-              name={k}
-              className="champ tabular-nums"
-              inputMode="decimal"
-              value={saisie[k]}
-              placeholder={texte(REGLAGES_PRIX_DEFAUT[k])}
-              onChange={(e) => setSaisie({ ...saisie, [k]: e.target.value })}
-            />
-            <span className="mt-1 block text-xs text-gris">{aide}</span>
-          </label>
-        ))}
-      </div>
-      <div className="rounded-2xl bg-fond p-4">
-        <div className="grid grid-cols-3 gap-3 text-center">
-          {[
-            ['Prix de vente', euro(vente), ''],
-            ['Prix de revient', euro(revient), ''],
-            ['Marge nette', pourcent(marge), marge < essai.marge_min ? 'text-rouge' : 'text-vert'],
-          ].map(([l, v, ton]) => (
-            <div key={l}>
-              <p className="text-xs font-bold text-gris">{l}</p>
-              <p className={`text-xl font-extrabold tabular-nums ${ton}`}>{v}</p>
-            </div>
-          ))}
+      <Section titre="Coûts de l’entreprise">
+        <ChampAuto
+          cle="frais_generaux"
+          libelle="Frais généraux"
+          valeur={nombreAffiche(rp.frais_generaux)}
+          unite="% du déboursé"
+          aide="Loyer, véhicules, assurances, comptable, temps au bureau"
+          onEnregistre={suivre('fg')}
+        />
+        <ChampAuto cle="cout_horaire" libelle="Coût horaire chargé" valeur={nombreAffiche(rp.cout_horaire)} unite="€ / h" aide="Salaire + charges, divisé par les heures productives" />
+        <ChampAuto
+          cle="marge_min"
+          libelle="Marge nette minimale"
+          valeur={nombreAffiche(rp.marge_min)}
+          unite="%"
+          aide="En dessous, le devis affiche une alerte"
+          onEnregistre={suivre('marge')}
+        />
+      </Section>
+      <Section titre="Prix de vente">
+        <ChampAuto
+          cle="coefficient"
+          libelle="Coefficient global par défaut"
+          valeur={nombreAffiche(rp.coefficient)}
+          unite="×"
+          aide="Modifiable sur chaque devis et chaque ligne"
+          onEnregistre={suivre('coef')}
+        />
+        <ChampAuto cle="taux_depannage" libelle="Taux horaire dépannage" valeur={nombreAffiche(rd.taux_depannage)} unite="€ HT / h" aide="Utilisé par les forfaits dépannage" />
+        <ChampAuto cle="deplacement" libelle="Forfait déplacement" valeur={nombreAffiche(rd.deplacement)} unite="€ HT" aide="Paris intra-muros" />
+        <ChampAuto cle="maj_soir" libelle="Majoration soir" valeur={nombreAffiche(rd.maj_soir)} unite="%" aide="Après 19 h" />
+        <ChampAuto cle="maj_we" libelle="Majoration week-end" valeur={nombreAffiche(rd.maj_we)} unite="%" aide="Samedi, dimanche, jours fériés" />
+        <ChampAuto cle="chute" libelle="Chute par défaut (m²)" valeur={nombreAffiche(rp.chute)} unite="%" aide="Ajoutée dans le métré" />
+      </Section>
+      <Section titre="Ce que donne votre coefficient" grille={false}>
+        <div aria-live="polite" className="space-y-1">
+          <p>
+            Pour <b>100 €</b> de déboursé sec, avec un coefficient de <b className="tabular-nums">{nombreAffiche(calcul.coef)}</b> : prix de vente{' '}
+            <b className="tabular-nums">{euro(pv)}</b>, prix de revient <b className="tabular-nums">{euro(pr)}</b>, marge nette{' '}
+            <b className={`tabular-nums ${margeNette < calcul.marge ? 'text-rouge' : 'text-vert'}`}>
+              {euro(pv - pr)} ({pourcent(margeNette)})
+            </b>
+            .
+          </p>
+          <p className="text-[13px] text-gris">
+            Coefficient minimum pour atteindre {nombreAffiche(calcul.marge)} % de marge nette avec {nombreAffiche(calcul.fg)} % de frais généraux :{' '}
+            <b className="text-encre tabular-nums">{nombreAffiche(plancher)}</b>.
+          </p>
         </div>
-        <p className="mt-3 text-xs text-gris">
-          Pour 100 € de déboursé sec (fournitures et main-d’œuvre) avec le coefficient × {texte(essai.coefficient)}. Prix d’un ouvrage = (fourniture + temps de pose ×{' '}
-          {euro(essai.cout_horaire)}) × coefficient. Pour garder {pourcent(essai.marge_min)} de marge nette, ne descendez pas sous × {texte(coefficientPlancher(essai))}.
-        </p>
-      </div>
+      </Section>
+      <Section titre="Objectif du mois">
+        <ChampAuto
+          cle="objectif_mensuel"
+          libelle="Chiffre d’affaires visé chaque mois"
+          valeur={r.objectif_mensuel ? String(r.objectif_mensuel) : ''}
+          unite="€ HT"
+          inputMode="numeric"
+          aide="Sert à l’anneau « Ce mois-ci » du tableau de bord des devis."
+        />
+      </Section>
     </>
   );
 }

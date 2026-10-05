@@ -13,12 +13,18 @@ export function Volet({
   fermer,
   titre,
   sous,
+  dessous,
+  blanc = false,
   children,
 }: {
   /** Adresse de la page sans la fiche. */
   fermer: string;
   titre: ReactNode;
   sous?: ReactNode;
+  /** Sous le titre (pastilles d'état d'une intervention…). */
+  dessous?: ReactNode;
+  /** Corps blanc à rubriques séparées par des filets (volet d'intervention du bac) au lieu du fond bleuté à cartes. */
+  blanc?: boolean;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -56,6 +62,7 @@ export function Volet({
           <div className="min-w-0 flex-1">
             {sous && <div className="mb-1.5 text-sm text-gris">{sous}</div>}
             <h2 className="text-2xl font-extrabold leading-tight">{titre}</h2>
+            {dessous && <div className="mt-1.5">{dessous}</div>}
           </div>
           <button
             type="button"
@@ -66,7 +73,7 @@ export function Volet({
             <Icone nom="fermer" taille={18} />
           </button>
         </header>
-        <div className="flex-1 overflow-y-auto px-6 py-6">{children}</div>
+        <div className={`flex-1 overflow-y-auto ${blanc ? 'bg-white px-[18px] pt-4 pb-10 max-sm:px-3.5' : 'px-6 py-6'}`}>{children}</div>
       </section>
     </div>
   );

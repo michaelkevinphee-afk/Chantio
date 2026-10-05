@@ -118,3 +118,19 @@ test('DPGF : en-tête repéré, lots, postes, quantités du client et ouvrages r
   assert.equal(normaliserUnite('Ens'), 'ens.');
   assert.equal(retrouverOuvrage('Peinture des murs', 'm²', ouvrages), null);
 });
+
+test('réglages de dépannage : valeurs par défaut, bornes et couleur des documents', async () => {
+  const { reglagesDepannage, REGLAGES_DEPANNAGE_DEFAUT } = await import('./rentabilite.ts');
+  const { couleurDocument, CODES_NAF, FORMES_JURIDIQUES } = await import('./libelles.ts');
+  assert.deepEqual(reglagesDepannage({}), { taux_depannage: 65, deplacement: 45, maj_soir: 50, maj_we: 75 });
+  assert.deepEqual(reglagesDepannage(null), REGLAGES_DEPANNAGE_DEFAUT);
+  assert.equal(reglagesDepannage({ taux_depannage: 72 }).taux_depannage, 72);
+  // Hors bornes : la valeur par défaut reste.
+  assert.equal(reglagesDepannage({ maj_soir: -5 }).maj_soir, 50);
+  assert.equal(reglagesDepannage({ maj_we: 900 }).maj_we, 75);
+  assert.equal(couleurDocument({}), '#101A3D');
+  assert.equal(couleurDocument({ couleur_doc: 'vert' }), '#067647');
+  assert.equal(couleurDocument({ couleur_doc: 'inconnue' }), '#101A3D');
+  assert.equal(CODES_NAF.length, 16);
+  assert.equal(FORMES_JURIDIQUES[0], 'Entrepreneur individuel');
+});

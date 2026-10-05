@@ -42,14 +42,44 @@ export function LienBouton({ variante = 'principal', className, ...props }: Comp
   return <Link className={classeBouton(variante, className)} {...props} />;
 }
 
-export function Titre({ children, sous, actions }: { children: ReactNode; sous?: ReactNode; actions?: ReactNode }) {
+/**
+ * En-tête de page, comme dans le bac : lien de retour facultatif, h1, phrase grise dessous,
+ * boutons à droite (ils passent sous le titre sur téléphone).
+ * - `texte` : la phrase sous le h1 (« Choisissez un client pour voir sa fiche : … »).
+ * - `retour` : un Link ou un bouton au-dessus du titre (« ← Ventes », « ← Retour à la fiche de … ») ;
+ *   s'il est masqué (ex. `menu:hidden`), il ne laisse pas d'espace vide.
+ * - `sous` : ancien sur-titre gris AU-DESSUS du h1, gardé pour les pages pas encore refaites.
+ */
+export function Titre({
+  children,
+  texte,
+  actions,
+  retour,
+  sous,
+}: {
+  children: ReactNode;
+  texte?: ReactNode;
+  actions?: ReactNode;
+  retour?: ReactNode;
+  sous?: ReactNode;
+}) {
   return (
-    <div className="apparition mb-8 flex flex-wrap items-end justify-between gap-4 max-sm:items-start">
-      <div>
-        {sous && <p className="mb-1 text-lg font-semibold text-gris">{sous}</p>}
-        <h1 className="text-4xl font-extrabold leading-[1.08] text-encre sm:text-5xl">{children}</h1>
+    <div className="apparition mb-5">
+      {retour && (
+        // Grille : chaque enfant devient un bloc qui porte sa marge, et disparaît avec elle s'il est masqué.
+        <div className="grid justify-items-start text-[15px] font-bold text-cobalt [&>*]:mb-3 [&_a:hover]:underline">
+          {typeof retour === 'string' ? <span>{retour}</span> : retour}
+        </div>
+      )}
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        {/* Avec une phrase, le bloc de gauche se partage la ligne avec les boutons (la phrase passe à la ligne), comme le bac. */}
+        <div className={texte ? 'min-w-0 flex-[1_1_420px]' : 'min-w-0'}>
+          {sous && <p className="mb-1 text-lg font-semibold text-gris">{sous}</p>}
+          <h1 className="text-[26px] leading-tight font-extrabold text-balance text-encre sm:text-3xl">{children}</h1>
+          {texte && <p className="mt-1.5 text-[15px] text-gris">{texte}</p>}
+        </div>
+        {actions && <div className="flex flex-wrap gap-2.5">{actions}</div>}
       </div>
-      {actions && <div className="flex gap-2">{actions}</div>}
     </div>
   );
 }

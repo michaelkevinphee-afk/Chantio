@@ -35,6 +35,25 @@ export function jourSemaine(iso: string): number {
   return (new Date(Date.UTC(a, m - 1, j)).getUTCDay() + 6) % 7;
 }
 
+/** Numéro de semaine ISO 8601 (« Semaine 40 » du planning) : la semaine du lundi 28 septembre 2026 est la 40e. */
+export function numeroSemaine(iso: string): number {
+  const [a, m, j] = iso.split('-').map(Number);
+  // Le jeudi de la semaine donne l'année ; la semaine 1 est celle du 4 janvier.
+  const jeudi = Date.UTC(a, m - 1, j + 3 - jourSemaine(iso));
+  const annee = new Date(jeudi).getUTCFullYear();
+  const quatre = Date.UTC(annee, 0, 4);
+  const jeudi1 = quatre + (3 - ((new Date(quatre).getUTCDay() + 6) % 7)) * 86_400_000;
+  return 1 + Math.round((jeudi - jeudi1) / (7 * 86_400_000));
+}
+
+/**
+ * Va dans « À placer au planning » : toute intervention à planifier (même datée, sans technicien),
+ * et toute intervention sans date qui n'est ni validée ni facturée. Même règle que le bac.
+ */
+export function aPlacer(i: { statut: string; date_prevue: string | null }): boolean {
+  return i.statut === 'a_planifier' || (!i.date_prevue && i.statut !== 'validee' && i.statut !== 'facturee');
+}
+
 const ecartJours = (de: string, a: string) => {
   const t = (iso: string) => {
     const [y, m, d] = iso.split('-').map(Number);

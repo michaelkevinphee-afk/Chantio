@@ -248,7 +248,7 @@ function Fiche({
         </div>
         {manuelle && (
           <label className="flex items-center gap-2 text-sm font-semibold">
-            <input type="checkbox" checked={enAttribution} onChange={(e) => setEnAttribution(e.target.checked)} className="h-4 w-4 accent-cobalt" />
+            <input type="checkbox" name="siret_attente" checked={enAttribution} onChange={(e) => setEnAttribution(e.target.checked)} className="h-4 w-4 accent-cobalt" />
             SIRET en cours d’attribution (entreprise en création)
           </label>
         )}

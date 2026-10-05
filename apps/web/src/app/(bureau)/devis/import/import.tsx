@@ -99,13 +99,13 @@ export function Import({ entrepriseId, imports, lecture }: { entrepriseId: strin
         <div>
           <div className="sur">
             <Link href="/devis" style={{ color: 'inherit' }}>
-              Devis et factures
+              Mes devis
             </Link>
           </div>
           <h1>Importer vos documents</h1>
         </div>
         <div className="actions">
-          <Link className="btn" href="/devis?onglet=importes">
+          <Link className="btn" href="/devis">
             Retour à la liste
           </Link>
         </div>
@@ -234,13 +234,13 @@ export function Import({ entrepriseId, imports, lecture }: { entrepriseId: strin
                 <span className="fl">›</span>
               </button>
             ))}
-            <Link className="source" href="/devis/catalogue">
+            <Link className="source" href="/produits-services">
               <span className="ico">
                 <Picto nom="catalogue" taille={20} epaisseur={2} />
               </span>
               <div>
                 <b>Tarif fournisseur</b>
-                <span>Remplit votre catalogue avec vos prix d’achat (fichier CSV)</span>
+                <span>Remplit vos produits et services avec vos prix d’achat (fichier CSV)</span>
               </div>
               <span className="fl">›</span>
             </Link>
