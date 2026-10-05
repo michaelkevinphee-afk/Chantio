@@ -407,6 +407,40 @@ section.tint{background:var(--grad-soft);overflow-x:clip}
   @keyframes drift{50%{translate:0 18px}}
 }
 @media (max-width:700px){.deco .b2{display:none}.hero-phone{width:32%}section.vivid{margin-top:56px}}
+
+/* v9 : nouveautés (bento) */
+header.top nav a{white-space:nowrap}
+@media (max-width:1180px){.top nav{gap:14px}.top nav a{font-size:14px}}
+.newpill{display:inline-flex;align-items:center;gap:10px;align-self:flex-start;padding:6px 14px 6px 6px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:14px;font-weight:600;color:var(--fg);box-shadow:0 8px 20px -14px var(--glow);text-decoration:none}
+.newpill b{background:var(--grad);color:#fff;font-size:12px;letter-spacing:.04em;padding:4px 10px;border-radius:999px}
+.newpill:hover{border-color:var(--cobalt)}
+.bento{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:20px}
+.bx{position:relative;grid-column:span 2;background:var(--surface);border:1px solid var(--line);border-radius:26px;padding:28px 28px 0;display:flex;flex-direction:column;gap:10px;overflow:hidden;transition:transform .35s ease,box-shadow .35s ease}
+.bx:hover{transform:translateY(-4px);box-shadow:0 28px 48px -30px rgba(16,26,61,.5)}
+.bx.w3{grid-column:span 3}.bx.w4{grid-column:span 4}.bx.w6{grid-column:span 6}
+.bx.tint{background:linear-gradient(160deg,#FFFFFF 0%,#EEF2FF 100%)}
+.bx .tg{display:inline-flex;align-self:flex-start;font:700 12px var(--mono);letter-spacing:.05em;color:var(--cobalt);background:var(--soft);padding:5px 10px;border-radius:8px}
+.bx .tg.n{background:var(--grad);color:#fff}
+.bx h3{font-size:22px;font-weight:800;line-height:1.2}
+.bx p{color:var(--mut);font-size:15px;max-width:52ch}
+.bx .win{margin-top:auto;padding-top:18px}
+.bx .win div{border-radius:14px 14px 0 0;border:1px solid var(--line);border-bottom:0;background:#fff;box-shadow:0 -10px 40px -24px rgba(16,26,61,.45);overflow:hidden}
+.bx .win div::before{content:"";display:block;height:22px;background:#F3F5FC radial-gradient(circle at 14px 11px,#FF6B6B 3.5px,transparent 4px),radial-gradient(circle at 28px 11px,#FFC145 3.5px,transparent 4px),radial-gradient(circle at 42px 11px,#3DD68C 3.5px,transparent 4px);background-color:#F3F5FC;border-bottom:1px solid var(--line)}
+.bx .win div{height:clamp(220px,22vw,310px)}
+.bx.w4 .win div{height:clamp(240px,26vw,360px)}
+.bx .win img{display:block;width:100%;height:calc(100% - 23px);object-fit:cover;object-position:left top;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.bx:hover .win img{transform:scale(1.03)}
+.bx.plain{padding-bottom:28px;justify-content:flex-start}
+.bx .ic{width:46px;height:46px;border-radius:14px;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 24px -12px var(--glow);margin-bottom:6px}
+.bx .ic svg{stroke:#fff}
+.bx ul{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--fg)}
+.bx ul li{display:flex;gap:8px;align-items:flex-start}.bx ul li::before{content:"";flex:0 0 7px;height:7px;margin-top:7px;border-radius:3px;background:var(--cobalt)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:36px}
+.kpis div{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:18px;padding:18px 20px;color:#fff}
+.kpis b{display:block;font-size:30px;font-weight:800;letter-spacing:-.02em}
+.kpis span{font-size:14px;color:rgba(255,255,255,.82)}
+@media (max-width:980px){.bento{grid-template-columns:repeat(2,minmax(0,1fr))}.bx,.bx.w3,.bx.w4{grid-column:span 2}.bx.half{grid-column:span 1}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.bento{grid-template-columns:minmax(0,1fr)}.bx,.bx.w3,.bx.w4,.bx.w6,.bx.half{grid-column:auto}.bx{padding:22px 22px 0}.bx.plain{padding-bottom:22px}.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}.tabs button{flex:0 0 auto}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -421,8 +455,8 @@ section.tint{background:var(--grad-soft);overflow-x:clip}
       <a href="#accueil" data-go="accueil" data-sec="comment">Comment ça marche</a>
       <a href="#accueil" data-go="accueil" data-sec="images">L'application</a>
       <a href="#accueil" data-go="accueil" data-sec="bureau">Le bureau</a>
+      <a href="#accueil" data-go="accueil" data-sec="nouveautes">Nouveautés</a>
       <a href="#tarifs" data-go="tarifs">Tarifs</a>
-      <a href="#accueil" data-go="accueil" data-sec="questions">Questions</a>
     </nav>
     <div class="actions">
       <a class="btn btn-ghost login" href="/connexion">Accès plateforme</a>
@@ -438,9 +472,9 @@ section.tint{background:var(--grad-soft);overflow-x:clip}
     <div class="deco" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
     <div class="wrap hero-grid">
       <div class="intro">
-        <div class="eyebrow pill"><svg width="16" height="16"><use href="#blocs"/></svg>Logiciel de fiches d'intervention</div>
-        <h1>Vos interventions signées, validées et <em>prêtes à facturer le jour même.</em></h1>
-        <p class="lead">Chantio relie le bureau et le terrain. Le technicien complète sa fiche sur mobile en quelques gestes, le client signe sur place, et le bureau reçoit un rapport complet, prêt pour la facturation.</p>
+        <a class="newpill" href="#accueil" data-go="accueil" data-sec="nouveautes"><b>NOUVEAU</b>Achats, contrats et objectifs de l'année →</a>
+        <h1>Toute votre entreprise du bâtiment, <em>du devis au paiement.</em></h1>
+        <p class="lead">Chantio relie le bureau et le terrain. Vous chiffrez, planifiez l'équipe, le technicien fait signer sa fiche sur son téléphone, et la facture part le jour même. Achats, contrats et chiffres de l'année suivent, sans rien ressaisir.</p>
         <div class="ctas">
           <a class="btn btn-main" href="#inscription" data-go="inscription">Démarrer l'essai gratuit</a>
           <a class="btn btn-ghost" href="#accueil" data-go="accueil" data-sec="images">Découvrir l'application</a>
@@ -453,7 +487,7 @@ section.tint{background:var(--grad-soft);overflow-x:clip}
       </div>
       <div class="devices" aria-label="Chantio sur ordinateur et sur téléphone">
         <div class="mac">
-          <div class="lid"><div class="scr"><img class="on" src="img/web-dash.webp?v=8" width="2016" height="1260" alt="Le tableau de bord du bureau : interventions par statut, fiches à valider et équipe en direct"></div></div>
+          <div class="lid"><div class="scr"><img class="on" src="img/web-accueil.webp?v=9" width="2016" height="1260" alt="L'accueil du bureau : la carte de l'équipe du jour, la journée de chaque technicien et les choses à faire rangées en cases"></div></div>
           <div class="base"></div>
         </div>
         <div class="iphone hero-phone" id="heroPhone">
@@ -466,7 +500,7 @@ section.tint{background:var(--grad-soft);overflow-x:clip}
           </div>
         </div>
         <div class="float f1"><div class="dot" style="background:#D1FADF;color:#027A48"><svg width="18" height="18"><use href="#ok"/></svg></div><div>Fiche signée à 10h42<small>Rapport envoyé au bureau</small></div></div>
-        <div class="float f2"><div class="dot" style="background:#E6ECFE;color:#2F54EB"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></div><div>CO mesuré : 4 ppm<small>Conforme</small></div></div>
+        <div class="float f2"><div class="dot" style="background:#E6ECFE;color:#2F54EB"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg></div><div>Karim est sur place<small>Équipe en direct sur la carte</small></div></div>
       </div>
     </div>
   </section>
@@ -483,14 +517,14 @@ section.tint{background:var(--grad-soft);overflow-x:clip}
 
   <section class="block vivid" id="comment">
     <div class="wrap">
-      <div class="head2 rv"><div class="eyebrow">Comment ça marche</div><h2>De la planification à la facture, un seul circuit.</h2><p>Chaque intervenant dispose exactement des informations dont il a besoin.</p></div>
+      <div class="head2 rv"><div class="eyebrow">Comment ça marche</div><h2>Du devis au paiement, un seul circuit.</h2><p>Chaque intervenant dispose exactement des informations dont il a besoin.</p></div>
       <div class="steps rv">
-        <div class="step"><div class="num">1 · AU BUREAU</div><h3>Planifier</h3><p class="mut">L'intervention est créée en quelques clics et transmise instantanément sur le mobile du technicien.</p>
-          <ul><li>Planning hebdomadaire de l'équipe</li><li>Historique des clients et des équipements</li><li>Import de votre fichier clients Excel</li></ul></div>
+        <div class="step"><div class="num">1 · AU BUREAU</div><h3>Chiffrer et planifier</h3><p class="mut">Le devis signé devient une intervention en un clic, placée au planning et transmise aussitôt sur le mobile du technicien.</p>
+          <ul><li>Devis avec votre catalogue, coefficients et marges</li><li>Planning de l'équipe à la demi-journée</li><li>Clients, syndics, immeubles et occupants</li></ul></div>
         <div class="step"><div class="num">2 · SUR LE CHANTIER</div><h3>Intervenir</h3><p class="mut">Une fiche guidée en quatre étapes : constat, mesures, pièces posées, signature.</p>
           <ul><li>Photos avant et après</li><li>Mesures de combustion contrôlées</li><li>Temps passé et fournitures</li></ul></div>
-        <div class="step"><div class="num">3 · EN FIN DE JOURNÉE</div><h3>Valider et facturer</h3><p class="mut">Le bureau relit la fiche, la valide et la transmet à la facturation.</p>
-          <ul><li>Signature du client sur l'écran</li><li>Rapport PDF à votre en-tête</li><li>Export vers votre logiciel de gestion</li></ul></div>
+        <div class="step"><div class="num">3 · LE JOUR MÊME</div><h3>Facturer et piloter</h3><p class="mut">Le bureau valide la fiche, envoie la facture et suit ce qui reste à encaisser et à payer.</p>
+          <ul><li>Facture à votre en-tête en un clic</li><li>Retards de paiement signalés dès l'accueil</li><li>Factures fournisseurs et objectifs de l'année</li></ul></div>
       </div>
     </div>
   </section>
@@ -526,35 +560,59 @@ section.tint{background:var(--grad-soft);overflow-x:clip}
 
   <section class="block" id="bureau">
     <div class="wrap">
-      <div class="head2 rv"><div class="eyebrow">L'espace bureau</div><h2>Toute l'activité de l'entreprise sur un seul écran.</h2></div>
+      <div class="head2 rv"><div class="eyebrow">L'espace bureau</div><h2>Toute l'activité de l'entreprise sur un seul écran.</h2><p>Huit écrans, un menu simple : Accueil, Planning, Interventions, Ventes, Achats et Chiffres.</p></div>
       <div class="tabs rv" role="tablist" aria-label="Écrans du bureau">
-        <button type="button" role="tab" id="t-dash" aria-selected="true" data-i="0" data-t="Tableau de bord" data-d="Les interventions du jour sur la carte, les fiches à valider et l'équipe en direct.">Tableau de bord</button>
-        <button type="button" role="tab" id="t-plan" aria-selected="false" data-i="1" data-t="Planning" data-d="La semaine de toute l'équipe. Une intervention glissée sur un technicien apparaît aussitôt sur son mobile.">Planning</button>
-        <button type="button" role="tab" id="t-list" aria-selected="false" data-i="2" data-t="Interventions" data-d="Toutes les interventions, filtrées par statut : à planifier, en cours, à valider, validées.">Interventions</button>
-        <button type="button" role="tab" id="t-fiche" aria-selected="false" data-i="3" data-t="Fiche détaillée" data-d="Constat, mesures, temps passé et signature. Un clic pour valider et transmettre à la facturation.">Fiche détaillée</button>
-        <button type="button" role="tab" id="t-devis" aria-selected="false" data-i="4" data-t="Devis et factures" data-d="Devis, factures et relances au même endroit, avec le chiffre d'affaires du mois et l'objectif à atteindre.">Devis et factures</button>
+        <button type="button" role="tab" id="t-dash" aria-selected="true" data-i="0" data-t="Accueil" data-d="La carte de l'équipe du jour, la journée de chaque technicien et, juste dessous, les choses à faire rangées en cases : paiements en retard, fiches à valider, devis à relancer.">Accueil</button>
+        <button type="button" role="tab" id="t-plan" aria-selected="false" data-i="1" data-t="Planning" data-d="Chantiers et dépannages dans la même vue, à la demi-journée. Glissez une intervention : elle apparaît aussitôt sur le téléphone du technicien.">Planning</button>
+        <button type="button" role="tab" id="t-list" aria-selected="false" data-i="2" data-t="Interventions" data-d="À planifier, planifiées, à valider, renvoyées, terminées : chaque compteur filtre la liste, et la recherche retrouve aussi les plus anciennes.">Interventions</button>
+        <button type="button" role="tab" id="t-fiche" aria-selected="false" data-i="3" data-t="Fiche détaillée" data-d="La fiche envoyée par le technicien s'ouvre à côté de la liste. Vous la relisez, la validez ou la renvoyez en un clic.">Fiche détaillée</button>
+        <button type="button" role="tab" id="t-devis" aria-selected="false" data-i="4" data-t="Ventes" data-d="Devis et factures avec leurs compteurs, relances, réponses aux appels d'offres et marge de chaque chantier.">Ventes</button>
+        <button type="button" role="tab" id="t-achats" aria-selected="false" data-i="5" data-t="Achats" data-d="Les factures fournisseurs importées ou photographiées sont lues toutes seules. Vous approuvez, planifiez le paiement et suivez ce qui reste à payer.">Achats</button>
+        <button type="button" role="tab" id="t-annee" aria-selected="false" data-i="6" data-t="Mon année" data-d="Où vous en êtes face à l'objectif, la prévision de fin d'année et le résultat théorique, mois par mois. Votre fichier Excel de suivi s'importe en un geste.">Mon année</button>
+        <button type="button" role="tab" id="t-contrats" aria-selected="false" data-i="7" data-t="Contrats" data-d="Immeubles des syndics et bailleurs, contrats d'entretien, visites à planifier et renouvellements à préparer avant le préavis.">Contrats</button>
       </div>
       <div class="deskshow rv" role="tabpanel" aria-labelledby="t-dash" id="webpanel">
         <div class="mac wide">
           <div class="lid"><div class="scr" id="deskScr">
-            <img class="on" src="img/web-dash.webp?v=8" width="2016" height="1260" alt="Tableau de bord" loading="lazy">
-            <img src="img/web-planning.webp?v=8" width="2016" height="1260" alt="Planning de la semaine" loading="lazy">
-            <img src="img/web-interventions.webp?v=8" width="2016" height="1260" alt="Liste des interventions" loading="lazy">
-            <img src="img/web-dfiche.webp?v=8" width="2016" height="1260" alt="Fiche d'intervention détaillée" loading="lazy">
-            <img src="img/web-devis.webp?v=8" width="2016" height="1260" alt="Devis et factures : chiffre d'affaires et devis en attente" loading="lazy">
+            <img class="on" src="img/web-accueil.webp?v=9" width="2016" height="1260" alt="L'accueil : carte de l'équipe et choses à faire" loading="lazy">
+            <img src="img/web-planning.webp?v=9" width="2016" height="1260" alt="Planning de la semaine" loading="lazy">
+            <img src="img/web-interventions.webp?v=9" width="2016" height="1260" alt="Liste des interventions" loading="lazy">
+            <img src="img/web-dfiche.webp?v=9" width="2016" height="1260" alt="Fiche d'intervention ouverte dans un volet" loading="lazy">
+            <img src="img/web-devis.webp?v=9" width="2016" height="1260" alt="Mes devis : brouillons, en attente, signés" loading="lazy">
+            <img src="img/web-achats.webp?v=9" width="2016" height="1260" alt="Dépenses fournisseurs" loading="lazy">
+            <img src="img/web-annee.webp?v=9" width="2016" height="1260" alt="Chiffres, mon année : objectif, prévision et résultat" loading="lazy">
+            <img src="img/web-immeubles.webp?v=9" width="2016" height="1260" alt="Immeubles et contrats d'entretien" loading="lazy">
           </div></div>
           <div class="base"></div>
         </div>
-        <div class="txt"><h3 id="webt">Tableau de bord</h3><p class="mut" id="webd">Les interventions du jour sur la carte, les fiches à valider et l'équipe en direct.</p><div class="bar" aria-hidden="true"><i id="deskBar"></i></div></div>
+        <div class="txt"><h3 id="webt">Accueil</h3><p class="mut" id="webd">La carte de l'équipe du jour, la journée de chaque technicien et, juste dessous, les choses à faire rangées en cases : paiements en retard, fiches à valider, devis à relancer.</p><div class="bar" aria-hidden="true"><i id="deskBar"></i></div></div>
       </div>
       <p class="brandnote">Exemple : l'espace de l'entreprise Verger. Chaque entreprise retrouve son logo et ses couleurs.</p>
     </div>
   </section>
 
-  <section class="block" style="padding-top:0">
+
+  <section class="block tint" id="nouveautes">
+    <div class="wrap">
+      <div class="head2 rv"><div class="eyebrow">Nouveautés</div><h2>Bien plus que des fiches : <em>tout le pilotage de l'entreprise.</em></h2><p>Achats, contrats, planning des chantiers, objectifs de l'année. Chaque fonction est née d'une demande d'artisan.</p></div>
+      <div class="bento rv">
+        <article class="bx w4 tint"><span class="tg n">NOUVEAU · ACHATS</span><h3>Vos factures fournisseurs se lisent toutes seules.</h3><p>Importez le PDF ou prenez la facture en photo : fournisseur, montants et échéance sont remplis pour vous. Vous approuvez, contestez ou planifiez le paiement.</p><div class="win"><div><img src="img/zoom-achat.webp?v=9" alt="Une facture fournisseur lue automatiquement, avec son aperçu et le reste à payer" loading="lazy"></div></div></article>
+        <article class="bx"><span class="tg n">NOUVEAU · CHIFFRES</span><h3>Mon année, en un coup d'œil.</h3><p>Objectif, prévision de fin d'année et résultat théorique. Votre fichier Excel de suivi s'importe en un geste.</p><div class="win"><div><img src="img/zoom-annee.webp?v=9" alt="Chiffres, mon année : pourcentage de l'objectif atteint et course à l'objectif" loading="lazy"></div></div></article>
+        <article class="bx w3"><span class="tg">SYNDICS ET ENTRETIEN</span><h3>Immeubles, occupants et contrats d'entretien.</h3><p>Qui commande, qui paie, le gardien, les codes d'accès. Les contrats rappellent les visites et les renouvellements avant la date de préavis.</p><div class="win"><div><img src="img/zoom-contrats.webp?v=9" alt="Immeuble d'un syndic avec son contrat d'entretien et ses prochaines visites" loading="lazy"></div></div></article>
+        <article class="bx w3"><span class="tg">PLANNING</span><h3>Chantiers et dépannages dans la même vue.</h3><p>Chantiers sur plusieurs jours, demi-journées, réserve pour les urgences et charge de chaque technicien.</p><div class="win"><div><img src="img/zoom-planning.webp?v=9" alt="Planning de la semaine par technicien, à la demi-journée" loading="lazy"></div></div></article>
+        <article class="bx w4"><span class="tg">ACCUEIL</span><h3>L'essentiel rangé en cases, pas en liste.</h3><p>Paiements en retard en premier, puis les interventions à placer, les fiches à valider, ce qui reste à facturer et les devis à relancer.</p><div class="win"><div><img src="img/zoom-coupdoeil.webp?v=9" alt="Les choses à faire de la journée rangées en cases" loading="lazy"></div></div></article>
+        <article class="bx"><span class="tg">VENTES</span><h3>Devis et factures qui se suivent.</h3><p>Compteurs cliquables, appels d'offres, coefficients et marges par ouvrage.</p><div class="win"><div><img src="img/zoom-devis.webp?v=9" alt="Mes devis avec leurs compteurs" loading="lazy"></div></div></article>
+        <article class="bx plain half"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-5h6v5"/></svg></div><h3>Plusieurs entreprises, un seul compte.</h3><p>Passez d'une société à l'autre depuis le menu. Chaque entreprise garde son équipe, sa numérotation et son en-tête.</p></article>
+        <article class="bx plain half"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></div><h3>Une numérotation qui parle.</h3><p>DEP pour les dépannages, CH pour les chantiers, ENT pour l'entretien : chacun retrouve son dossier au premier coup d'œil.</p></article>
+        <article class="bx plain"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></svg></div><h3>Vos idées, dictées en dix secondes.</h3><p>Une bulle sur chaque écran : vous dictez votre idée et la page concernée est jointe. Chantio évolue avec vous.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" >
     <div class="wrap">
       <div class="band rv">
-        <div class="who"><div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2F54EB" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg></div><div class="k">DIRIGEANT</div><h3>Une vision complète de l'activité.</h3><p>Interventions du jour, fiches à valider, montants à facturer : l'essentiel en temps réel, sans papier égaré.</p></div>
+        <div class="who"><div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2F54EB" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg></div><div class="k">DIRIGEANT</div><h3>Une vision complète de l'activité.</h3><p>L'équipe sur la carte, les retards de paiement, les achats et l'objectif de l'année : l'essentiel en temps réel, sans papier égaré.</p></div>
         <div class="who"><div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2F54EB" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7"/><path d="m15 17 2 2 4-4"/></svg></div><div class="k">CHEF DE CHANTIER</div><h3>Planification et contrôle qualité.</h3><p>Affectation des techniciens, relecture des fiches et traitement des anomalies avant qu'elles n'atteignent le client.</p></div>
         <div class="who"><div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2F54EB" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/></svg></div><div class="k">TECHNICIEN</div><h3>Une saisie rapide, même avec des gants.</h3><p>Connexion mémorisée sur le téléphone, un écran par étape et une fiche terminée avant de quitter le chantier.</p></div>
       </div>
@@ -603,6 +661,8 @@ section.tint{background:var(--grad-soft);overflow-x:clip}
         <details><summary>Que se passe-t-il en cave ou en sous-sol, sans réseau ?</summary><p>La fiche se remplit intégralement hors connexion, photos et signature comprises. Elle est transmise automatiquement dès le retour du réseau.</p></details>
         <details><summary>Je travaille seul. Chantio est-il adapté ?</summary><p>Oui. La formule Solo réunit le bureau et le terrain dans une seule application, sans étape de validation superflue.</p></details>
         <details><summary>La signature du client est-elle obligatoire ?</summary><p>Non. Si le client est absent ou refuse de signer, la fiche le mentionne et suit son circuit normalement.</p></details>
+        <details><summary>J'ai plusieurs sociétés. Faut-il plusieurs comptes ?</summary><p>Non. Un seul compte suffit : vous passez d'une entreprise à l'autre depuis le menu, chacune avec son équipe, ses clients et sa numérotation.</p></details>
+        <details><summary>Je suis mon activité dans un fichier Excel. Puis-je le garder ?</summary><p>Vous l'importez dans Chiffres › Mon année : Chantio reprend vos objectifs et la production des mois passés, puis complète automatiquement avec vos factures.</p></details>
         <details><summary>Où sont hébergées mes données ?</summary><p>En Europe, avec une sauvegarde quotidienne. Vous pouvez les exporter à tout moment.</p></details>
         <details><summary>Puis-je résilier à tout moment ?</summary><p>Oui. Vous récupérez l'ensemble de vos fiches en PDF et de vos données au format Excel.</p></details>
       </div>
