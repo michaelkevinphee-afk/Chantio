@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { phraseAttente, resumeAFaire, SANS_CLIENT, toutAFaire, type AchatAFaire, type ClientAFaire, type DonneesAFaire } from './a-faire.ts';
+import { caseAFaire, phraseAttente, rangerAFaire, resumeAFaire, SANS_CLIENT, toutAFaire, type AchatAFaire, type ClientAFaire, type DonneesAFaire } from './a-faire.ts';
 import type { DocumentSuivi, InterventionSuivi } from './suivi-client.ts';
 
 const AJD = '2026-10-04';
@@ -191,4 +191,31 @@ test('devis et factures sans client : lignes « Sans client » après les client
       ['afaire', 'Sans client', 'Le devis « Robinets » est commencé mais pas encore envoyé.'],
     ],
   );
+});
+
+test('cases de l’Accueil : chaque chose dans une seule case, retards avec montant et jours', () => {
+  const L = toutAFaire(
+    donnees({
+      clients: [client('m', 'Mme Martin')],
+      inter: { m: [inter({ id: 'u1', urgence: 'urgente' }), inter({ id: 'v1', statut: 'terminee' })] },
+      docs: { m: [doc({ id: 'f1', genre: 'facture', type_facture: 'totale', statut: 'a_encaisser', echeance: '2026-09-24', net_a_payer: 1500 })] },
+      achats: [achat({})],
+    }),
+  );
+  const cases = rangerAFaire(L);
+  assert.deepEqual(
+    cases.map((c) => c.cle),
+    ['retards', 'placer', 'fiches', 'facturer', 'devis', 'achats', 'reste'],
+  );
+  const total = cases.reduce((s, c) => s + c.lignes.length, 0);
+  assert.equal(total, L.filter((x) => x.niveau !== 'attente').length);
+  const retards = cases.find((c) => c.cle === 'retards')!;
+  assert.equal(retards.lignes.length, 1);
+  assert.equal(retards.montant, 1500);
+  assert.equal(retards.lignes[0].jours, 10);
+  assert.ok(retards.urgent);
+  assert.equal(cases.find((c) => c.cle === 'placer')!.lignes.length, 1);
+  assert.equal(cases.find((c) => c.cle === 'fiches')!.lignes.length, 1);
+  assert.equal(cases.find((c) => c.cle === 'achats')!.montant, 2612.4);
+  assert.equal(caseAFaire({ cle: 'inconnue:1' }), 'reste');
 });

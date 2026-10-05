@@ -33,6 +33,10 @@ export interface ChoseAFaire {
   lien: string;
   /** `id` : contrat (renouveler, planifier-visites) ou intervention (facturer-intervention, devis-intervention). */
   geste?: { action: GesteAFaire; id: string };
+  /** Montant concerné, en euros (TTC pour une facture, HT pour un devis) : totaux de l'Accueil. */
+  montant?: number;
+  /** Jours de retard d'une facture. */
+  jours?: number;
 }
 
 export interface ClientSuivi {
@@ -305,8 +309,8 @@ export function chosesAFaire(
   contrats: ContratSuivi[] = [],
 ): ChoseAFaire[] {
   const L: ChoseAFaire[] = [];
-  const ajoute = (cle: string, niveau: NiveauSuivi, texte: string, bouton: string, lien: string, geste?: ChoseAFaire['geste']) =>
-    L.push({ cle, niveau, texte, bouton, lien, ...(geste ? { geste } : {}) });
+  const ajoute = (cle: string, niveau: NiveauSuivi, texte: string, bouton: string, lien: string, geste?: ChoseAFaire['geste'], chiffres?: Pick<ChoseAFaire, 'montant' | 'jours'>) =>
+    L.push({ cle, niveau, texte, bouton, lien, ...(geste ? { geste } : {}), ...chiffres });
   const imms = aDesImmeubles(c.type);
   const I = interventions;
   const D = documents;
@@ -348,6 +352,8 @@ export function chosesAFaire(
         `${laFacture(f)} de ${eurBac(resteDu(f, D))}\u00a0TTC devait être payée le ${ddmm(f.echeance!)} : ${pluriel(n, 'jour', 'jours')} de retard.`,
         'Voir la facture',
         doc(f),
+        undefined,
+        { montant: resteDu(f, D), jours: n },
       );
     });
   I.filter((i) => i.statut === 'a_planifier' && i.urgence !== 'normale').forEach((i) => {
@@ -444,6 +450,8 @@ export function chosesAFaire(
       `Le devis ${objetCite(d)} (${eurBac(d.total_ht, 0)}\u00a0HT) a été envoyé le ${ddmm(devisEnvoyeLe(d))} : pas encore de réponse. Pensez à relancer.`,
       'Voir le devis',
       doc(d),
+      undefined,
+      { montant: d.total_ht },
     );
   });
   D.filter(

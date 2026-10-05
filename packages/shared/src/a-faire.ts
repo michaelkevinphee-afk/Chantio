@@ -109,6 +109,7 @@ export function toutAFaire(d: DonneesAFaire): ElementAFaire[] {
       texte: `${a.numero ? `La facture n° ${a.numero}` : 'La facture'} de ${a.fournisseur || 'Fournisseur à vérifier'} (${eurBac(reste(a))} TTC) devait être payée le ${jjmmaaaaBac(a.echeance!)}.`,
       bouton: 'Déclarer un paiement',
       lien: `/achats/${a.id}?payer=1`,
+      montant: reste(a),
     });
   } else if (echues.length) {
     L.push({
@@ -118,6 +119,7 @@ export function toutAFaire(d: DonneesAFaire): ElementAFaire[] {
       texte: `${echues.length} factures fournisseurs ont dépassé leur échéance (${eurBac(echues.reduce((s, a) => s + reste(a), 0))} TTC).`,
       bouton: 'Voir les factures',
       lien: '/achats?filtre=a_payer',
+      montant: echues.reduce((s, a) => s + reste(a), 0),
     });
   }
 
@@ -160,6 +162,63 @@ export function toutAFaire(d: DonneesAFaire): ElementAFaire[] {
   return L.map((x, n) => ({ x, n }))
     .sort((a, b) => RANG[a.x.niveau] - RANG[b.x.niveau] || a.n - b.n)
     .map(({ x }) => x);
+}
+
+// ---------- Les cases « En un coup d'œil » de l'Accueil ----------
+
+/**
+ * Les cases de l'Accueil : les paiements clients en retard (en grand), puis six cases.
+ * Chaque chose à faire va dans une seule case, selon le début de sa clé ; une clé inconnue va dans « Le reste ».
+ */
+export type CaseAFaire = 'retards' | 'placer' | 'fiches' | 'facturer' | 'devis' | 'achats' | 'reste';
+
+const RANGEMENT: [CaseAFaire, RegExp][] = [
+  ['retards', /^retard:/],
+  ['placer', /^(urgence|planifier|visites):/],
+  ['fiches', /^(valider|renvoyee):/],
+  ['facturer', /^(facturer|facture-brouillon):/],
+  ['devis', /^(relancer|devis-brouillon|devis-signe|devis-demande|appel-offres):/],
+  ['achats', /^achat/],
+];
+
+export function caseAFaire(x: Pick<ElementAFaire, 'cle'>): CaseAFaire {
+  return RANGEMENT.find(([, motif]) => motif.test(x.cle))?.[0] ?? 'reste';
+}
+
+export interface CaseResumee {
+  cle: CaseAFaire;
+  titre: string;
+  /** La phrase sous le titre. */
+  phrase: string;
+  lignes: ElementAFaire[];
+  /** Au moins une ligne urgente. */
+  urgent: boolean;
+  /** Somme des montants connus (0 s'il n'y en a pas). */
+  montant: number;
+}
+
+const CASES: { cle: CaseAFaire; titre: string; phrase: string }[] = [
+  { cle: 'retards', titre: 'Paiements clients en retard', phrase: 'Factures dont l’échéance est passée.' },
+  { cle: 'placer', titre: 'Interventions à placer', phrase: 'Sans date ou sans technicien.' },
+  { cle: 'fiches', titre: 'Fiches à valider', phrase: 'Terminées par les techniciens, à relire.' },
+  { cle: 'facturer', titre: 'À facturer', phrase: 'Validées, pas encore facturées.' },
+  { cle: 'devis', titre: 'Devis', phrase: 'À relancer, terminer ou planifier.' },
+  { cle: 'achats', titre: 'Factures fournisseurs', phrase: 'À vérifier ou à payer.' },
+  { cle: 'reste', titre: 'Le reste', phrase: 'Contrats, immeubles, accès à l’entreprise.' },
+];
+
+/** Range les choses à faire (sans « On attend ») dans les cases de l'Accueil, dans l'ordre de la liste. */
+export function rangerAFaire(L: ElementAFaire[]): CaseResumee[] {
+  const faire = L.filter((x) => x.niveau !== 'attente');
+  return CASES.map((c) => {
+    const lignes = faire.filter((x) => caseAFaire(x) === c.cle);
+    return {
+      ...c,
+      lignes,
+      urgent: lignes.some((x) => x.niveau === 'urgent'),
+      montant: lignes.reduce((s, x) => s + (x.montant ?? 0), 0),
+    };
+  });
 }
 
 export interface ResumeAFaire {
