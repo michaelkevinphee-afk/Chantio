@@ -3,6 +3,7 @@ import { suivreRetour, type StatutRetour } from '@/app/actions-retours';
 import { LienEnvoi } from '@/components/retour';
 import { Puce, Vide } from '@/components/ui';
 import type { contexteBureau } from '@/lib/session';
+import { RecapRetours } from './recap-retours';
 
 // Paramètres › Retours sur Chantio : les messages envoyés depuis la bulle, du plus récent au plus ancien,
 // avec la page exacte où ils ont été dits.
@@ -51,6 +52,8 @@ export async function RubriqueRetours({ ctx }: { ctx: Awaited<ReturnType<typeof 
     );
   }
   return (
+    <>
+    <RecapRetours />
     <ul className="divide-y divide-trait">
       {retours.map((r) => {
         const s = STATUTS[r.statut] ?? STATUTS.nouveau;
@@ -93,5 +96,6 @@ export async function RubriqueRetours({ ctx }: { ctx: Awaited<ReturnType<typeof 
         );
       })}
     </ul>
+    </>
   );
 }
