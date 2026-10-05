@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { resumerRetours } from '@/lib/recap-retours';
 import { contexte, contexteBureau } from '@/lib/session';
 
 export type StatutRetour = 'nouveau' | 'en_cours' | 'fait';
@@ -36,4 +37,18 @@ export async function suivreRetour(formulaire: FormData) {
   if (!['nouveau', 'en_cours', 'fait'].includes(statut)) return;
   await supabase.from('retours').update({ statut }).eq('id', String(formulaire.get('id')));
   revalidatePath('/parametres');
+}
+
+/** Récapitulatif par Claude des retours qui ne sont pas encore faits (Paramètres › Retours sur Chantio). */
+export async function recapRetours(): Promise<{ texte: string } | { erreur: string }> {
+  const { supabase } = await contexteBureau();
+  const { data, error } = await supabase
+    .from('retours')
+    .select('cree_le, auteur, page, titre_page, statut, texte')
+    .neq('statut', 'fait')
+    .order('cree_le', { ascending: true })
+    .limit(300);
+  if (error) return { erreur: 'Les retours n’ont pas pu être lus.' };
+  if (!data?.length) return { erreur: 'Aucun retour en attente : rien à récapituler.' };
+  return resumerRetours(data);
 }
