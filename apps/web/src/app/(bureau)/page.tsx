@@ -2,7 +2,8 @@ import { aujourdhui, dateLongue, eurBac, familleIntervention, heureCourte, numer
 import { AttenteAccueil, lienAccueil, LignesAFaire } from '@/components/accueil/a-faire';
 import { ApercuAppli } from '@/components/accueil/apercu-appli';
 import { CoupDOeil, type CaseAccueil } from '@/components/accueil/coup-d-oeil';
-import { EquipeDuJour, FAITES, type ArretEquipe, type InterventionDuJour } from '@/components/accueil/equipe-du-jour';
+import { FAITES } from '@/components/accueil/du-jour';
+import { EquipeDuJour, type ArretEquipe, type InterventionDuJour } from '@/components/accueil/equipe-du-jour';
 import { Rafraichir } from '@/components/accueil/rafraichir';
 import { presentsSurLeTerrain, techniciensTerrain } from '@/components/accueil/techniciens';
 import { LienBouton, Titre } from '@/components/ui';

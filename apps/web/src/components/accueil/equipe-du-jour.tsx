@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import type { FamilleIntervention, StatutIntervention } from '@chantio/shared';
 import { CarteDuJour, type ArretCarte, type RepereEntreprise } from '@/components/carte-du-jour';
+import { FAITES } from './du-jour';
 import { AvatarTechnicien } from './techniciens';
 
 /** Une intervention du jour, telle que l'Accueil l'affiche (carte et journée de chacun). */
@@ -34,8 +35,6 @@ export interface TechnicienDuJour {
 
 /** Un point de la carte, avec les techniciens de l'intervention (pour n'afficher que l'un d'eux). */
 export type ArretEquipe = ArretCarte & { membres: string[] };
-
-export const FAITES: StatutIntervention[] = ['terminee', 'validee', 'facturee'];
 
 const PUCE = {
   cobalt: 'degrade text-white shadow-none',
