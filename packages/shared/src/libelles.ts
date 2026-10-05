@@ -77,15 +77,15 @@ export function libelleAcces(role: RoleMembre): 'Dirigeant' | 'Bureau' | 'Techni
 }
 
 export const LIBELLE_FORMULE: Record<Formule, string> = {
-  solo: 'Solo',
+  solo: 'Artisan',
   equipe: 'Équipe',
   entreprise: 'Entreprise',
 };
 
 export const PRIX_FORMULE: Record<Formule, string> = {
-  solo: '19 € / mois',
-  equipe: '49 € / mois',
-  entreprise: '149 € / mois',
+  solo: '29 € / mois',
+  equipe: '79 € / mois',
+  entreprise: '199 € / mois',
 };
 
 export const LIBELLE_IDENTITE: Record<StatutIdentite, string> = {
@@ -184,9 +184,9 @@ export function couleurDocument(r?: { couleur_doc?: string } | null): string {
 export const LOGICIELS_COMPTA = ['Sage', 'Cegid', 'EBP', 'Quadra', 'ACD', 'Pennylane', 'Autre'] as const;
 
 /** Paramètres › Abonnement : prix hors taxe par mois et public de chaque formule. */
-export const PRIX_FORMULE_HT: Record<Formule, number> = { solo: 19, equipe: 49, entreprise: 149 };
+export const PRIX_FORMULE_HT: Record<Formule, number> = { solo: 29, equipe: 79, entreprise: 199 };
 export const DESCRIPTION_FORMULE: Record<Formule, string> = {
-  solo: 'Pour l’artisan seul',
-  equipe: 'Pour une petite équipe avec ses techniciens',
-  entreprise: 'Pour les PME et plusieurs équipes',
+  solo: 'Pour l’artisan seul ou avec son bureau (2 utilisateurs)',
+  equipe: 'Pour une petite équipe : 3 utilisateurs, puis 15 € par utilisateur',
+  entreprise: 'Pour les PME : 8 utilisateurs, puis 12 € par utilisateur',
 };

@@ -124,7 +124,7 @@ export default async function Entreprises({ searchParams }: PageProps<'/entrepri
           </section>
         )}
 
-        <p className="mt-2.5 text-sm text-gris">Chaque entreprise a sa propre formule (Solo, Équipe ou Entreprise).</p>
+        <p className="mt-2.5 text-sm text-gris">Chaque entreprise a sa propre formule (Artisan, Équipe ou Entreprise).</p>
       </div>
     </PleinEcran>
   );
