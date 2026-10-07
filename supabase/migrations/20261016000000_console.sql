@@ -125,7 +125,7 @@ create table public.acces_chantio (
   id             bigint generated always as identity primary key,
   entreprise_id  uuid not null references public.entreprises (id) on delete cascade,
   equipier_id    uuid references prive.equipe_chantio (id) on delete set null,
-  -- Qui : « Michael de Chantio », ou le dirigeant qui ouvre ou coupe l'accès.
+  -- Qui : « Paul de Chantio », ou le dirigeant qui ouvre ou coupe l'accès.
   qui            text not null,
   action         text not null,
   assistance_id  uuid,

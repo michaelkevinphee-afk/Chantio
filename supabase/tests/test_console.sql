@@ -22,12 +22,12 @@ end $$;
 
 insert into auth.users (email) values
   ('christophe@verger.example'), ('technicien@verger.example'), ('patron@concurrent.example'),
-  ('michael@chantio.example'), ('ines@chantio.example'), ('hugo@chantio.example'), ('intrus@exemple.example');
+  ('paul@chantio.example'), ('ines@chantio.example'), ('hugo@chantio.example'), ('intrus@exemple.example');
 -- Adresse pas encore validée : l'invitation de l'équipe ne s'y relie pas.
 insert into auth.users (email, email_confirmed_at) values ('pas-valide@chantio.example', null);
 
 -- L'équipe Chantio : le propriétaire est ajouté à la main (script de mise en production).
-insert into prive.equipe_chantio (email, prenom, role) values ('michael@chantio.example', 'Michael', 'proprietaire');
+insert into prive.equipe_chantio (email, prenom, role) values ('paul@chantio.example', 'Paul', 'proprietaire');
 
 -- Une autre entreprise, avec un client.
 select pg_temp.connecter('patron@concurrent.example');
@@ -79,8 +79,8 @@ begin
 end $$;
 reset role;
 
--- Michael, sans la double vérification : il est reconnu, mais rien ne s'ouvre.
-select pg_temp.connecter('michael@chantio.example', false);
+-- Paul, sans la double vérification : il est reconnu, mais rien ne s'ouvre.
+select pg_temp.connecter('paul@chantio.example', false);
 set role authenticated;
 do $$
 declare
@@ -94,8 +94,8 @@ begin
 end $$;
 reset role;
 
--- Michael avec la double vérification.
-select pg_temp.connecter('michael@chantio.example', true);
+-- Paul avec la double vérification.
+select pg_temp.connecter('paul@chantio.example', true);
 set role authenticated;
 do $$
 declare
@@ -431,7 +431,7 @@ end $$;
 reset role;
 
 -- Création d'une entreprise depuis la console : son dirigeant est invité.
-select pg_temp.connecter('michael@chantio.example', true);
+select pg_temp.connecter('paul@chantio.example', true);
 set role authenticated;
 do $$
 declare
@@ -459,7 +459,7 @@ end $$;
 reset role;
 
 -- Un équipier retiré n'a plus accès, même avec la double vérification.
-select pg_temp.connecter('michael@chantio.example', true);
+select pg_temp.connecter('paul@chantio.example', true);
 set role authenticated;
 select public.console_modifier_equipier((select id from public.console_equipe() where email = 'ines@chantio.example'), 'support', false);
 reset role;
@@ -472,8 +472,8 @@ begin
 end $$;
 reset role;
 
--- Dernier propriétaire : impossible de le retirer (Michael ne se retire pas lui-même ; on promeut Hugo puis on essaie).
-select pg_temp.connecter('michael@chantio.example', true);
+-- Dernier propriétaire : impossible de le retirer (Paul ne se retire pas lui-même ; on promeut Hugo puis on essaie).
+select pg_temp.connecter('paul@chantio.example', true);
 set role authenticated;
 select public.console_modifier_equipier((select id from public.console_equipe() where email = 'hugo@chantio.example'), 'proprietaire', true);
 reset role;
@@ -481,9 +481,9 @@ select pg_temp.connecter('hugo@chantio.example', true);
 set role authenticated;
 do $$
 begin
-  perform public.console_modifier_equipier((select id from public.console_equipe() where email = 'michael@chantio.example'), 'support', true);
+  perform public.console_modifier_equipier((select id from public.console_equipe() where email = 'paul@chantio.example'), 'support', true);
   -- Hugo reste propriétaire : le changement passe.
-  assert (select role from public.console_equipe() where email = 'michael@chantio.example') = 'support', 'rôle changé';
+  assert (select role from public.console_equipe() where email = 'paul@chantio.example') = 'support', 'rôle changé';
 end $$;
 reset role;
 
