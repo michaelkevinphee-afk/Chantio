@@ -13,7 +13,7 @@ export const metadata = { title: 'Devis et factures · Chantio' };
 
 /**
  * Éditeur plein écran d'un devis, d'une facture ou d'un avoir (vEditeur du bac). La croix ramène aux devis
- * ou aux factures ; ?retour=client ramène à la fiche du client, ?retour=/chemin à l'écran d'où l'on vient.
+ * ou aux factures ; ?facturer=1 ouvre la fenêtre « Facturer le devis » ; ?retour=client ramène à la fiche du client, ?retour=/chemin à l'écran d'où l'on vient.
  */
 export default async function PageDocument({ params, searchParams }: PageProps<'/devis/[id]'>) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
@@ -77,6 +77,7 @@ export default async function PageDocument({ params, searchParams }: PageProps<'
           entreprise={ctx.entreprise}
           retour={retour}
           aujourdhui={aujourdhui()}
+          ouvrirFacturer={sp.facturer === '1'}
           modeles={{
             objet: (facture ? reglages.mail_facture_objet : reglages.mail_devis_objet) || '',
             texte: (facture ? reglages.mail_facture_texte : reglages.mail_devis_texte) || '',

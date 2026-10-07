@@ -43,6 +43,7 @@ import { lireDocument, type ChampsLus } from '@/lib/devis';
 import { lireFichierImporte } from '@/lib/lecture';
 import { contexteBureau } from '@/lib/session';
 import { lireFacturation } from './charger';
+import { lireListeDocuments } from './liste-donnees';
 
 type Resultat<T = object> = ({ ok: true } & T) | { ok: false; erreur: string };
 type Bureau = Awaited<ReturnType<typeof contexteBureau>>;
@@ -402,6 +403,15 @@ export async function facturerDevis(
   if (!res.ok) return res;
   revaliderVentes();
   return { ok: true, id: res.id, message: `${TITRES_FACTURE[type]} préparée en brouillon` };
+}
+
+/** Devis signés qui restent à facturer (fenêtre « Nouvelle facture » : acompte, avancement, situation, solde). */
+export async function devisAFacturer(): Promise<{ id: string; numero: string | null; objet: string; clientId: string | null; ht: number; facturePct: number }[]> {
+  const ctx = await contexteBureau();
+  const lignes = await lireListeDocuments(ctx.supabase, 'devis', aujourdhui());
+  return lignes
+    .filter((l) => l.statut === 'signe' && (l.facturePct ?? 0) < 100 - 1e-6)
+    .map((l) => ({ id: l.id, numero: l.numero, objet: l.objet, clientId: l.clientId, ht: l.ht, facturePct: l.facturePct ?? 0 }));
 }
 
 /** Prépare un avoir sur une facture émise : mêmes lignes (facture totale) ou montant facturé par taux de TVA. */
