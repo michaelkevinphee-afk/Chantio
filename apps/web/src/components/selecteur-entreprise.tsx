@@ -53,6 +53,7 @@ export function SelecteurEntreprise({
   email,
   prenomNom,
   invitations = 0,
+  console: equipeChantio = false,
   variante = 'menu',
 }: {
   nom: string;
@@ -61,6 +62,8 @@ export function SelecteurEntreprise({
   email?: string | null;
   prenomNom?: string;
   invitations?: number;
+  /** Membre de l'équipe Chantio : lien vers la console. */
+  console?: boolean;
   variante?: VarianteSelecteur;
 }) {
   const [ouvert, setOuvert] = useState(false);
@@ -217,6 +220,11 @@ export function SelecteurEntreprise({
             <Link role="menuitem" href="/entreprises" onClick={() => fermer()} className={`${LIGNE} font-bold text-gris`}>
               <Icone nom="curseurs" taille={18} className="shrink-0" /> Gérer vos entreprises
             </Link>
+            {equipeChantio && (
+              <Link role="menuitem" href="/console" onClick={() => fermer()} className={`${LIGNE} font-bold text-cobalt`}>
+                <Icone nom="bouclier" taille={18} className="shrink-0" /> Console Chantio
+              </Link>
+            )}
             <hr className="my-1.5 border-trait" />
             <form action={deconnecter}>
               <button role="menuitem" className={`${LIGNE} font-bold text-gris`}>

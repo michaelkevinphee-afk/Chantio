@@ -2,10 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { LIBELLE_ROLE, type ReglagesFacturation, type RoleMembre } from '@chantio/shared';
+import { envoyerCode } from '@/lib/envoi-code';
 import { contexteBureau } from '@/lib/session';
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase/config';
 
 // L'équipe se gère dans Paramètres › Membres : chaque action y ramène.
 const MEMBRES = '/parametres?rubrique=membres';
@@ -112,20 +112,6 @@ export async function renvoyer(membreId: string) {
   if (!data?.email) redirect(`${MEMBRES}&erreur=${enc('Adresse e-mail introuvable.')}`);
   const errEnvoi = await envoyerCode(data.email);
   redirect(`${MEMBRES}&renvoi=${enc(data.prenom ?? '')}${errEnvoi ? `&sansmail=${enc(errEnvoi)}` : ''}`);
-}
-
-// Envoie un code de connexion par e-mail. Renvoie le message d'erreur, ou null.
-// Client sans session : l'envoi ne touche pas à la connexion du dirigeant.
-async function envoyerCode(email: string) {
-  const envoi = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { error } = await envoi.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-  if (!error) return null;
-  console.error('Envoi du code impossible', error);
-  return /rate|limit|seconds/i.test(error.message)
-    ? 'trop d’envois rapprochés, réessayez dans une minute'
-    : error.message;
 }
 
 /** Désactive ou réactive un membre (jamais un dirigeant, jamais soi-même). */

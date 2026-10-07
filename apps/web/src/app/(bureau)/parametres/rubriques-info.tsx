@@ -1,5 +1,13 @@
 import type { ReactNode } from 'react';
-import { DESCRIPTION_FORMULE, LIBELLE_FORMULE, PRIX_FORMULE_HT, type Formule } from '@chantio/shared';
+import {
+  DESCRIPTION_FORMULE,
+  LIBELLE_FORMULE,
+  LIBELLE_STATUT_ABONNEMENT,
+  PRIX_FORMULE_HT,
+  TON_STATUT_ABONNEMENT,
+  type Formule,
+  type StatutAbonnement,
+} from '@chantio/shared';
 import { Icone, type NomIcone } from '@/components/icones';
 import { Puce } from '@/components/ui';
 import { BoutonFormule } from './notifications';
@@ -77,9 +85,31 @@ export function RubriqueConnectivite() {
 }
 
 /** Paramètres › Abonnement (dirigeant). */
-export function RubriqueAbonnement({ formule }: { formule: Formule }) {
+export function RubriqueAbonnement({
+  formule,
+  etat,
+}: {
+  formule: Formule;
+  /** Compte chez Chantio (table abonnements), null tant que la console n'est pas en place. */
+  etat?: { statut: StatutAbonnement; essai_fin: string | null } | null;
+}) {
+  const fin = etat?.essai_fin ? new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${etat.essai_fin}T12:00:00Z`)) : null;
   return (
     <>
+      {etat && (
+        <p className="mt-5 flex flex-wrap items-center gap-2">
+          <Puce ton={TON_STATUT_ABONNEMENT[etat.statut]}>{LIBELLE_STATUT_ABONNEMENT[etat.statut]}</Puce>
+          <span className="text-gris">
+            {etat.statut === 'essai' && fin
+              ? `Essai gratuit jusqu’au ${fin}.`
+              : etat.statut === 'offert'
+                ? 'Chantio vous est offert.'
+                : etat.statut === 'resilie'
+                  ? 'Votre abonnement est terminé.'
+                  : 'Votre abonnement est actif.'}
+          </span>
+        </p>
+      )}
       <Section titre="Votre formule" grille={false}>
         <div className="grid grid-cols-[minmax(0,1fr)] gap-3 min-[1101px]:grid-cols-3">
           {(Object.keys(LIBELLE_FORMULE) as Formule[]).map((f) => {
