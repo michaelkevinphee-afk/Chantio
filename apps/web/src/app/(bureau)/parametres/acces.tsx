@@ -1,4 +1,4 @@
-import { DUREES_ASSISTANCE, dureeLisible } from '@chantio/shared';
+import { DUREES_ASSISTANCE, MODES_ASSISTANCE, dureeLisible, type ModeAssistance } from '@chantio/shared';
 import { autoriserAcces, repondreAcces, retirerAcces } from '@/app/actions-acces';
 import { BoutonEnvoi } from '@/components/retour';
 import type { contexteBureau } from '@/lib/session';
@@ -13,6 +13,7 @@ type Assistance = {
   demandeur: string;
   motif: string;
   duree_minutes: number;
+  mode?: ModeAssistance;
   statut: 'demandee' | 'acceptee' | 'refusee' | 'terminee' | 'annulee';
   cree_le: string;
   fin: string | null;
@@ -28,7 +29,7 @@ export async function RubriqueAcces({ ctx, sp }: { ctx: Awaited<ReturnType<typeo
   const [{ data: lues, error }, { data: journalLu }] = await Promise.all([
     supabase
       .from('assistances')
-      .select('id, origine, demandeur, motif, duree_minutes, statut, cree_le, fin')
+      .select('*')
       .eq('entreprise_id', entreprise.id)
       .order('cree_le', { ascending: false })
       .limit(20),
@@ -55,7 +56,8 @@ export async function RubriqueAcces({ ctx, sp }: { ctx: Awaited<ReturnType<typeo
         {demande && (
           <div className="rounded-[14px] border-2 border-violet bg-violet-doux/60 p-4">
             <p>
-              <b>{demande.demandeur}</b> demande à voir votre compte pendant <b>{dureeLisible(demande.duree_minutes)}</b> pour vous aider :
+              <b>{demande.demandeur}</b> demande à {demande.mode === 'modification' ? <b>voir et modifier</b> : 'voir'} votre compte pendant{' '}
+              <b>{dureeLisible(demande.duree_minutes)}</b> pour vous aider :
             </p>
             <p className="mt-1 font-semibold">« {demande.motif} »</p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -79,7 +81,10 @@ export async function RubriqueAcces({ ctx, sp }: { ctx: Awaited<ReturnType<typeo
         {ouverte ? (
           <div className="flex flex-wrap items-center gap-3 rounded-[14px] bg-vert-doux px-4 py-3">
             <p className="min-w-0 flex-1">
-              <b>L’équipe Chantio peut voir votre compte jusqu’au {quand(ouverte.fin!)}</b>, en lecture seule.
+              <b>
+                L’équipe Chantio peut {ouverte.mode === 'modification' ? 'voir et modifier' : 'voir'} votre compte jusqu’au {quand(ouverte.fin!)}
+              </b>
+              {ouverte.mode === 'modification' ? ', et chaque modification est notée ci-dessous.' : ', en lecture seule.'}
               {ouverte.motif && <span className="block text-gris">« {ouverte.motif} »</span>}
             </p>
             <form action={retirerAcces}>
@@ -106,6 +111,16 @@ export async function RubriqueAcces({ ctx, sp }: { ctx: Awaited<ReturnType<typeo
                   ))}
                 </select>
               </label>
+              <label className="block">
+                <span className="etiquette">Ce qu’elle peut faire</span>
+                <select name="mode" defaultValue="lecture" className="champ !w-auto">
+                  {MODES_ASSISTANCE.map((m) => (
+                    <option key={m.mode} value={m.mode}>
+                      {m.libelle}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="block min-w-[200px] flex-1">
                 <span className="etiquette">Pourquoi (facultatif)</span>
                 <input name="motif" maxLength={300} className="champ" placeholder="Problème avec une facture" />
@@ -120,7 +135,11 @@ export async function RubriqueAcces({ ctx, sp }: { ctx: Awaited<ReturnType<typeo
       <Section titre="Ce que cela veut dire" grille={false}>
         <ul className="flex list-disc flex-col gap-1.5 pl-5">
           <li>Sans votre accord, l’équipe Chantio ne voit que des nombres : combien d’utilisateurs, d’interventions, de fiches.</li>
-          <li>Avec votre accord, elle consulte vos données pour vous aider, sans pouvoir rien modifier ni envoyer.</li>
+          <li>En « lecture seule », elle consulte vos données pour vous aider, sans rien pouvoir modifier ni envoyer.</li>
+          <li>
+            En « lecture et modification », elle peut aussi paramétrer votre compte à votre place (clients, catalogue, équipe…). Elle ne peut ni toucher à un
+            dirigeant, ni prolonger l’accès. Chaque modification est notée ci-dessous.
+          </li>
           <li>L’accès se coupe tout seul à la fin de la durée. Vous pouvez le couper avant.</li>
           <li>Chaque accès et chaque changement de votre abonnement est noté ci-dessous. Personne ne peut effacer ce journal.</li>
         </ul>

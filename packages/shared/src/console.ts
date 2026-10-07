@@ -120,6 +120,13 @@ export const DUREES_ASSISTANCE: { minutes: number; libelle: string }[] = [
   { minutes: 1440, libelle: '24 heures' },
 ];
 
+/** Ce que l'équipe Chantio peut faire pendant une session d'assistance (choisi par le dirigeant). */
+export type ModeAssistance = 'lecture' | 'modification';
+export const MODES_ASSISTANCE: { mode: ModeAssistance; libelle: string }[] = [
+  { mode: 'lecture', libelle: 'Lecture seule' },
+  { mode: 'modification', libelle: 'Lecture et modification' },
+];
+
 export function dureeLisible(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;
   const h = Math.floor(minutes / 60);

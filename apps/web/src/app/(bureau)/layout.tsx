@@ -5,6 +5,7 @@ import { chargerAFaire } from '@/lib/a-faire';
 import { COOKIE_MENU, lireEtatMenu } from '@/lib/menu';
 import { liensProfils } from '@/lib/profils';
 import { contexteBureau, mesEntreprises } from '@/lib/session';
+import { quitterCompteClient } from '@/app/actions-acces';
 
 export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
   const { supabase, user, membre, entreprise } = await contexteBureau();
@@ -26,7 +27,7 @@ export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
     dirigeant
       ? supabase
           .from('assistances')
-          .select('demandeur, motif, duree_minutes, statut, cree_le, fin')
+          .select('*')
           .eq('entreprise_id', entreprise.id)
           .in('statut', ['demandee', 'acceptee'])
           .order('cree_le', { ascending: false })
@@ -49,17 +50,30 @@ export default async function LayoutBureau({ children }: LayoutProps<'/'>) {
 
   // Chiffres lus à l'heure de la requête : le bandeau disparaît à la page suivante quand l'accès expire.
   const maintenant = new Date().getTime();
-  type Acces = { demandeur: string; motif: string; duree_minutes: number; statut: string; cree_le: string; fin: string | null };
+  type Acces = { id: string; demandeur: string; motif: string; duree_minutes: number; mode?: string; statut: string; cree_le: string; fin: string | null };
   const lignes = (acces ?? []) as Acces[];
   const ouvert = lignes.find((a) => a.statut === 'acceptee' && a.fin && new Date(a.fin).getTime() > maintenant);
   const demande = lignes.find((a) => a.statut === 'demandee' && maintenant - new Date(a.cree_le).getTime() < 86_400_000);
   const heure = (iso: string) =>
     new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)).replace(':', ' h ');
-  const bandeau = demande
-    ? { ton: 'violet' as const, texte: `${demande.demandeur} demande à voir votre compte pour vous aider : « ${demande.motif} »`, action: 'Répondre' }
-    : ouvert
-      ? { ton: 'vert' as const, texte: `L’équipe Chantio peut voir votre compte jusqu’au ${heure(ouvert.fin!)}, en lecture seule.`, action: 'Couper l’accès' }
-      : null;
+  const voir = (a: Acces) => (a.mode === 'modification' ? 'voir et modifier' : 'voir');
+  // Équipier Chantio entré dans ce compte pour le paramétrer : il le sait, et peut en sortir.
+  const bandeau = membre.assistance_id
+    ? {
+        ton: 'violet' as const,
+        texte: `Vous êtes dans le compte de ${entreprise.nom} pour l’équipe Chantio${ouvert ? `, jusqu’au ${heure(ouvert.fin!)}` : ''}. Chaque modification est notée dans son journal.`,
+        action: 'Quitter le compte',
+        quitter: quitterCompteClient,
+      }
+    : demande
+      ? { ton: 'violet' as const, texte: `${demande.demandeur} demande à ${voir(demande)} votre compte pour vous aider : « ${demande.motif} »`, action: 'Répondre' }
+      : ouvert
+        ? {
+            ton: 'vert' as const,
+            texte: `L’équipe Chantio peut ${voir(ouvert)} votre compte jusqu’au ${heure(ouvert.fin!)}${ouvert.mode === 'modification' ? '' : ', en lecture seule'}.`,
+            action: 'Couper l’accès',
+          }
+        : null;
 
   return (
     <CadreBureau

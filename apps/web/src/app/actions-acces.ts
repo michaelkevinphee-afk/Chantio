@@ -22,7 +22,8 @@ export async function autoriserAcces(d: FormData) {
   const { supabase } = await contexteBureau();
   const duree = Number(d.get('duree')) || 60;
   const motif = String(d.get('motif') ?? '').trim().slice(0, 300) || null;
-  const { error } = await supabase.rpc('autoriser_assistance', { p_duree_minutes: duree, p_motif: motif });
+  const mode = d.get('mode') === 'modification' ? 'modification' : 'lecture';
+  const { error } = await supabase.rpc('autoriser_assistance', { p_duree_minutes: duree, p_motif: motif, p_mode: mode });
   if (error) revenir('erreur', lisible(error));
   revenir('ok', 'Accès ouvert. Il se coupera tout seul à la fin de la durée choisie.');
 }
@@ -44,4 +45,13 @@ export async function retirerAcces(d: FormData) {
   const { error } = await supabase.rpc('retirer_assistance', { p_assistance: id });
   if (error) revenir('erreur', lisible(error));
   revenir('ok', 'Accès coupé. L’équipe Chantio ne voit plus vos données.');
+}
+
+// Équipier Chantio : quitte le compte du client et revient à sa propre entreprise (ou à la console).
+export async function quitterCompteClient() {
+  const { supabase } = await contexteBureau();
+  await supabase.rpc('quitter_compte_client');
+  const { data } = await supabase.rpc('mes_entreprises');
+  revalidatePath('/', 'layout');
+  redirect((data ?? []).length ? '/' : '/console/assistance');
 }

@@ -1,23 +1,23 @@
 import Link from 'next/link';
-import { DUREES_ASSISTANCE, dureeLisible, peutConsole } from '@chantio/shared';
+import { DUREES_ASSISTANCE, MODES_ASSISTANCE, dureeLisible, peutConsole } from '@chantio/shared';
 import { EnClair, Message, Tableau } from '@/components/console/elements';
 import { BoutonEnvoi, LienEnvoi } from '@/components/retour';
 import { Panneau, Puce, Titre } from '@/components/ui';
 import { contexteConsole, jour, quand } from '@/lib/console';
-import { demanderAssistance, terminerAssistance } from '../../actions';
+import { demanderAssistance, entrerCompte, terminerAssistance } from '../../actions';
 import { listeEntreprises, type Assistance } from '../donnees';
 
 export const metadata = { title: 'Assistance · Console Chantio' };
 
 // Assistance : voir le compte d'un client pour l'aider, seulement avec son accord, pour une durée
-// limitée, en lecture seule, et noté dans son journal (exigence RGPD : Chantio est sous-traitant).
+// limitée, en lecture seule ou en modification selon son choix, et noté dans son journal (exigence RGPD : Chantio est sous-traitant).
 
 type Ligne = Assistance & { entreprise_id: string; entreprise: string };
 
 const ETAPES = [
   ['Vous demandez', 'Vous choisissez la durée et écrivez pourquoi. Le dirigeant reçoit un e-mail et voit la demande en haut de son bureau.'],
   ['Le dirigeant accepte', 'Ou refuse. Il peut aussi ouvrir l’accès lui-même, depuis Paramètres › Accès de Chantio, quand il vous appelle.'],
-  ['Vous consultez', 'En lecture seule : interventions, clients, devis, factures, achats. Chaque consultation est notée dans son journal.'],
+  ['Vous consultez', 'En lecture seule, ou en entrant dans son bureau pour le paramétrer s’il a choisi « lecture et modification ». Tout est noté dans son journal.'],
   ['L’accès se coupe', 'Tout seul à la fin de la durée. Le dirigeant ou vous pouvez le couper avant.'],
 ] as const;
 
@@ -65,9 +65,17 @@ export default async function AssistancePage({ searchParams }: PageProps<'/conso
                       {a.entreprise}
                     </Link>
                     <span className="block text-gris">
-                      {ouverte(a) ? `Ouverte jusqu’à ${quand(a.fin)}` : `Demandée par ${a.demandeur} ${quand(a.cree_le)}`} · « {a.motif} »
+                      {ouverte(a) ? `Ouverte jusqu’à ${quand(a.fin)}` : `Demandée par ${a.demandeur} ${quand(a.cree_le)}`}
+                      {a.mode === 'modification' ? ' · modification' : ''} · « {a.motif} »
                     </span>
                   </span>
+                  {ouverte(a) && a.mode === 'modification' && peut && (
+                    <form action={entrerCompte}>
+                      <input type="hidden" name="entreprise" value={a.entreprise_id} />
+                      <input type="hidden" name="retour" value="/console/assistance" />
+                      <LienEnvoi className="font-bold text-cobalt hover:underline">Entrer</LienEnvoi>
+                    </form>
+                  )}
                   {ouverte(a) && (
                     <Link href={`/console/entreprises/${a.entreprise_id}?onglet=assistance`} className="font-bold text-cobalt hover:underline">
                       Consulter
@@ -114,6 +122,16 @@ export default async function AssistancePage({ searchParams }: PageProps<'/conso
                   {DUREES_ASSISTANCE.map((d) => (
                     <option key={d.minutes} value={d.minutes}>
                       {d.libelle}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="etiquette">Accès demandé</span>
+                <select name="mode" defaultValue="lecture" className="champ">
+                  {MODES_ASSISTANCE.map((m) => (
+                    <option key={m.mode} value={m.mode}>
+                      {m.libelle}
                     </option>
                   ))}
                 </select>

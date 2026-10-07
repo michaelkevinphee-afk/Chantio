@@ -37,7 +37,8 @@ export function CadreBureau({
   /** Prénom de l'utilisateur, pour l'accueil de la bulle des retours. */
   prenom: string;
   /** Demande ou accès en cours de l'équipe Chantio (dirigeant), lien vers Paramètres › Accès de Chantio. */
-  bandeau?: { ton: 'violet' | 'vert'; texte: string; action: string } | null;
+  /** quitter : bouton qui envoie l'action au lieu du lien vers Paramètres › Accès de Chantio. */
+  bandeau?: { ton: 'violet' | 'vert'; texte: string; action: string; quitter?: () => Promise<void> } | null;
   children: ReactNode;
 }) {
   const [etat, setEtat] = useState(menu);
@@ -109,7 +110,15 @@ export function CadreBureau({
 
       {/* Contenu sur toute la largeur ; sur téléphone, place laissée à la barre du bas. */}
       <main data-contenu className="min-w-0 flex-1 px-4 py-8 lg:px-10 lg:py-10 max-menu:pb-[calc(96px+env(safe-area-inset-bottom))]">
-        {bandeau && (
+        {bandeau?.quitter ? (
+          <form action={bandeau.quitter} className="mb-5 flex items-center gap-3 rounded-[14px] bg-violet-doux px-4 py-3 text-[15px] font-semibold text-violet">
+            <Icone nom="bouclier" taille={20} className="shrink-0" />
+            <span className="min-w-0 flex-1 text-encre">{bandeau.texte}</span>
+            <button type="submit" className="shrink-0 font-extrabold whitespace-nowrap hover:underline">
+              {bandeau.action} ›
+            </button>
+          </form>
+        ) : bandeau && (
           <Link
             href="/parametres?rubrique=acces"
             className={`mb-5 flex items-center gap-3 rounded-[14px] px-4 py-3 text-[15px] font-semibold transition ${bandeau.ton === 'violet' ? 'bg-violet-doux text-violet hover:brightness-95' : 'bg-vert-doux text-vert hover:brightness-95'}`}

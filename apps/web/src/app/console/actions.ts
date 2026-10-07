@@ -88,7 +88,8 @@ export async function demanderAssistance(d: FormData) {
   if (!UUID.test(id)) revenir('/console/assistance', 'erreur', 'Choisissez une entreprise.');
   const duree = Number(texte(d, 'duree')) || 60;
   const motif = texte(d, 'motif');
-  const { error } = await supabase.rpc('console_demander_assistance', { p_entreprise: id, p_duree_minutes: duree, p_motif: motif });
+  const mode = texte(d, 'mode') === 'modification' ? 'modification' : 'lecture';
+  const { error } = await supabase.rpc('console_demander_assistance', { p_entreprise: id, p_duree_minutes: duree, p_motif: motif, p_mode: mode });
   if (error) revenir(retourDe(d, fiche(id, 'assistance')), 'erreur', messageBase(error));
 
   // Prévient le ou les dirigeants par e-mail : la demande les attend aussi dans le bureau.
@@ -105,7 +106,7 @@ export async function demanderAssistance(d: FormData) {
       [
         `Bonjour ${m.prenom},`,
         '',
-        `${moi.prenom}, de l’équipe Chantio, souhaite accéder au compte de ${f?.entreprise.nom ?? 'votre entreprise'} pendant ${dureeLisible(duree)} pour vous aider :`,
+        `${moi.prenom}, de l’équipe Chantio, souhaite ${mode === 'modification' ? 'voir et modifier' : 'voir'} le compte de ${f?.entreprise.nom ?? 'votre entreprise'} pendant ${dureeLisible(duree)} pour vous aider :`,
         `« ${motif} »`,
         '',
         `Pour accepter ou refuser : ${site}/parametres?rubrique=acces`,
@@ -125,6 +126,18 @@ export async function demanderAssistance(d: FormData) {
       ? `Demande envoyée. Le dirigeant est prévenu par e-mail et dans son bureau.`
       : `Demande envoyée. Le dirigeant la verra en haut de son bureau à sa prochaine connexion (aucun e-mail n’est parti).`,
   );
+}
+
+// Entre dans le bureau du client (session « lecture et modification ») pour le paramétrer.
+export async function entrerCompte(d: FormData) {
+  const { supabase } = await contexteConsole();
+  const id = texte(d, 'entreprise');
+  const retour = retourDe(d, fiche(id, 'assistance'));
+  if (!UUID.test(id)) revenir(retour, 'erreur', 'Entreprise introuvable.');
+  const { error } = await supabase.rpc('console_entrer_compte', { p_entreprise: id });
+  if (error) revenir(retour, 'erreur', messageBase(error));
+  revalidatePath('/', 'layout');
+  redirect('/');
 }
 
 export async function terminerAssistance(d: FormData) {
