@@ -97,6 +97,8 @@ export interface Membre {
   photo_chemin: string | null;
   /** Le membre a activé le partage de sa position (écran Moi de l'appli). */
   partage_position?: boolean;
+  /** Équipier Chantio entré dans le compte pendant une session d'assistance (sinon absent ou null). */
+  assistance_id?: string | null;
   partage_position_le?: string | null;
   /** Heures de travail par semaine (charge au planning). */
   heures_semaine?: number;

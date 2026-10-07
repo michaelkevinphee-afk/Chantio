@@ -4,6 +4,7 @@ import {
   AIDE_STATUT_ABONNEMENT,
   DUREES_ASSISTANCE,
   dureeLisible,
+  MODES_ASSISTANCE,
   joursRestants,
   LIBELLE_FORMULE,
   LIBELLE_IDENTITE,
@@ -27,7 +28,7 @@ import { EnClair, Ligne, Message, PuceAbonnement, Tableau, Tuile } from '@/compo
 import { BoutonEnvoi, LienEnvoi } from '@/components/retour';
 import { Panneau, Puce, Titre } from '@/components/ui';
 import { aujourdhuiParis, contexteConsole, euros, ilYa, jour, quand } from '@/lib/console';
-import { demanderAssistance, modifierAbonnement, terminerAssistance } from '../../../actions';
+import { demanderAssistance, entrerCompte, modifierAbonnement, terminerAssistance } from '../../../actions';
 import { ficheEntreprise, type Assistance } from '../../donnees';
 
 // Fiche d'une entreprise cliente : son compte chez Chantio (formule, utilisateurs, volumes),
@@ -192,8 +193,9 @@ export default async function FicheEntreprisePage({ params, searchParams }: Page
       {onglet === 'assistance' && (
         <div className="grid gap-5">
           <EnClair>
-            Le dirigeant décide : sans son accord, vous ne voyez que des nombres. Avec son accord, vous lisez ses interventions, clients, devis, factures et achats
-            pendant la durée choisie, sans rien pouvoir modifier. Chaque consultation est notée dans son journal (Paramètres › Accès de Chantio).
+            Le dirigeant décide : sans son accord, vous ne voyez que des nombres. En « lecture seule », vous lisez ses interventions, clients, devis, factures et
+            achats pendant la durée choisie. En « lecture et modification », vous entrez aussi dans son bureau pour paramétrer son compte, sans pouvoir toucher à un
+            dirigeant. Chaque consultation et chaque modification est notée dans son journal (Paramètres › Accès de Chantio).
           </EnClair>
 
           {ouverte ? (
@@ -211,9 +213,16 @@ export default async function FicheEntreprisePage({ params, searchParams }: Page
             >
               <p className="px-5 pt-4 text-[14.5px]">
                 {ouverte.origine === 'client' ? `Ouverte par ${ouverte.repondu_par ?? 'le dirigeant'}` : `Demandée par ${ouverte.demandeur}, acceptée par ${ouverte.repondu_par ?? 'le dirigeant'}`}{' '}
-                · jusqu’à <b>{quand(ouverte.fin)}</b>
+                · jusqu’à <b>{quand(ouverte.fin)}</b> · {ouverte.mode === 'modification' ? 'lecture et modification' : 'lecture seule'}
                 {ouverte.motif && <span className="block text-gris">« {ouverte.motif} »</span>}
               </p>
+              {ouverte.mode === 'modification' && peutConsole(moi.role, 'assistance') && (
+                <form action={entrerCompte} className="px-5 pt-4">
+                  <input type="hidden" name="entreprise" value={e.id} />
+                  <input type="hidden" name="retour" value={retour} />
+                  <BoutonEnvoi enCours="Ouverture…">Entrer dans son compte pour le paramétrer</BoutonEnvoi>
+                </form>
+              )}
               {peutConsole(moi.role, 'assistance') ? (
                 <>
                   <div className="flex gap-1.5 overflow-x-auto px-5 pt-4" role="group" aria-label="Que consulter">
@@ -252,13 +261,13 @@ export default async function FicheEntreprisePage({ params, searchParams }: Page
               }
             >
               <p className="px-5 py-4 text-[14.5px]">
-                {enAttente.demandeur} a demandé {dureeLisible(enAttente.duree_minutes)} d’accès {ilYa(enAttente.cree_le)} : « {enAttente.motif} ».
+                {enAttente.demandeur} a demandé {dureeLisible(enAttente.duree_minutes)} d’accès{enAttente.mode === 'modification' ? ' en modification' : ''} {ilYa(enAttente.cree_le)} : « {enAttente.motif} ».
                 <span className="block text-gris">Le dirigeant l’accepte ou la refuse depuis son bureau. Sans réponse, elle expire au bout de 24 heures.</span>
               </p>
             </Panneau>
           ) : peutConsole(moi.role, 'assistance') ? (
             <Panneau titre="Demander l’accès au dirigeant">
-              <form action={demanderAssistance} className="grid gap-4 p-5 sm:grid-cols-[200px_minmax(0,1fr)]">
+              <form action={demanderAssistance} className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-[180px_220px_minmax(0,1fr)]">
                 <input type="hidden" name="entreprise" value={e.id} />
                 <input type="hidden" name="retour" value={retour} />
                 <label className="block">
@@ -272,10 +281,20 @@ export default async function FicheEntreprisePage({ params, searchParams }: Page
                   </select>
                 </label>
                 <label className="block">
+                  <span className="etiquette">Accès demandé</span>
+                  <select name="mode" defaultValue="lecture" className="champ">
+                    {MODES_ASSISTANCE.map((m) => (
+                      <option key={m.mode} value={m.mode}>
+                        {m.libelle}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
                   <span className="etiquette">Pourquoi (le dirigeant le lit)</span>
                   <input name="motif" required maxLength={300} className="champ" placeholder="Vérifier pourquoi la facture FA-2026-0042 ne part pas" />
                 </label>
-                <div className="sm:col-span-2">
+                <div className="sm:col-span-2 lg:col-span-3">
                   <BoutonEnvoi enCours="Envoi…">Envoyer la demande</BoutonEnvoi>
                 </div>
               </form>
@@ -405,7 +424,7 @@ function AbonnementForm({
             </div>
           </fieldset>
           {modifiable && (
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-3">
               <BoutonEnvoi enCours="Enregistrement…">Enregistrer</BoutonEnvoi>
             </div>
           )}

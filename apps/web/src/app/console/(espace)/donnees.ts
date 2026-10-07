@@ -44,6 +44,7 @@ export type Assistance = {
   demandeur: string;
   motif: string;
   duree_minutes: number;
+  mode?: 'lecture' | 'modification';
   statut: 'demandee' | 'acceptee' | 'refusee' | 'terminee' | 'annulee';
   cree_le: string;
   repondu_le: string | null;
