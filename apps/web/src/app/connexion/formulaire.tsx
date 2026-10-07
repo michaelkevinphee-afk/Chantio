@@ -84,7 +84,9 @@ export default function FormulaireConnexion() {
   }
 
   function entrer() {
-    router.replace('/');
+    // Retour à la console si on venait de là (seule destination acceptée, jamais une adresse extérieure).
+    const suite = new URLSearchParams(window.location.search).get('suite') ?? '';
+    router.replace(/^\/console(\/[\w-]*)*$/.test(suite) ? suite : '/');
     router.refresh();
   }
 

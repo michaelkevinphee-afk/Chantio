@@ -12,7 +12,9 @@ end $$;
 create schema auth;
 create table auth.users (
   id uuid primary key default gen_random_uuid(),
-  email text unique
+  email text unique,
+  email_confirmed_at timestamptz default now(),
+  last_sign_in_at timestamptz
 );
 create function auth.uid() returns uuid language sql stable as $$
   select coalesce(
@@ -20,8 +22,16 @@ create function auth.uid() returns uuid language sql stable as $$
     nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'
   )::uuid
 $$;
+-- Le jeton complet (dont « aal » : aal2 après la double vérification).
+create function auth.jwt() returns jsonb language sql stable as $$
+  select coalesce(
+    nullif(current_setting('request.jwt.claims', true), ''),
+    jsonb_build_object('sub', nullif(current_setting('request.jwt.claim.sub', true), ''))::text
+  )::jsonb
+$$;
 grant usage on schema auth to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
+grant execute on function auth.jwt() to anon, authenticated;
 
 create schema storage;
 create table storage.buckets (id text primary key, name text, public boolean);
@@ -29,7 +39,8 @@ create table storage.objects (
   id uuid primary key default gen_random_uuid(),
   bucket_id text references storage.buckets (id),
   name text not null,
-  owner_id text
+  owner_id text,
+  metadata jsonb
 );
 alter table storage.objects enable row level security;
 create function storage.foldername(name text) returns text[] language sql immutable as $$

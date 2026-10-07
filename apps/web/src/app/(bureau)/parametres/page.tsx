@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { aujourdhui, initiales, libelleAcces, type Formule, type ReglagesFacturation } from '@chantio/shared';
+import { aujourdhui, initiales, libelleAcces, type Formule, type ReglagesFacturation, type StatutAbonnement } from '@chantio/shared';
 import { deconnecter } from '@/app/actions-session';
 import { EnvoiPhoto } from '@/components/envoi-photo';
 import { Icone } from '@/components/icones';
@@ -11,6 +11,7 @@ import { Note, Section } from './elements';
 import { lireBudget } from '../chiffres/annee/donnees';
 import { RubriquePrix } from './formulaire';
 import { RubriqueMembres } from './membres';
+import { RubriqueAcces } from './acces';
 import { RubriqueRetours } from './retours';
 import { RubriqueBudget, RubriqueProduction } from './pilotage';
 import { CasesNotifications } from './notifications';
@@ -209,7 +210,8 @@ export default async function Parametres({ searchParams }: PageProps<'/parametre
       </>
     );
   } else if (cle === 'abonnement') {
-    contenu = <RubriqueAbonnement formule={(entreprise.formule ?? 'equipe') as Formule} />;
+    const { data: etat } = await supabase.from('abonnements').select('statut, essai_fin').eq('entreprise_id', entreprise.id).maybeSingle();
+    contenu = <RubriqueAbonnement formule={(entreprise.formule ?? 'equipe') as Formule} etat={etat as { statut: StatutAbonnement; essai_fin: string | null } | null} />;
   } else if (cle === 'donnees') {
     contenu = <RubriqueDonnees />;
   } else if (cle === 'membres') {
@@ -223,6 +225,8 @@ export default async function Parametres({ searchParams }: PageProps<'/parametre
     contenu = <RubriqueCgv r={r} />;
   } else if (cle === 'retours') {
     contenu = <RubriqueRetours ctx={ctx} />;
+  } else if (cle === 'acces') {
+    contenu = <RubriqueAcces ctx={ctx} sp={sp} />;
   } else if (cle === 'budget' || cle === 'production') {
     // Réservées au dirigeant (rubriqueDemandee les refuse aux autres), comme les tables du pilotage.
     const annee = Number(aujourdhui().slice(0, 4));

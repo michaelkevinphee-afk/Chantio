@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Suspense, useState, type ComponentProps, type ReactNode } from 'react';
 import { deconnecter } from '@/app/actions-session';
 import { COOKIE_MENU, ecrireEtatMenu, type EtatMenu } from '@/lib/menu';
@@ -25,6 +26,7 @@ export function CadreBureau({
   pastilles,
   menu,
   prenom,
+  bandeau = null,
   children,
 }: {
   /** Props du sélecteur d'entreprise (sans la variante, choisie ici). */
@@ -34,6 +36,8 @@ export function CadreBureau({
   menu: EtatMenu;
   /** Prénom de l'utilisateur, pour l'accueil de la bulle des retours. */
   prenom: string;
+  /** Demande ou accès en cours de l'équipe Chantio (dirigeant), lien vers Paramètres › Accès de Chantio. */
+  bandeau?: { ton: 'violet' | 'vert'; texte: string; action: string } | null;
   children: ReactNode;
 }) {
   const [etat, setEtat] = useState(menu);
@@ -105,6 +109,16 @@ export function CadreBureau({
 
       {/* Contenu sur toute la largeur ; sur téléphone, place laissée à la barre du bas. */}
       <main data-contenu className="min-w-0 flex-1 px-4 py-8 lg:px-10 lg:py-10 max-menu:pb-[calc(96px+env(safe-area-inset-bottom))]">
+        {bandeau && (
+          <Link
+            href="/parametres?rubrique=acces"
+            className={`mb-5 flex items-center gap-3 rounded-[14px] px-4 py-3 text-[15px] font-semibold transition ${bandeau.ton === 'violet' ? 'bg-violet-doux text-violet hover:brightness-95' : 'bg-vert-doux text-vert hover:brightness-95'}`}
+          >
+            <Icone nom="bouclier" taille={20} className="shrink-0" />
+            <span className="min-w-0 flex-1 text-encre">{bandeau.texte}</span>
+            <span className="shrink-0 font-extrabold whitespace-nowrap">{bandeau.action} ›</span>
+          </Link>
+        )}
         {children}
       </main>
 

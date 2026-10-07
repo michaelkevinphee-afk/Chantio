@@ -36,7 +36,8 @@ export async function proxy(request: NextRequest) {
   if (!data?.claims && !PAGES_PUBLIQUES.some((p) => chemin.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = '/connexion';
-    url.search = '';
+    // Après la connexion, l'équipe Chantio revient à la console.
+    url.search = chemin.startsWith('/console') ? `?suite=${encodeURIComponent(chemin)}` : '';
     return NextResponse.redirect(url);
   }
   return reponse;

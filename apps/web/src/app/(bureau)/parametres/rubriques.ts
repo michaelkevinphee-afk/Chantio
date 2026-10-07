@@ -20,7 +20,8 @@ export type CleRubrique =
   | 'budget'
   | 'production'
   | 'compta'
-  | 'retours';
+  | 'retours'
+  | 'acces';
 
 export interface Rubrique {
   cle: CleRubrique;
@@ -109,6 +110,13 @@ export const GROUPES: { titre: string; rubriques: Rubrique[] }[] = [
         libelle: 'Retours sur Chantio',
         aide: 'Les idées et remarques envoyées avec la bulle en bas à droite, avec la page exacte où elles ont été dites.',
         icone: 'p_retours',
+      },
+      {
+        cle: 'acces',
+        libelle: 'Accès de Chantio',
+        aide: 'Qui chez Chantio peut voir votre compte pour vous aider, jusqu’à quand, et le journal de chaque accès.',
+        icone: 'bouclier',
+        dirigeantSeul: true,
       },
     ],
   },

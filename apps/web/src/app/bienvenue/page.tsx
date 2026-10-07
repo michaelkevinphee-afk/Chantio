@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { LIBELLE_ROLE, type RoleMembre } from '@chantio/shared';
 import { rejoindre } from '@/app/(bureau)/entreprises/actions';
@@ -20,9 +21,10 @@ export default async function Bienvenue({ searchParams }: PageProps<'/bienvenue'
   const { data: membre } = await supabase.rpc('membre_actif').maybeSingle();
   if (membre) redirect('/');
   const { demande } = await searchParams;
-  const [{ data: invitations }, { data: demandes }] = await Promise.all([
+  const [{ data: invitations }, { data: demandes }, { data: equipeChantio }] = await Promise.all([
     supabase.rpc('invitations_recues'),
     supabase.from('demandes_acces').select('id, statut').eq('user_id', user.id).eq('statut', 'en_attente'),
+    supabase.rpc('est_equipe_chantio'),
   ]);
   const recues = (invitations ?? []) as { membre_id: string; entreprise: string; role: RoleMembre }[];
 
@@ -33,6 +35,12 @@ export default async function Bienvenue({ searchParams }: PageProps<'/bienvenue'
       <p className="mt-2 text-gris">
         Connecté avec <b className="text-encre">{user.email}</b>. Si votre patron vous a invité, demandez-lui de vérifier cette adresse.
       </p>
+
+      {equipeChantio === true && (
+        <Link href="/console" className="mt-6 flex items-center justify-between rounded-[14px] bg-doux px-4 py-3 font-bold text-cobalt hover:underline">
+          Vous faites partie de l’équipe Chantio : ouvrir la console <span aria-hidden="true">›</span>
+        </Link>
+      )}
 
       {demande && (
         <p className="mt-6 rounded-[14px] bg-vert-doux px-4 py-3 text-sm font-semibold text-vert">
