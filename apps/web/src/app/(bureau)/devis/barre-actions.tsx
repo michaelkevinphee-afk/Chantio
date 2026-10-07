@@ -49,6 +49,7 @@ export function BarreActions({
   valider,
   avantAction,
   arreter,
+  ouvrirFacturer = false,
 }: {
   infos: InfosBarre;
   etat: string;
@@ -62,10 +63,12 @@ export function BarreActions({
   avantAction: () => Promise<boolean>;
   /** Plus d'enregistrement automatique (brouillon supprimé). */
   arreter: () => void;
+  /** Ouvert avec ?facturer=1 (depuis « Nouvelle facture ») : la fenêtre « Facturer » s'ouvre d'emblée. */
+  ouvrirFacturer?: boolean;
 }) {
   const router = useRouter();
   const [enCours, demarrer] = useTransition();
-  const [facturer, setFacturer] = useState(false);
+  const [facturer, setFacturer] = useState(() => ouvrirFacturer && [principal, ...menu].some((a) => a?.cle === 'facturer'));
   const [confirmer, setConfirmer] = useState(false);
   const plus = useRef<HTMLDetailsElement>(null);
   const d = infos;

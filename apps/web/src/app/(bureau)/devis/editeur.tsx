@@ -124,6 +124,7 @@ export function Editeur({
   retour,
   aujourdhui,
   modeles,
+  ouvrirFacturer = false,
 }: {
   doc: DocumentEditeur;
   liens: LiensDocument;
@@ -133,6 +134,8 @@ export function Editeur({
   retour: string;
   aujourdhui: string;
   modeles: { objet: string; texte: string };
+  /** ?facturer=1 : ouvre la fenêtre « Facturer le devis ». */
+  ouvrirFacturer?: boolean;
 }) {
   const router = useRouter();
   const reglages = entreprise.facturation;
@@ -834,6 +837,7 @@ export function Editeur({
             valider={valider}
             avantAction={async () => (mod ? enregistrer() : true)}
             arreter={() => (actif.current = false)}
+            ouvrirFacturer={ouvrirFacturer}
           />
         </div>
         <aside className="ed-d" aria-labelledby="ed-ap-t">

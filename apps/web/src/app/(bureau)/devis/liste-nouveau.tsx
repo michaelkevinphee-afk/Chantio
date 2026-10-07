@@ -2,18 +2,20 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
-import { aDesImmeubles, DESCRIPTION_PARCOURS, LIBELLE_PARCOURS, type Parcours, type TypeClient } from '@chantio/shared';
+import { useEffect, useState, useTransition } from 'react';
+import { aDesImmeubles, DESCRIPTION_PARCOURS, euroBac, LIBELLE_PARCOURS, nombreBac, type Parcours, type TypeClient } from '@chantio/shared';
 import { Fenetre } from '@/components/fenetre';
 import { annoncer, Roue } from '@/components/retour';
 import { Bouton, Puce } from '@/components/ui';
-import { creerBrouillon } from './actions';
+import { creerBrouillon, devisAFacturer } from './actions';
 import type { ClientFenetre } from './liste-donnees';
 import type { GenreListe } from './liste-regles';
 
 // Fenêtre « Nouveau devis » / « Nouvelle facture » du bac (fenetreNouveauDoc) : le type, le client
 // (avec l'immeuble et l'occupant pour un syndic ou un bailleur), l'objet, et pour un devis de chantier
 // la réponse à un appel d'offres. « Créer le brouillon » ouvre l'éditeur sur le brouillon prérempli.
+// Pour une facture, les devis signés du client restent à facturer : acompte, avancement, situation ou solde
+// se préparent depuis le devis (fenêtre « Facturer le devis », ouverte d'emblée avec ?facturer=1).
 
 const ETIQUETTE = 'mb-1 block text-[13px] font-bold text-gris';
 const CHAMP = 'champ rounded-[12px] px-3 py-2.5 text-[15px]';
@@ -49,6 +51,10 @@ export function FenetreNouveauDocument({
   const [ao, setAo] = useState(false);
   const [aoLimite, setAoLimite] = useState('');
   const [aoRef, setAoRef] = useState('');
+  const [aFacturer, setAFacturer] = useState<Awaited<ReturnType<typeof devisAFacturer>> | null>(null);
+  useEffect(() => {
+    if (!devis) devisAFacturer().then(setAFacturer, () => setAFacturer([]));
+  }, [devis]);
 
   // Sans client, le bac renvoie d'abord vers « Mes clients ».
   if (!premier)
@@ -224,6 +230,35 @@ export function FenetreNouveauDocument({
             </div>
           )}
         </>
+      )}
+
+      {!devis && aFacturer && (
+        <section aria-labelledby="nf-devis" className="rounded-[12px] border border-trait bg-[#F7F8FF] p-3">
+          <h3 id="nf-devis" className="text-sm font-extrabold">
+            Acompte, avancement, situation ou solde d’un devis signé
+          </h3>
+          {aFacturer.filter((v) => v.clientId === client.id).length ? (
+            <ul className="mt-2 grid gap-2">
+              {aFacturer
+                .filter((v) => v.clientId === client.id)
+                .map((v) => (
+                  <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-trait bg-white px-3 py-2">
+                    <span className="text-[14px]">
+                      <b>{v.numero ?? 'Devis'}</b> · {v.objet || 'Sans objet'}
+                      <small className="block text-xs text-gris">
+                        {euroBac(v.ht)} HT · déjà facturé {nombreBac(v.facturePct)} %
+                      </small>
+                    </span>
+                    <Link href={`/devis/${v.id}?facturer=1`} className="rounded-[10px] border border-cobalt px-3 py-1.5 text-sm font-extrabold text-cobalt hover:bg-white">
+                      Facturer ce devis
+                    </Link>
+                  </li>
+                ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-[13px] text-gris">Ce client n’a pas de devis signé à facturer. Une facture d’acompte, d’avancement ou de situation part toujours d’un devis signé.</p>
+          )}
+        </section>
       )}
     </Fenetre>
   );

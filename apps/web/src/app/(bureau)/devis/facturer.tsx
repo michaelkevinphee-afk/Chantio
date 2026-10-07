@@ -1,7 +1,8 @@
 'use client';
 
 // Fenêtre « Facturer le devis … », comme fenetreFacturer() du bac : facture totale (rien de facturé),
-// facture d'acompte (pourcentage), situation de travaux (avancement cumulé), facture de solde (le reste).
+// facture d'acompte (pourcentage), facture d'avancement ou situation de travaux (avancement cumulé),
+// facture de solde (le reste).
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -35,19 +36,21 @@ export function FenetreFacturer({
   const options = [
     deja ? null : (['totale', 'Facture totale', 'Toutes les lignes du devis, en une fois'] as const),
     ['acompte', 'Facture d’acompte', 'Un pourcentage du devis, avant les travaux'] as const,
-    ['situation', 'Situation de travaux', 'Selon l’avancement cumulé du chantier'] as const,
+    ['avancement', 'Facture d’avancement', 'Un pourcentage global d’avancement du chantier'] as const,
+    ['situation', 'Situation de travaux', 'Numérotée (n° 1, 2, 3…), selon l’avancement cumulé du chantier'] as const,
     deja ? (['solde', 'Facture de solde', `Le reste (${nombreBac(reste)} %), avec le détail et la déduction des acomptes`] as const) : null,
   ].filter((o) => o !== null);
 
+  const cumulatif = choix === 'situation' || choix === 'avancement';
   const preparer = () => {
-    const p = choix === 'acompte' ? nombre(pct.acompte) : choix === 'situation' ? nombre(pct.situation) : 0;
+    const p = choix === 'acompte' ? nombre(pct.acompte) : cumulatif ? nombre(pct.situation) : 0;
     const part = choix === 'totale' ? 100 : choix === 'solde' ? reste : choix === 'acompte' ? p : p - deja;
     if (!(part > 0) || deja + part > 100.001) {
-      annoncer(choix === 'situation' ? `L’avancement doit être entre ${nombreBac(deja)} et 100 %` : `Pourcentage entre 0 et ${nombreBac(reste)} %`, 'erreur');
+      annoncer(cumulatif ? `L’avancement doit être entre ${nombreBac(deja)} et 100 %` : `Pourcentage entre 0 et ${nombreBac(reste)} %`, 'erreur');
       return;
     }
     demarrer(async () => {
-      const r = await facturerDevis(devis.id, choix, choix === 'acompte' || choix === 'situation' ? p : undefined);
+      const r = await facturerDevis(devis.id, choix, choix === 'acompte' || cumulatif ? p : undefined);
       if (!r.ok) {
         annoncer(r.erreur, 'erreur');
         return;
@@ -100,7 +103,7 @@ export function FenetreFacturer({
             </span>
           </label>
         )}
-        {choix === 'situation' && (
+        {cumulatif && (
           <label className="champ">
             Avancement cumulé du chantier
             <span className="saisie-u">
